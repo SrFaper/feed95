@@ -20,10 +20,9 @@ jobs:
           java-version: '17'
 
       - name: Configurar Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.41.7'
-          channel: 'stable'
+        run: |
+          git clone https://github.com/flutter/flutter.git --branch 3.41.7 --depth 1 $HOME/flutter
+          echo "$HOME/flutter/bin" >> $GITHUB_PATH
 
       - name: Instalar dependencias
         working-directory: frontend
