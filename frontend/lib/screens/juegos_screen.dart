@@ -26,7 +26,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
 
   Future<void> cargarJuegos() async {
     setState(() => cargando = true);
-    juegos = await ApiService.obtenerJuegos();
+    juegos = await ApiService.obtenerJuegos(widget.usuario.id);
     setState(() => cargando = false);
   }
 

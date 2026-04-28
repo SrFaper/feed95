@@ -1,56 +1,103 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:crypto/crypto.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
 import '../models/juego.dart';
 import '../models/usuario.dart';
 
-// Clase encargada de centralizar todas las peticiones HTTP al backend
 class ApiService {
-  static const String baseUrl = 'http://localhost/feed95/backend';
+  static Database? _db;
 
-  // Registro de usuario
+  static Future<Database> get db async {
+    if (_db != null) return _db!;
+    _db = await _initDb();
+    return _db!;
+  }
+
+  static Future<Database> _initDb() async {
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, 'feed95.db');
+
+    return await openDatabase(
+      path,
+      version: 1,
+      onCreate: (db, version) async {
+        await db.execute('''
+          CREATE TABLE usuarios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL,
+            correo TEXT NOT NULL UNIQUE,
+            password TEXT NOT NULL
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE juegos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL,
+            descripcion TEXT,
+            imagen TEXT,
+            version TEXT,
+            calificacion INTEGER,
+            generos TEXT,
+            estado TEXT,
+            usuario_id INTEGER NOT NULL,
+            FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+          )
+        ''');
+      },
+    );
+  }
+
+  static String _hashPassword(String password) {
+    final bytes = utf8.encode(password);
+    return sha256.convert(bytes).toString();
+  }
+
+  // Registro
   static Future<Map<String, dynamic>> registrarUsuario({
     required String nombre,
     required String correo,
     required String password,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/auth/registro.php'),
-      body: {
+    final database = await db;
+    try {
+      await database.insert('usuarios', {
         'nombre': nombre,
         'correo': correo,
-        'password': password,
-      },
-    );
-    return jsonDecode(response.body);
+        'password': _hashPassword(password),
+      });
+      return {'success': true, 'message': 'Usuario registrado correctamente'};
+    } catch (e) {
+      return {'success': false, 'message': 'El correo ya está registrado'};
+    }
   }
 
-  // Inicio de sesión
+  // Login
   static Future<Map<String, dynamic>> login({
     required String correo,
     required String password,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/auth/login.php'),
-      body: {
-        'correo': correo,
-        'password': password,
-      },
+    final database = await db;
+    final result = await database.query(
+      'usuarios',
+      where: 'correo = ? AND password = ?',
+      whereArgs: [correo, _hashPassword(password)],
     );
-    return jsonDecode(response.body);
+    if (result.isNotEmpty) {
+      return {'success': true, 'usuario': result.first};
+    }
+    return {'success': false, 'message': 'Correo o contraseña incorrectos'};
   }
 
-  // Listar juegos
-  static Future<List<Juego>> obtenerJuegos() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/productos/listar.php'),
+  // Listar juegos del usuario
+  static Future<List<Juego>> obtenerJuegos(int usuarioId) async {
+    final database = await db;
+    final result = await database.query(
+      'juegos',
+      where: 'usuario_id = ?',
+      whereArgs: [usuarioId],
     );
-    final data = jsonDecode(response.body);
-    if (data['success'] == true) {
-      return (data['juegos'] as List)
-          .map((item) => Juego.fromJson(item))
-          .toList();
-    }
-    return [];
+    return result.map((item) => Juego.fromJson(item)).toList();
   }
 
   // Crear juego
@@ -64,20 +111,18 @@ class ApiService {
     required String estado,
     required int usuarioId,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/productos/crear.php'),
-      body: {
-        'nombre': nombre,
-        'descripcion': descripcion,
-        'imagen': imagen,
-        'version': version,
-        'calificacion': calificacion,
-        'generos': generos,
-        'estado': estado,
-        'usuario_id': usuarioId.toString(),
-      },
-    );
-    return jsonDecode(response.body);
+    final database = await db;
+    await database.insert('juegos', {
+      'nombre': nombre,
+      'descripcion': descripcion,
+      'imagen': imagen,
+      'version': version,
+      'calificacion': int.tryParse(calificacion) ?? 0,
+      'generos': generos,
+      'estado': estado,
+      'usuario_id': usuarioId,
+    });
+    return {'success': true, 'message': 'Juego agregado correctamente'};
   }
 
   // Actualizar juego
@@ -91,34 +136,31 @@ class ApiService {
     required String generos,
     required String estado,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/productos/actualizar.php'),
-      body: {
-        'id': id.toString(),
+    final database = await db;
+    await database.update(
+      'juegos',
+      {
         'nombre': nombre,
         'descripcion': descripcion,
         'imagen': imagen,
         'version': version,
-        'calificacion': calificacion,
+        'calificacion': int.tryParse(calificacion) ?? 0,
         'generos': generos,
         'estado': estado,
       },
+      where: 'id = ?',
+      whereArgs: [id],
     );
-    return jsonDecode(response.body);
+    return {'success': true, 'message': 'Juego actualizado correctamente'};
   }
 
   // Eliminar juego
   static Future<Map<String, dynamic>> eliminarJuego(int id) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/productos/eliminar.php'),
-      body: {
-        'id': id.toString(),
-      },
-    );
-    return jsonDecode(response.body);
+    final database = await db;
+    await database.delete('juegos', where: 'id = ?', whereArgs: [id]);
+    return {'success': true, 'message': 'Juego eliminado correctamente'};
   }
 
-  // Convierte JSON de usuario en objeto Usuario
   static Usuario convertirUsuario(Map<String, dynamic> json) {
     return Usuario.fromJson(json);
   }
