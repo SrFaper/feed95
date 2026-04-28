@@ -32,11 +32,15 @@ jobs:
         working-directory: frontend
         run: flutter build apk --release
 
+      - name: Renombrar APK
+        run: mv frontend/build/app/outputs/flutter-apk/app-release.apk frontend/build/app/outputs/flutter-apk/feed95-v0.apk
+
       - name: Crear Release y subir APK
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: build-${{ github.run_number }}
-          name: "Build #${{ github.run_number }}"
-          files: frontend/build/app/outputs/flutter-apk/app-release.apk
+          tag_name: feed95-v0.${{ github.run_number }}
+          name: "Feed95 v0.${{ github.run_number }}"
+          body: "Nueva versión de Feed95. Descarga e instala el APK adjunto."
+          files: frontend/build/app/outputs/flutter-apk/feed95-v0.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
