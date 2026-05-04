@@ -1,6 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
 import '../models/juego.dart';
 import '../models/usuario.dart';
@@ -15,18 +18,23 @@ class ApiService {
   }
 
   static Future<Database> _initDb() async {
+    // Inicializar sqflite_common_ffi para Windows y Linux
+    if (!kIsWeb && (Platform.isWindows || Platform.isLinux)) {
+      sqfliteFfiInit();
+      databaseFactory = databaseFactoryFfi;
+    }
+
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, 'feed95.db');
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE usuarios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre TEXT NOT NULL,
-            correo TEXT NOT NULL UNIQUE,
+            nombre TEXT NOT NULL UNIQUE,
             password TEXT NOT NULL
           )
         ''');
@@ -45,6 +53,17 @@ class ApiService {
           )
         ''');
       },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        // Por si alguien tenía la versión anterior con correo
+        await db.execute('DROP TABLE IF EXISTS usuarios');
+        await db.execute('''
+          CREATE TABLE usuarios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL UNIQUE,
+            password TEXT NOT NULL
+          )
+        ''');
+      },
     );
   }
 
@@ -56,37 +75,35 @@ class ApiService {
   // Registro
   static Future<Map<String, dynamic>> registrarUsuario({
     required String nombre,
-    required String correo,
     required String password,
   }) async {
     final database = await db;
     try {
       await database.insert('usuarios', {
         'nombre': nombre,
-        'correo': correo,
         'password': _hashPassword(password),
       });
       return {'success': true, 'message': 'Usuario registrado correctamente'};
     } catch (e) {
-      return {'success': false, 'message': 'El correo ya está registrado'};
+      return {'success': false, 'message': 'Ese nombre de usuario ya existe'};
     }
   }
 
   // Login
   static Future<Map<String, dynamic>> login({
-    required String correo,
+    required String nombre,
     required String password,
   }) async {
     final database = await db;
     final result = await database.query(
       'usuarios',
-      where: 'correo = ? AND password = ?',
-      whereArgs: [correo, _hashPassword(password)],
+      where: 'nombre = ? AND password = ?',
+      whereArgs: [nombre, _hashPassword(password)],
     );
     if (result.isNotEmpty) {
       return {'success': true, 'usuario': result.first};
     }
-    return {'success': false, 'message': 'Correo o contraseña incorrectos'};
+    return {'success': false, 'message': 'Usuario o contraseña incorrectos'};
   }
 
   // Listar juegos del usuario
@@ -172,9 +189,7 @@ class ApiService {
       where: 'id = ?',
       whereArgs: [id],
     );
-    if (result.isNotEmpty) {
-      return convertirUsuario(result.first);
-    }
+    if (result.isNotEmpty) return convertirUsuario(result.first);
     return null;
   }
 }

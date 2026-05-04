@@ -4,7 +4,6 @@ import '../services/api_service.dart';
 import 'home_screen.dart';
 import 'registro_screen.dart';
 
-// Pantalla de inicio de sesión
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -13,12 +12,12 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final correoController = TextEditingController();
+  final nombreController = TextEditingController();
   final passwordController = TextEditingController();
   bool cargando = false;
 
   Future<void> iniciarSesion() async {
-    if (correoController.text.isEmpty || passwordController.text.isEmpty) {
+    if (nombreController.text.isEmpty || passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Complete todos los campos')),
       );
@@ -28,7 +27,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => cargando = true);
 
     final respuesta = await ApiService.login(
-      correo: correoController.text,
+      nombre: nombreController.text,
       password: passwordController.text,
     );
 
@@ -43,9 +42,9 @@ class _LoginScreenState extends State<LoginScreen> {
         MaterialPageRoute(builder: (context) => HomeScreen(usuario: usuario)),
       );
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(respuesta['message'])));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(respuesta['message'])),
+      );
     }
   }
 
@@ -64,9 +63,8 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 24),
             TextField(
-              controller: correoController,
-              decoration: const InputDecoration(labelText: 'Correo'),
-              keyboardType: TextInputType.emailAddress,
+              controller: nombreController,
+              decoration: const InputDecoration(labelText: 'Usuario'),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -85,12 +83,10 @@ class _LoginScreenState extends State<LoginScreen> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const RegistroScreen(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const RegistroScreen()),
                 );
               },
-              child: const Text('¿No tienes cuenta? Creala aquí'),
+              child: const Text('¿No tienes cuenta? Créala aquí'),
             ),
           ],
         ),

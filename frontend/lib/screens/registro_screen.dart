@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 
-// Pantalla para registrar nuevos usuarios
 class RegistroScreen extends StatefulWidget {
   const RegistroScreen({super.key});
 
@@ -11,16 +10,23 @@ class RegistroScreen extends StatefulWidget {
 
 class _RegistroScreenState extends State<RegistroScreen> {
   final nombreController = TextEditingController();
-  final correoController = TextEditingController();
   final passwordController = TextEditingController();
+  final confirmarPasswordController = TextEditingController();
   bool cargando = false;
 
   Future<void> registrar() async {
     if (nombreController.text.isEmpty ||
-        correoController.text.isEmpty ||
-        passwordController.text.isEmpty) {
+        passwordController.text.isEmpty ||
+        confirmarPasswordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Complete todos los campos')),
+      );
+      return;
+    }
+
+    if (passwordController.text != confirmarPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Las contraseñas no coinciden')),
       );
       return;
     }
@@ -29,7 +35,6 @@ class _RegistroScreenState extends State<RegistroScreen> {
 
     final respuesta = await ApiService.registrarUsuario(
       nombre: nombreController.text,
-      correo: correoController.text,
       password: passwordController.text,
     );
 
@@ -60,18 +65,18 @@ class _RegistroScreenState extends State<RegistroScreen> {
             const SizedBox(height: 24),
             TextField(
               controller: nombreController,
-              decoration: const InputDecoration(labelText: 'Nombre'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: correoController,
-              decoration: const InputDecoration(labelText: 'Correo'),
-              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(labelText: 'Usuario'),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: passwordController,
               decoration: const InputDecoration(labelText: 'Contraseña'),
+              obscureText: true,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: confirmarPasswordController,
+              decoration: const InputDecoration(labelText: 'Repetir contraseña'),
               obscureText: true,
             ),
             const SizedBox(height: 24),
