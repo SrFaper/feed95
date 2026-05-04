@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import 'home_screen.dart';
 import 'registro_screen.dart';
@@ -34,17 +35,17 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => cargando = false);
 
     if (respuesta['success'] == true) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('usuario_id', respuesta['usuario']['id'] as int);
       final usuario = ApiService.convertirUsuario(respuesta['usuario']);
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (context) => HomeScreen(usuario: usuario),
-        ),
+        MaterialPageRoute(builder: (context) => HomeScreen(usuario: usuario)),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(respuesta['message'])),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(respuesta['message'])));
     }
   }
 
@@ -89,7 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 );
               },
-              child: const Text('¿No tienes cuenta? Regístrate'),
+              child: const Text('¿No tienes cuenta? Creala aquí'),
             ),
           ],
         ),

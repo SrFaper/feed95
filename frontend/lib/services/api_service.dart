@@ -164,4 +164,17 @@ class ApiService {
   static Usuario convertirUsuario(Map<String, dynamic> json) {
     return Usuario.fromJson(json);
   }
+
+  static Future<Usuario?> obtenerUsuarioPorId(int id) async {
+    final database = await db;
+    final result = await database.query(
+      'usuarios',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (result.isNotEmpty) {
+      return convertirUsuario(result.first);
+    }
+    return null;
+  }
 }

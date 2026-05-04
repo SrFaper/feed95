@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/usuario.dart';
 import 'juegos_screen.dart';
 import 'login_screen.dart';
 
-// Pantalla principal después de iniciar sesión
 class HomeScreen extends StatelessWidget {
   final Usuario usuario;
-
   const HomeScreen({super.key, required this.usuario});
 
   @override
@@ -17,12 +16,12 @@ class HomeScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () {
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.remove('usuario_id');
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const LoginScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
               );
             },
           ),
