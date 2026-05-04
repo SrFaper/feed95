@@ -1,0 +1,49 @@
+name: Build Flutter Windows EXE
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/build-exe.yml'
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Flutter
+        run: |
+          git clone https://github.com/flutter/flutter.git --branch 3.41.7 --depth 1 $env:USERPROFILE\flutter
+          echo "$env:USERPROFILE\flutter\bin" >> $env:GITHUB_PATH
+
+      - name: Instalar dependencias
+        working-directory: frontend
+        run: flutter pub get
+
+      - name: Habilitar soporte Windows
+        working-directory: frontend
+        run: flutter config --enable-windows-desktop
+
+      - name: Build Windows
+        working-directory: frontend
+        run: flutter build windows --release
+
+      - name: Comprimir ejecutable
+        run: |
+          Compress-Archive -Path "frontend\build\windows\x64\runner\Release\*" -DestinationPath "feed95-windows.zip"
+
+      - name: Crear Release en GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v0.1-windows"
+          name: "Feed95 v0.1 - Windows"
+          body: "Versión de escritorio para Windows. Descarga y extrae el ZIP, luego ejecuta feed95.exe."
+          prerelease: true
+          files: feed95-windows.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
