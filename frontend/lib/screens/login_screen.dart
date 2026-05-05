@@ -33,6 +33,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => cargando = false);
 
+    if (!mounted) return;
+
     if (respuesta['success'] == true) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('usuario_id', respuesta['usuario']['id'] as int);

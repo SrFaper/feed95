@@ -1,9 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/juego.dart';
 import '../models/usuario.dart';
 import '../services/api_service.dart';
 
-// Pantalla usada tanto para crear como para editar juegos
 class JuegoFormScreen extends StatefulWidget {
   final Usuario usuario;
   final Juego? juego;
@@ -26,8 +27,11 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
   final calificacionController = TextEditingController();
   final generosController = TextEditingController();
   String estadoSeleccionado = 'Pendiente';
+  String? _imagenLocal;
 
-  final List<String> estados = ['Pendiente', 'Jugando', 'Completado', 'Abandonado'];
+  final List<String> estados = [
+    'Pendiente', 'Jugando', 'Completado', 'Abandonado'
+  ];
 
   bool cargando = false;
 
@@ -42,6 +46,18 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
       calificacionController.text = widget.juego!.calificacion.toString();
       generosController.text = widget.juego!.generos;
       estadoSeleccionado = widget.juego!.estado;
+      _imagenLocal = widget.juego!.imagenLocal;
+    }
+  }
+
+  Future<void> _elegirImagen() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      setState(() {
+        _imagenLocal = picked.path;
+        imagenController.clear();
+      });
     }
   }
 
@@ -62,6 +78,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
         nombre: nombreController.text,
         descripcion: descripcionController.text,
         imagen: imagenController.text,
+        imagenLocal: _imagenLocal,
         version: versionController.text,
         calificacion: calificacionController.text,
         generos: generosController.text,
@@ -74,6 +91,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
         nombre: nombreController.text,
         descripcion: descripcionController.text,
         imagen: imagenController.text,
+        imagenLocal: _imagenLocal,
         version: versionController.text,
         calificacion: calificacionController.text,
         generos: generosController.text,
@@ -83,6 +101,8 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
 
     setState(() => cargando = false);
 
+    if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(respuesta['message'])),
     );
@@ -90,6 +110,33 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     if (respuesta['success'] == true) {
       Navigator.pop(context);
     }
+  }
+
+  Widget _vistaPrevia() {
+    if (_imagenLocal != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.file(
+          File(_imagenLocal!),
+          height: 160,
+          width: double.infinity,
+          fit: BoxFit.cover,
+        ),
+      );
+    }
+    if (imagenController.text.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.network(
+          imagenController.text,
+          height: 160,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => const SizedBox(),
+        ),
+      );
+    }
+    return const SizedBox();
   }
 
   @override
@@ -103,6 +150,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextField(
               controller: nombreController,
@@ -115,11 +163,38 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
               maxLines: 3,
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: imagenController,
-              decoration: const InputDecoration(labelText: 'URL de imagen'),
+
+            // Vista previa
+            _vistaPrevia(),
+            if (_imagenLocal != null || imagenController.text.isNotEmpty)
+              const SizedBox(height: 8),
+
+            // URL o galería
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: imagenController,
+                    decoration: const InputDecoration(labelText: 'URL de imagen'),
+                    onChanged: (_) => setState(() => _imagenLocal = null),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.photo_library),
+                  tooltip: 'Elegir desde galería',
+                  onPressed: _elegirImagen,
+                ),
+                if (_imagenLocal != null)
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    tooltip: 'Quitar imagen',
+                    onPressed: () => setState(() => _imagenLocal = null),
+                  ),
+              ],
             ),
             const SizedBox(height: 12),
+
             TextField(
               controller: versionController,
               decoration: const InputDecoration(labelText: 'Versión'),
@@ -147,11 +222,14 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
               },
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: cargando ? null : guardarJuego,
-              child: cargando
-                  ? const CircularProgressIndicator()
-                  : Text(esEdicion ? 'Actualizar' : 'Guardar'),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: cargando ? null : guardarJuego,
+                child: cargando
+                    ? const CircularProgressIndicator()
+                    : Text(esEdicion ? 'Actualizar' : 'Guardar'),
+              ),
             ),
           ],
         ),

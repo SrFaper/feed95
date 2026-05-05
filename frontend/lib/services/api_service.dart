@@ -18,7 +18,6 @@ class ApiService {
   }
 
   static Future<Database> _initDb() async {
-    // Inicializar sqflite_common_ffi para Windows y Linux
     if (!kIsWeb && (Platform.isWindows || Platform.isLinux)) {
       sqfliteFfiInit();
       databaseFactory = databaseFactoryFfi;
@@ -29,13 +28,14 @@ class ApiService {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 4,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE usuarios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL
+            password TEXT NOT NULL,
+            color INTEGER NOT NULL DEFAULT 4280391411
           )
         ''');
         await db.execute('''
@@ -44,6 +44,7 @@ class ApiService {
             nombre TEXT NOT NULL,
             descripcion TEXT,
             imagen TEXT,
+            imagen_local TEXT,
             version TEXT,
             calificacion INTEGER,
             generos TEXT,
@@ -54,15 +55,16 @@ class ApiService {
         ''');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        // Por si alguien tenía la versión anterior con correo
-        await db.execute('DROP TABLE IF EXISTS usuarios');
-        await db.execute('''
-          CREATE TABLE usuarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL
-          )
-        ''');
+        if (oldVersion < 3) {
+          await db.execute(
+            'ALTER TABLE usuarios ADD COLUMN color INTEGER NOT NULL DEFAULT 4280391411'
+          );
+        }
+        if (oldVersion < 4) {
+          await db.execute(
+            'ALTER TABLE juegos ADD COLUMN imagen_local TEXT'
+          );
+        }
       },
     );
   }
@@ -76,14 +78,19 @@ class ApiService {
   static Future<Map<String, dynamic>> registrarUsuario({
     required String nombre,
     required String password,
+    required int color,
   }) async {
     final database = await db;
     try {
-      await database.insert('usuarios', {
+      final id = await database.insert('usuarios', {
         'nombre': nombre,
         'password': _hashPassword(password),
+        'color': color,
       });
-      return {'success': true, 'message': 'Usuario registrado correctamente'};
+      final result = await database.query(
+        'usuarios', where: 'id = ?', whereArgs: [id],
+      );
+      return {'success': true, 'message': 'Perfil creado correctamente', 'usuario': result.first};
     } catch (e) {
       return {'success': false, 'message': 'Ese nombre de usuario ya existe'};
     }
@@ -103,16 +110,50 @@ class ApiService {
     if (result.isNotEmpty) {
       return {'success': true, 'usuario': result.first};
     }
-    return {'success': false, 'message': 'Usuario o contraseña incorrectos'};
+    return {'success': false, 'message': 'Contraseña incorrecta'};
+  }
+
+  // Listar todos los perfiles
+  static Future<List<Usuario>> listarUsuarios() async {
+    final database = await db;
+    final result = await database.query('usuarios', orderBy: 'nombre ASC');
+    return result.map((item) => Usuario.fromJson(item)).toList();
+  }
+
+  // Editar perfil
+  static Future<Map<String, dynamic>> editarUsuario({
+    required int id,
+    required String nombre,
+    String? password,
+    int? color,
+  }) async {
+    final database = await db;
+    try {
+      final Map<String, dynamic> data = {'nombre': nombre};
+      if (password != null && password.isNotEmpty) {
+        data['password'] = _hashPassword(password);
+      }
+      if (color != null) data['color'] = color;
+      await database.update('usuarios', data, where: 'id = ?', whereArgs: [id]);
+      return {'success': true, 'message': 'Perfil actualizado correctamente'};
+    } catch (e) {
+      return {'success': false, 'message': 'Ese nombre ya está en uso'};
+    }
+  }
+
+  // Eliminar perfil y sus juegos
+  static Future<Map<String, dynamic>> eliminarUsuario(int id) async {
+    final database = await db;
+    await database.delete('juegos', where: 'usuario_id = ?', whereArgs: [id]);
+    await database.delete('usuarios', where: 'id = ?', whereArgs: [id]);
+    return {'success': true, 'message': 'Perfil eliminado'};
   }
 
   // Listar juegos del usuario
   static Future<List<Juego>> obtenerJuegos(int usuarioId) async {
     final database = await db;
     final result = await database.query(
-      'juegos',
-      where: 'usuario_id = ?',
-      whereArgs: [usuarioId],
+      'juegos', where: 'usuario_id = ?', whereArgs: [usuarioId],
     );
     return result.map((item) => Juego.fromJson(item)).toList();
   }
@@ -122,6 +163,7 @@ class ApiService {
     required String nombre,
     required String descripcion,
     required String imagen,
+    String? imagenLocal,
     required String version,
     required String calificacion,
     required String generos,
@@ -133,6 +175,7 @@ class ApiService {
       'nombre': nombre,
       'descripcion': descripcion,
       'imagen': imagen,
+      'imagen_local': imagenLocal,
       'version': version,
       'calificacion': int.tryParse(calificacion) ?? 0,
       'generos': generos,
@@ -148,6 +191,7 @@ class ApiService {
     required String nombre,
     required String descripcion,
     required String imagen,
+    String? imagenLocal,
     required String version,
     required String calificacion,
     required String generos,
@@ -160,6 +204,7 @@ class ApiService {
         'nombre': nombre,
         'descripcion': descripcion,
         'imagen': imagen,
+        'imagen_local': imagenLocal,
         'version': version,
         'calificacion': int.tryParse(calificacion) ?? 0,
         'generos': generos,
@@ -185,9 +230,7 @@ class ApiService {
   static Future<Usuario?> obtenerUsuarioPorId(int id) async {
     final database = await db;
     final result = await database.query(
-      'usuarios',
-      where: 'id = ?',
-      whereArgs: [id],
+      'usuarios', where: 'id = ?', whereArgs: [id],
     );
     if (result.isNotEmpty) return convertirUsuario(result.first);
     return null;

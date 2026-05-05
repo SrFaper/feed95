@@ -1,38 +1,48 @@
 import 'package:flutter/material.dart';
+import '../models/usuario.dart';
 import '../services/api_service.dart';
+import 'registro_screen.dart';
 
-const List<Color> coloresDisponibles = [
-  Color(0xFF607D8B), Color(0xFFE91E63), Color(0xFF9C27B0),
-  Color(0xFF3F51B5), Color(0xFF2196F3), Color(0xFF009688),
-  Color(0xFF4CAF50), Color(0xFFFF9800), Color(0xFFF44336),
-  Color(0xFF795548), Color(0xFF00BCD4), Color(0xFFFFEB3B),
-];
+class PerfilScreen extends StatefulWidget {
+  final Usuario usuario;
+  final VoidCallback onActualizado;
 
-class RegistroScreen extends StatefulWidget {
-  const RegistroScreen({super.key});
+  const PerfilScreen({
+    super.key,
+    required this.usuario,
+    required this.onActualizado,
+  });
 
   @override
-  State<RegistroScreen> createState() => _RegistroScreenState();
+  State<PerfilScreen> createState() => _PerfilScreenState();
 }
 
-class _RegistroScreenState extends State<RegistroScreen> {
-  final nombreController = TextEditingController();
-  final passwordController = TextEditingController();
-  final confirmarPasswordController = TextEditingController();
-  Color colorSeleccionado = coloresDisponibles[0];
+class _PerfilScreenState extends State<PerfilScreen> {
+  late TextEditingController nombreController;
+  late TextEditingController passwordController;
+  late TextEditingController confirmarPasswordController;
+  late Color colorSeleccionado;
   bool cargando = false;
 
-  Future<void> registrar() async {
-    if (nombreController.text.isEmpty ||
-        passwordController.text.isEmpty ||
-        confirmarPasswordController.text.isEmpty) {
+  @override
+  void initState() {
+    super.initState();
+    nombreController = TextEditingController(text: widget.usuario.nombre);
+    passwordController = TextEditingController();
+    confirmarPasswordController = TextEditingController();
+    colorSeleccionado = widget.usuario.color;
+  }
+
+  Future<void> guardar() async {
+    if (nombreController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Complete todos los campos')),
+        const SnackBar(content: Text('El nombre no puede estar vacío')),
       );
       return;
     }
 
-    if (passwordController.text != confirmarPasswordController.text) {
+    if (passwordController.text.isNotEmpty &&
+        passwordController.text != confirmarPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Las contraseñas no coinciden')),
       );
@@ -41,21 +51,23 @@ class _RegistroScreenState extends State<RegistroScreen> {
 
     setState(() => cargando = true);
 
-    final respuesta = await ApiService.registrarUsuario(
+    final respuesta = await ApiService.editarUsuario(
+      id: widget.usuario.id,
       nombre: nombreController.text,
-      password: passwordController.text,
-      color: colorSeleccionado.toARGB32(),
+      password: passwordController.text.isNotEmpty ? passwordController.text : null,
+      color: colorSeleccionado.toARGB32(),  // ← corregido: era .value
     );
 
     setState(() => cargando = false);
 
-    if (!mounted) return;
+    if (!mounted) return;  // ← guard mounted
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(respuesta['message'])),
     );
 
     if (respuesta['success'] == true) {
+      widget.onActualizado();
       Navigator.pop(context);
     }
   }
@@ -63,14 +75,13 @@ class _RegistroScreenState extends State<RegistroScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Nuevo perfil')),
+      appBar: AppBar(title: const Text('Editar perfil')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 16),
               Center(
                 child: CircleAvatar(
                   radius: 48,
@@ -79,7 +90,11 @@ class _RegistroScreenState extends State<RegistroScreen> {
                     nombreController.text.isNotEmpty
                         ? nombreController.text[0].toUpperCase()
                         : '?',
-                    style: const TextStyle(fontSize: 40, color: Colors.white, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 40,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -92,17 +107,23 @@ class _RegistroScreenState extends State<RegistroScreen> {
               const SizedBox(height: 12),
               TextField(
                 controller: passwordController,
-                decoration: const InputDecoration(labelText: 'Contraseña'),
+                decoration: const InputDecoration(
+                  labelText: 'Nueva contraseña',
+                  hintText: 'Dejar vacío para no cambiar',
+                ),
                 obscureText: true,
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: confirmarPasswordController,
-                decoration: const InputDecoration(labelText: 'Repetir contraseña'),
+                decoration: const InputDecoration(
+                  labelText: 'Repetir nueva contraseña',
+                ),
                 obscureText: true,
               ),
               const SizedBox(height: 24),
-              const Text('Color del perfil', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('Color del perfil',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               Wrap(
                 spacing: 10,
@@ -121,7 +142,10 @@ class _RegistroScreenState extends State<RegistroScreen> {
                             ? Border.all(color: Colors.white, width: 3)
                             : null,
                         boxShadow: seleccionado
-                            ? [BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 8)]
+                            ? [BoxShadow(
+                                color: color.withValues(alpha: 0.6), // ← corregido: era withOpacity
+                                blurRadius: 8,
+                              )]
                             : null,
                       ),
                       child: seleccionado
@@ -135,10 +159,10 @@ class _RegistroScreenState extends State<RegistroScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: cargando ? null : registrar,
+                  onPressed: cargando ? null : guardar,
                   child: cargando
                       ? const CircularProgressIndicator()
-                      : const Text('Crear perfil'),
+                      : const Text('Guardar cambios'),
                 ),
               ),
             ],

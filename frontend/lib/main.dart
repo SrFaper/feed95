@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'screens/login_screen.dart';
+import 'screens/perfiles_screen.dart';
 import 'screens/home_screen.dart';
 import 'services/api_service.dart';
 
@@ -58,7 +58,7 @@ class _SplashScreenState extends State<SplashScreen> {
     if (mounted) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        MaterialPageRoute(builder: (context) => const PerfilesScreen()),
       );
     }
   }
