@@ -1,15 +1,17 @@
-# ========================
-# Flutter / Dart
-# ========================
+========================
+Flutter / Dart
+========================
 frontend/.dart_tool/
-frontend/build/
+frontend/.idea/
+frontend/.packages
 frontend/.flutter-plugins
 frontend/.flutter-plugins-dependencies
+frontend/build/
 frontend/pubspec.lock
 
-# ========================
-# Android
-# ========================
+========================
+Android
+========================
 frontend/android/.gradle/
 frontend/android/local.properties
 frontend/android/app/debug/
@@ -19,32 +21,57 @@ frontend/android/key.properties
 *.jks
 *.keystore
 
-# ========================
-# Windows
-# ========================
+========================
+Windows
+========================
 frontend/windows/build/
-frontend/windows/runner/*.obj
+frontend/windows/flutter/ephemeral/
 
-# ========================
-# Backend / PHP
-# ========================
+========================
+MacOS
+========================
+frontend/ios/Pods/
+frontend/ios/.symlinks/
+frontend/ios/Flutter/Flutter.framework
+frontend/macos/Pods/
+
+========================
+Base de datos local
+========================
+*.db
+*.sqlite
+
+========================
+Backend / PHP
+========================
 .env
 backend/config/env.php
 
-# ========================
-# Base de datos
-# ========================
-*.dump
-
-# ========================
-# Sistema operativo
-# ========================
+========================
+Sistema operativo / Archivos del sistema
+========================
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# ========================
-# VS Code
-# ========================
+========================
+VS Code
+========================
+.vscode/
 .vscode/settings.json
 .vscode/launch.json
+
+========================
+Archivos temporales
+========================
+*.tmp
+*.swp
+*.bak
+*.txt
+
+========================
+Cache / Logs
+========================
+frontend/.gradle/
+frontend/.pub-cache/
+*.log
