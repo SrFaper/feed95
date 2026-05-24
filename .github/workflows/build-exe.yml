@@ -34,16 +34,24 @@ jobs:
         run: flutter build windows --release
 
       - name: Comprimir ejecutable
+        # Al renombrar el binario en CMakeLists, el ejecutable ya se llamará feed95.exe
         run: |
-          Compress-Archive -Path "frontend\build\windows\x64\runner\Release\*" -DestinationPath "feed95-windows.zip"
+          Compress-Archive -Path "frontend\build\windows\x64\runner\Release\*" -DestinationPath "feed95.zip"
 
-      - name: Crear Release en GitHub
+      - name: Borrar Release 'beta' anterior
+        uses: dev-drprasad/delete-tag-and-release@v1.1
+        with:
+          delete_release: true
+          tag_name: beta-windows
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Crear Pre-release 'beta'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v0.1-windows"
-          name: "Feed95 v0.1 - Windows"
-          body: "Versión de escritorio para Windows. Descarga y extrae el ZIP, luego ejecuta feed95.exe."
+          tag_name: beta-windows
+          name: "Feed95 - Versión Beta (Windows)"
+          body: "Versión de pruebas para Windows. Se sobrescribe automáticamente."
+          # Para que sea un lanzamiento oficial solo debo cambiar el prerelease a false
           prerelease: true
-          files: feed95-windows.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          files: feed95.zip
+          token: ${{ secrets.GITHUB_TOKEN }}

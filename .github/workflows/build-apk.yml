@@ -36,19 +36,22 @@ jobs:
         run: flutter build apk --release
 
       - name: Renombrar APK
-        # Renombramos el archivo a "feed95.apk" exactamente
-        run: mv frontend/build/app/outputs/flutter-apk/app-release.apk frontend/build/app/outputs/flutter-apk/feed95.apk
+        run: mv frontend/build/app/outputs/flutter-apk/app-release.apk feed95.apk
 
-      - name: Crear Pre-release en GitHub
+      - name: Borrar Release 'beta' anterior
+        uses: dev-drprasad/delete-tag-and-release@v1.1
+        with:
+          delete_release: true
+          tag_name: beta
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Crear Pre-release 'beta'
         uses: softprops/action-gh-release@v2
         with:
-          # Nombre del tag y del Release (v0.1) antes creaba uno automatico y eso no estaba chimbita
-          tag_name: "v0.1"
-          name: "Feed95 v0.1"
-          body: "Nueva versión de prueba de Feed95. Descarga e instala el archivo feed95.apk."
-          # Esto lo pongo para que aparezca como Pre-release
+          tag_name: beta
+          name: "Feed95 - Versión Beta (Android)"
+          body: "Versión de pruebas constante. Se sobrescribe automáticamente en cada actualización."
+          # Para que sea un lanzamiento oficial solo debo cambiar el prerelease a false
           prerelease: true
-          # Este es el archivo que se subirá
-          files: frontend/build/app/outputs/flutter-apk/feed95.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          files: feed95.apk
+          token: ${{ secrets.GITHUB_TOKEN }}
