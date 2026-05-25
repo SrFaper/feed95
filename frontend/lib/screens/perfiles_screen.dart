@@ -165,6 +165,7 @@ class _PerfilesScreenState extends State<PerfilesScreen> {
                         return GestureDetector(
                           onTap: () => _seleccionarPerfil(perfil),
                           onLongPress: () => _eliminarPerfil(perfil),
+                          onSecondaryTap: () => _eliminarPerfil(perfil),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [

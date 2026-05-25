@@ -23,47 +23,55 @@ class ApiService {
       databaseFactory = databaseFactoryFfi;
     }
 
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'feed95.db');
+    String path;
+
+    if (!kIsWeb && Platform.isWindows) {
+      // Guardar en AppData\Roaming\feed95\ en Windows
+      final appData = Platform.environment['APPDATA']!;
+      final dir = Directory(join(appData, 'feed95'));
+      if (!await dir.exists()) await dir.create(recursive: true);
+      path = join(dir.path, 'feed95.db');
+    } else {
+      final dbPath = await getDatabasesPath();
+      path = join(dbPath, 'feed95.db');
+    }
 
     return await openDatabase(
       path,
       version: 4,
       onCreate: (db, version) async {
         await db.execute('''
-          CREATE TABLE usuarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL,
-            color INTEGER NOT NULL DEFAULT 4280391411
-          )
-        ''');
+        CREATE TABLE usuarios (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          nombre TEXT NOT NULL UNIQUE,
+          password TEXT NOT NULL,
+          color INTEGER NOT NULL DEFAULT 4280391411
+        )
+      ''');
         await db.execute('''
-          CREATE TABLE juegos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre TEXT NOT NULL,
-            descripcion TEXT,
-            imagen TEXT,
-            imagen_local TEXT,
-            version TEXT,
-            calificacion INTEGER,
-            generos TEXT,
-            estado TEXT,
-            usuario_id INTEGER NOT NULL,
-            FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
-          )
-        ''');
+        CREATE TABLE juegos (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          nombre TEXT NOT NULL,
+          descripcion TEXT,
+          imagen TEXT,
+          imagen_local TEXT,
+          version TEXT,
+          calificacion INTEGER,
+          generos TEXT,
+          estado TEXT,
+          usuario_id INTEGER NOT NULL,
+          FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+        )
+      ''');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 3) {
           await db.execute(
-            'ALTER TABLE usuarios ADD COLUMN color INTEGER NOT NULL DEFAULT 4280391411'
+            'ALTER TABLE usuarios ADD COLUMN color INTEGER NOT NULL DEFAULT 4280391411',
           );
         }
         if (oldVersion < 4) {
-          await db.execute(
-            'ALTER TABLE juegos ADD COLUMN imagen_local TEXT'
-          );
+          await db.execute('ALTER TABLE juegos ADD COLUMN imagen_local TEXT');
         }
       },
     );
@@ -88,9 +96,15 @@ class ApiService {
         'color': color,
       });
       final result = await database.query(
-        'usuarios', where: 'id = ?', whereArgs: [id],
+        'usuarios',
+        where: 'id = ?',
+        whereArgs: [id],
       );
-      return {'success': true, 'message': 'Perfil creado correctamente', 'usuario': result.first};
+      return {
+        'success': true,
+        'message': 'Perfil creado correctamente',
+        'usuario': result.first,
+      };
     } catch (e) {
       return {'success': false, 'message': 'Ese nombre de usuario ya existe'};
     }
@@ -153,7 +167,9 @@ class ApiService {
   static Future<List<Juego>> obtenerJuegos(int usuarioId) async {
     final database = await db;
     final result = await database.query(
-      'juegos', where: 'usuario_id = ?', whereArgs: [usuarioId],
+      'juegos',
+      where: 'usuario_id = ?',
+      whereArgs: [usuarioId],
     );
     return result.map((item) => Juego.fromJson(item)).toList();
   }
@@ -230,7 +246,9 @@ class ApiService {
   static Future<Usuario?> obtenerUsuarioPorId(int id) async {
     final database = await db;
     final result = await database.query(
-      'usuarios', where: 'id = ?', whereArgs: [id],
+      'usuarios',
+      where: 'id = ?',
+      whereArgs: [id],
     );
     if (result.isNotEmpty) return convertirUsuario(result.first);
     return null;
