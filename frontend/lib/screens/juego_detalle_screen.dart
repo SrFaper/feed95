@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../models/juego.dart';
 import '../models/usuario.dart';
 import '../services/api_service.dart';
 import 'juego_form_screen.dart';
-import 'package:flutter/foundation.dart';
 
 class JuegoDetalleScreen extends StatefulWidget {
   final Juego juego;
@@ -29,6 +29,19 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
     juego = widget.juego;
   }
 
+  Color _colorEstado(String estado) {
+    switch (estado) {
+      case 'Jugando':
+        return const Color.fromARGB(255, 255, 54, 71);
+      case 'Completado':
+        return const Color.fromARGB(255, 255, 82, 98);
+      case 'Abandonado':
+        return const Color.fromARGB(255, 90, 42, 54);
+      default:
+        return const Color.fromARGB(255, 122, 122, 122);
+    }
+  }
+
   Future<void> _eliminar() async {
     final confirmar = await showDialog<bool>(
       context: context,
@@ -45,10 +58,8 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              'Eliminar',
-              style: TextStyle(color: Colors.white),
-            ),
+            child: const Text('Eliminar',
+                style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -67,9 +78,9 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
       await Process.run(juego.rutaEjecutable!, [], runInShell: true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('No se pudo ejecutar: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo ejecutar: $e')),
+      );
     }
   }
 
@@ -106,19 +117,6 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
     );
   }
 
-  Color _colorEstado(String estado) {
-    switch (estado) {
-      case 'Jugando':
-        return Colors.green.shade700;
-      case 'Completado':
-        return Colors.blue.shade700;
-      case 'Abandonado':
-        return Colors.red.shade700;
-      default:
-        return Colors.grey.shade700;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final generos = juego.generos
@@ -127,10 +125,14 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
         .where((g) => g.isNotEmpty)
         .toList();
 
+    final tieneEjecutable = !kIsWeb &&
+        (Platform.isWindows || Platform.isLinux) &&
+        juego.rutaEjecutable != null &&
+        juego.rutaEjecutable!.isNotEmpty;
+
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          // AppBar con imagen de fondo
           SliverAppBar(
             expandedHeight: 280,
             pinned: true,
@@ -148,13 +150,10 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                       ),
                     ),
                   );
-                  // Recargar juego actualizado
-                  final juegos = await ApiService.obtenerJuegos(
-                    widget.usuario.id,
-                  );
-                  final actualizado = juegos
-                      .where((j) => j.id == juego.id)
-                      .toList();
+                  final juegos =
+                      await ApiService.obtenerJuegos(widget.usuario.id);
+                  final actualizado =
+                      juegos.where((j) => j.id == juego.id).toList();
                   if (actualizado.isNotEmpty && mounted) {
                     setState(() => juego = actualizado.first);
                   }
@@ -171,7 +170,6 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                 fit: StackFit.expand,
                 children: [
                   _imagen(),
-                  // Gradiente para que el AppBar sea legible
                   DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -189,16 +187,16 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
             ),
           ),
 
-          // Contenido
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Nombre y estado
+
+                  // Título + botón ejecutar
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Expanded(
                         child: Text(
@@ -209,12 +207,62 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      if (tieneEjecutable) ...[
+                        const SizedBox(width: 12),
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.play_arrow, size: 18),
+                          label: const Text('Jugar'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                const Color.fromARGB(255, 255, 54, 71),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 10),
+                          ),
+                          onPressed: _ejecutar,
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Versión · Calificación · Estado en una sola fila
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      if (juego.version.isNotEmpty)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.tag,
+                                size: 14, color: Colors.grey),
+                            const SizedBox(width: 4),
+                            Text(
+                              juego.version,
+                              style: const TextStyle(
+                                  color: Colors.grey, fontSize: 13),
+                            ),
+                          ],
+                        ),
+                      if (juego.calificacion > 0)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.star,
+                                size: 14, color: Colors.amber),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${juego.calificacion}/10',
+                              style: const TextStyle(
+                                  color: Colors.grey, fontSize: 13),
+                            ),
+                          ],
+                        ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
+                            horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: _colorEstado(juego.estado),
                           borderRadius: BorderRadius.circular(20),
@@ -230,50 +278,19 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-
-                  // Versión y calificación
-                  Row(
-                    children: [
-                      if (juego.version.isNotEmpty) ...[
-                        const Icon(Icons.tag, size: 14, color: Colors.grey),
-                        const SizedBox(width: 4),
-                        Text(
-                          juego.version,
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 13,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                      ],
-                      if (juego.calificacion > 0) ...[
-                        const Icon(Icons.star, size: 14, color: Colors.amber),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${juego.calificacion}/10',
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
                   const SizedBox(height: 16),
 
-                  // Géneros como tags
+                  // Tags de géneros
                   if (generos.isNotEmpty) ...[
                     Wrap(
                       spacing: 8,
                       runSpacing: 6,
                       children: generos.map((g) {
                         return Chip(
-                          label: Text(g, style: const TextStyle(fontSize: 12)),
+                          label: Text(g,
+                              style: const TextStyle(fontSize: 12)),
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 0,
-                          ),
+                              horizontal: 4, vertical: 0),
                           visualDensity: VisualDensity.compact,
                         );
                       }).toList(),
@@ -281,40 +298,18 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                     const SizedBox(height: 16),
                   ],
 
-                  // Botón ejecutar — solo en Windows/Linux si tiene ruta
-                  if (!kIsWeb &&
-                      (Platform.isWindows || Platform.isLinux) &&
-                      juego.rutaEjecutable != null &&
-                      juego.rutaEjecutable!.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.play_arrow),
-                        label: const Text('Ejecutar juego'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green.shade700,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        onPressed: _ejecutar,
-                      ),
-                    ),
-                  ],
-
                   // Descripción
                   if (juego.descripcion.isNotEmpty) ...[
                     const Text(
                       'Descripción',
                       style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                          fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       juego.descripcion,
-                      style: const TextStyle(fontSize: 14, height: 1.5),
+                      style:
+                          const TextStyle(fontSize: 14, height: 1.5),
                     ),
                   ],
                 ],

@@ -40,8 +40,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
           await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) =>
-                  JuegoFormScreen(usuario: widget.usuario),
+              builder: (context) => JuegoFormScreen(usuario: widget.usuario),
             ),
           );
           cargarJuegos();
@@ -51,36 +50,35 @@ class _JuegosScreenState extends State<JuegosScreen> {
       body: cargando
           ? const Center(child: CircularProgressIndicator())
           : juegos.isEmpty
-              ? const Center(child: Text('No hay juegos en tu catálogo'))
-              : GridView.builder(
-                  padding: const EdgeInsets.all(12),
-                  gridDelegate:
-                      const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 180,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 0.65,
-                  ),
-                  itemCount: juegos.length,
-                  itemBuilder: (context, index) {
-                    final juego = juegos[index];
-                    return _TarjetaJuego(
-                      juego: juego,
-                      onTap: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => JuegoDetalleScreen(
-                              juego: juego,
-                              usuario: widget.usuario,
-                            ),
-                          ),
-                        );
-                        cargarJuegos();
-                      },
+          ? const Center(child: Text('No hay juegos en tu catálogo'))
+          : GridView.builder(
+              padding: const EdgeInsets.all(12),
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 180,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 0.65,
+              ),
+              itemCount: juegos.length,
+              itemBuilder: (context, index) {
+                final juego = juegos[index];
+                return _TarjetaJuego(
+                  juego: juego,
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => JuegoDetalleScreen(
+                          juego: juego,
+                          usuario: widget.usuario,
+                        ),
+                      ),
                     );
+                    cargarJuegos();
                   },
-                ),
+                );
+              },
+            ),
     );
   }
 }
@@ -160,9 +158,7 @@ class _TarjetaJuego extends StatelessWidget {
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
-                  shadows: [
-                    Shadow(blurRadius: 4, color: Colors.black),
-                  ],
+                  shadows: [Shadow(blurRadius: 4, color: Colors.black)],
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -176,7 +172,9 @@ class _TarjetaJuego extends StatelessWidget {
                 right: 8,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 6, vertical: 3),
+                    horizontal: 6,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.65),
                     borderRadius: BorderRadius.circular(6),
@@ -184,8 +182,7 @@ class _TarjetaJuego extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.star,
-                          size: 12, color: Colors.amber),
+                      const Icon(Icons.star, size: 12, color: Colors.amber),
                       const SizedBox(width: 2),
                       Text(
                         '${juego.calificacion}',
@@ -205,8 +202,7 @@ class _TarjetaJuego extends StatelessWidget {
               top: 8,
               left: 8,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
                   color: colorEstado.withValues(alpha: 0.85),
                   borderRadius: BorderRadius.circular(6),
