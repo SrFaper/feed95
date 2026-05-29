@@ -72,8 +72,7 @@ class ApiService {
           );
         }
         if (oldVersion < 4) {
-          await db.execute('ALTER TABLE juegos ADD COLUMN imagen_local TEXT'
-          );
+          await db.execute('ALTER TABLE juegos ADD COLUMN imagen_local TEXT');
         }
         if (oldVersion < 5) {
           await db.execute(
@@ -263,5 +262,90 @@ class ApiService {
     );
     if (result.isNotEmpty) return convertirUsuario(result.first);
     return null;
+  }
+
+  // Exportar backup
+  static Future<String> exportarBackup() async {
+    final database = await db;
+    final usuarios = await database.query('usuarios');
+    final juegos = await database.query('juegos');
+
+    final backup = {
+      'version': 1,
+      'fecha': DateTime.now().toIso8601String(),
+      'usuarios': usuarios,
+      'juegos': juegos,
+    };
+
+    return jsonEncode(backup);
+  }
+
+  // Importar backup
+  static Future<Map<String, dynamic>> importarBackup(String jsonStr) async {
+    final database = await db;
+
+    try {
+      final backup = jsonDecode(jsonStr) as Map<String, dynamic>;
+      final usuarios = (backup['usuarios'] as List)
+          .cast<Map<String, dynamic>>();
+      final juegos = (backup['juegos'] as List).cast<Map<String, dynamic>>();
+
+      // Insertar usuarios — si el nombre ya existe se omite
+      for (final u in usuarios) {
+        try {
+          await database.insert('usuarios', {
+            'nombre': u['nombre'],
+            'password': u['password'],
+            'color': u['color'] ?? 4280391411,
+          });
+        } catch (_) {
+          // Usuario ya existe, se omite
+        }
+      }
+
+      // Obtener mapa de nombres a IDs nuevos para reasignar juegos
+      final usuariosNuevos = await database.query('usuarios');
+      final mapaIds = <int, int>{};
+      for (final u in usuarios) {
+        final encontrado = usuariosNuevos.where(
+          (n) => n['nombre'] == u['nombre'],
+        );
+        if (encontrado.isNotEmpty) {
+          mapaIds[u['id'] as int] = encontrado.first['id'] as int;
+        }
+      }
+
+      // Insertar juegos reasignando usuario_id
+      for (final j in juegos) {
+        final idOriginal = j['usuario_id'] as int;
+        final idNuevo = mapaIds[idOriginal];
+        if (idNuevo == null) continue;
+
+        try {
+          await database.insert('juegos', {
+            'nombre': j['nombre'],
+            'descripcion': j['descripcion'],
+            'imagen': j['imagen'],
+            'imagen_local': j['imagen_local'],
+            'version': j['version'],
+            'calificacion': j['calificacion'] ?? 0,
+            'generos': j['generos'],
+            'estado': j['estado'],
+            'ruta_ejecutable': j['ruta_ejecutable'],
+            'usuario_id': idNuevo,
+          });
+        } catch (_) {
+          // Si falla un juego individual se omite y continúa
+        }
+      }
+
+      return {
+        'success': true,
+        'message':
+            'Backup restaurado: ${usuarios.length} perfil(es), ${juegos.length} juego(s)',
+      };
+    } catch (e) {
+      return {'success': false, 'message': 'Archivo de backup inválido'};
+    }
   }
 }
