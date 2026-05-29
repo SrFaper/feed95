@@ -1,0 +1,91 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
+class SteamResultado {
+  final int appId;
+  final String nombre;
+  final String portada;
+
+  SteamResultado({
+    required this.appId,
+    required this.nombre,
+    required this.portada,
+  });
+}
+
+class SteamDetalle {
+  final String nombre;
+  final String descripcion;
+  final String portada;
+  final String generos;
+
+  SteamDetalle({
+    required this.nombre,
+    required this.descripcion,
+    required this.portada,
+    required this.generos,
+  });
+}
+
+class SteamService {
+  // Buscar juegos por nombre
+  static Future<List<SteamResultado>> buscar(String query) async {
+    try {
+      final uri = Uri.parse(
+        'https://store.steampowered.com/api/storesearch/?term=${Uri.encodeComponent(query)}&l=spanish&cc=US',
+      );
+      final response = await http.get(uri).timeout(const Duration(seconds: 8));
+      if (response.statusCode != 200) return [];
+
+      final data = jsonDecode(response.body);
+      final items = data['items'] as List? ?? [];
+
+      return items.map((item) {
+        final appId = item['id'] as int;
+        return SteamResultado(
+          appId: appId,
+          nombre: item['name'] ?? '',
+          portada: 'https://cdn.akamai.steamstatic.com/steam/apps/$appId/library_600x900.jpg',
+        );
+      }).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  // Obtener detalles de un juego por appId
+  static Future<SteamDetalle?> obtenerDetalle(int appId) async {
+    try {
+      final uri = Uri.parse(
+        'https://store.steampowered.com/api/appdetails?appids=$appId&l=spanish',
+      );
+      final response = await http.get(uri).timeout(const Duration(seconds: 8));
+      if (response.statusCode != 200) return null;
+
+      final data = jsonDecode(response.body);
+      final appData = data['$appId'];
+      if (appData == null || appData['success'] != true) return null;
+
+      final info = appData['data'];
+      final generos = (info['genres'] as List? ?? [])
+          .map((g) => g['description'] as String)
+          .join(', ');
+
+      // Limpiar HTML básico de la descripción
+      final descripcionRaw =
+          (info['short_description'] ?? '') as String;
+      final descripcion = descripcionRaw
+          .replaceAll(RegExp(r'<[^>]*>'), '')
+          .trim();
+
+      return SteamDetalle(
+        nombre: info['name'] ?? '',
+        descripcion: descripcion,
+        portada: 'https://cdn.akamai.steamstatic.com/steam/apps/$appId/library_600x900.jpg',
+        generos: generos,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+}

@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../models/juego.dart';
 import '../models/usuario.dart';
 import '../services/api_service.dart';
+import '../services/steam_service.dart';
 
 class JuegoFormScreen extends StatefulWidget {
   final Usuario usuario;
@@ -31,14 +32,13 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
   final rutaEjecutableController = TextEditingController();
   String estadoSeleccionado = 'Pendiente';
   String? _imagenLocal;
+  bool cargando = false;
+  bool _buscandoSteam = false;
 
   final List<String> estados = [
     'Pendiente', 'Jugando', 'Completado', 'Abandonado'
   ];
 
-  bool cargando = false;
-
-  // Solo mostramos el campo de ejecutable en Windows y Linux
   bool get _mostrarEjecutable =>
       !kIsWeb && (Platform.isWindows || Platform.isLinux);
 
@@ -56,6 +56,95 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
       _imagenLocal = widget.juego!.imagenLocal;
       rutaEjecutableController.text = widget.juego!.rutaEjecutable ?? '';
     }
+  }
+
+  Future<void> _buscarEnSteam() async {
+    final query = nombreController.text.trim();
+    if (query.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Escribe un nombre para buscar')),
+      );
+      return;
+    }
+
+    setState(() => _buscandoSteam = true);
+    final resultados = await SteamService.buscar(query);
+    setState(() => _buscandoSteam = false);
+
+    if (!mounted) return;
+
+    if (resultados.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se encontraron resultados en Steam')),
+      );
+      return;
+    }
+
+    // Mostrar diálogo con resultados
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Resultados en Steam'),
+        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: resultados.length,
+            itemBuilder: (context, index) {
+              final r = resultados[index];
+              return ListTile(
+                leading: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: Image.network(
+                    r.portada,
+                    width: 40,
+                    height: 56,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        const Icon(Icons.videogame_asset),
+                  ),
+                ),
+                title: Text(r.nombre, style: const TextStyle(fontSize: 14)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await _rellenarDesdeSteam(r.appId);
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _rellenarDesdeSteam(int appId) async {
+    setState(() => cargando = true);
+    final detalle = await SteamService.obtenerDetalle(appId);
+    setState(() => cargando = false);
+
+    if (!mounted) return;
+
+    if (detalle == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudieron obtener los detalles')),
+      );
+      return;
+    }
+
+    setState(() {
+      nombreController.text = detalle.nombre;
+      descripcionController.text = detalle.descripcion;
+      imagenController.text = detalle.portada;
+      generosController.text = detalle.generos;
+      _imagenLocal = null;
+    });
   }
 
   Future<void> _elegirImagen() async {
@@ -179,9 +268,29 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(
-              controller: nombreController,
-              decoration: const InputDecoration(labelText: 'Nombre *'),
+            // Nombre + botón buscar en Steam
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: nombreController,
+                    decoration:
+                        const InputDecoration(labelText: 'Nombre *'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _buscandoSteam
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : IconButton(
+                        icon: const Icon(Icons.search),
+                        tooltip: 'Buscar en Steam',
+                        onPressed: _buscarEnSteam,
+                      ),
+              ],
             ),
             const SizedBox(height: 12),
             TextField(
@@ -228,8 +337,8 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
             const SizedBox(height: 12),
             TextField(
               controller: calificacionController,
-              decoration:
-                  const InputDecoration(labelText: 'Calificación (1-10)'),
+              decoration: const InputDecoration(
+                  labelText: 'Calificación (1-10)'),
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 12),
@@ -250,15 +359,14 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
               },
             ),
 
-            // Campo ejecutable — solo en Windows/Linux
             if (_mostrarEjecutable) ...[
               const SizedBox(height: 24),
               const Divider(),
               const SizedBox(height: 8),
               const Text(
                 'Lanzador',
-                style:
-                    TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Row(
@@ -282,8 +390,8 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
                     IconButton(
                       icon: const Icon(Icons.close),
                       tooltip: 'Quitar ruta',
-                      onPressed: () =>
-                          setState(() => rutaEjecutableController.clear()),
+                      onPressed: () => setState(
+                          () => rutaEjecutableController.clear()),
                     ),
                 ],
               ),
