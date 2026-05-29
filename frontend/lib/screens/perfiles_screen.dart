@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/usuario.dart';
 import '../services/api_service.dart';
+import '../main.dart';
 import 'home_screen.dart';
 import 'registro_screen.dart';
 
@@ -67,7 +68,10 @@ class _PerfilesScreenState extends State<PerfilesScreen> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => HomeScreen(usuario: usuario)),
+          MaterialPageRoute(
+            builder: (context) =>
+                HomeScreen(usuario: usuario, appState: Feed95App.of(context)),
+          ),
         );
       }
     } else {

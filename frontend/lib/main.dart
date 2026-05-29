@@ -12,14 +12,14 @@ void main() async {
 class Feed95App extends StatefulWidget {
   const Feed95App({super.key});
 
-  static _Feed95AppState? of(BuildContext context) =>
-      context.findAncestorStateOfType<_Feed95AppState>();
+  static Feed95AppState? of(BuildContext context) =>
+      context.findAncestorStateOfType<Feed95AppState>();
 
   @override
-  State<Feed95App> createState() => _Feed95AppState();
+  State<Feed95App> createState() => Feed95AppState();
 }
 
-class _Feed95AppState extends State<Feed95App> {
+class Feed95AppState extends State<Feed95App> {
   ThemeMode _themeMode = ThemeMode.system;
 
   @override
@@ -98,7 +98,12 @@ class _SplashScreenState extends State<SplashScreen> {
       if (usuario != null && mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => HomeScreen(usuario: usuario)),
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(
+              usuario: usuario,
+              appState: Feed95App.of(context),
+            ),
+          ),
         );
         return;
       }

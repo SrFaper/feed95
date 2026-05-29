@@ -2,13 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import '../models/usuario.dart';
+import '../main.dart';
 import 'juegos_screen.dart';
 import 'perfiles_screen.dart';
 import 'perfil_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final Usuario usuario;
-  const HomeScreen({super.key, required this.usuario});
+  final Feed95AppState? appState;
+
+  const HomeScreen({
+    super.key,
+    required this.usuario,
+    this.appState,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -36,10 +43,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appState = widget.appState;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Feed95'),
         actions: [
+          IconButton(
+            icon: Icon(
+              Theme.of(context).brightness == Brightness.dark
+                  ? Icons.light_mode
+                  : Icons.dark_mode,
+            ),
+            tooltip: 'Cambiar tema',
+            onPressed: () {
+              final isDark =
+                  Theme.of(context).brightness == Brightness.dark;
+              appState?.cambiarTema(
+                isDark ? ThemeMode.light : ThemeMode.dark,
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.switch_account),
             tooltip: 'Cambiar perfil',
@@ -61,13 +85,18 @@ class _HomeScreenState extends State<HomeScreen> {
               backgroundColor: usuario.color,
               child: Text(
                 usuario.nombre[0].toUpperCase(),
-                style: const TextStyle(fontSize: 36, color: Colors.white, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 36,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             const SizedBox(height: 16),
             Text(
               'Bienvenido, ${usuario.nombre}',
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                  fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             TextButton.icon(
@@ -80,7 +109,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     builder: (context) => PerfilScreen(
                       usuario: usuario,
                       onActualizado: () async {
-                        final actualizado = await ApiService.obtenerUsuarioPorId(usuario.id);
+                        final actualizado =
+                            await ApiService.obtenerUsuarioPorId(
+                                usuario.id);
                         if (actualizado != null && mounted) {
                           setState(() => usuario = actualizado);
                         }
