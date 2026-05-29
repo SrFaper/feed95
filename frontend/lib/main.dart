@@ -9,16 +9,65 @@ void main() async {
   runApp(const Feed95App());
 }
 
-class Feed95App extends StatelessWidget {
+class Feed95App extends StatefulWidget {
   const Feed95App({super.key});
+
+  static _Feed95AppState? of(BuildContext context) =>
+      context.findAncestorStateOfType<_Feed95AppState>();
+
+  @override
+  State<Feed95App> createState() => _Feed95AppState();
+}
+
+class _Feed95AppState extends State<Feed95App> {
+  ThemeMode _themeMode = ThemeMode.system;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarTema();
+  }
+
+  Future<void> _cargarTema() async {
+    final prefs = await SharedPreferences.getInstance();
+    final tema = prefs.getString('theme_mode') ?? 'system';
+    setState(() {
+      _themeMode = tema == 'dark'
+          ? ThemeMode.dark
+          : tema == 'light'
+              ? ThemeMode.light
+              : ThemeMode.system;
+    });
+  }
+
+  Future<void> cambiarTema(ThemeMode modo) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      'theme_mode',
+      modo == ThemeMode.dark
+          ? 'dark'
+          : modo == ThemeMode.light
+              ? 'light'
+              : 'system',
+    );
+    setState(() => _themeMode = modo);
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Feed95',
       debugShowCheckedModeBanner: false,
+      themeMode: _themeMode,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
+      ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+          brightness: Brightness.dark,
+        ),
         useMaterial3: true,
       ),
       home: const SplashScreen(),
