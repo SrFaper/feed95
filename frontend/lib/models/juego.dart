@@ -3,12 +3,13 @@ class Juego {
   final String nombre;
   final String descripcion;
   final String imagen;
-  final String? imagenLocal; // ruta local del dispositivo
+  final String? imagenLocal;
   final String version;
   final int calificacion;
   final String generos;
   final String estado;
   final int usuarioId;
+  final String? rutaEjecutable;
 
   Juego({
     required this.id,
@@ -21,6 +22,7 @@ class Juego {
     required this.generos,
     required this.estado,
     required this.usuarioId,
+    this.rutaEjecutable,
   });
 
   factory Juego.fromJson(Map<String, dynamic> json) {
@@ -35,6 +37,7 @@ class Juego {
       generos: json['generos'] ?? '',
       estado: json['estado'] ?? '',
       usuarioId: int.parse(json['usuario_id'].toString()),
+      rutaEjecutable: json['ruta_ejecutable'],
     );
   }
 }

@@ -4,6 +4,7 @@ import '../models/juego.dart';
 import '../models/usuario.dart';
 import '../services/api_service.dart';
 import 'juego_form_screen.dart';
+import 'package:flutter/foundation.dart';
 
 class JuegoDetalleScreen extends StatefulWidget {
   final Juego juego;
@@ -33,7 +34,9 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Eliminar juego'),
-        content: Text('¿Eliminar "${juego.nombre}"? Esta acción no se puede deshacer.'),
+        content: Text(
+          '¿Eliminar "${juego.nombre}"? Esta acción no se puede deshacer.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -42,8 +45,10 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Eliminar',
-                style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Eliminar',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -53,6 +58,18 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
       await ApiService.eliminarJuego(juego.id);
       if (!mounted) return;
       Navigator.pop(context);
+    }
+  }
+
+  Future<void> _ejecutar() async {
+    if (juego.rutaEjecutable == null || juego.rutaEjecutable!.isEmpty) return;
+    try {
+      await Process.run(juego.rutaEjecutable!, [], runInShell: true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('No se pudo ejecutar: $e')));
     }
   }
 
@@ -132,8 +149,9 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                     ),
                   );
                   // Recargar juego actualizado
-                  final juegos =
-                      await ApiService.obtenerJuegos(widget.usuario.id);
+                  final juegos = await ApiService.obtenerJuegos(
+                    widget.usuario.id,
+                  );
                   final actualizado = juegos
                       .where((j) => j.id == juego.id)
                       .toList();
@@ -194,7 +212,9 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                       const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: _colorEstado(juego.estado),
                           borderRadius: BorderRadius.circular(20),
@@ -202,9 +222,10 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                         child: Text(
                           juego.estado,
                           style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold),
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
@@ -215,21 +236,27 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                   Row(
                     children: [
                       if (juego.version.isNotEmpty) ...[
-                        const Icon(Icons.tag, size: 14,
-                            color: Colors.grey),
+                        const Icon(Icons.tag, size: 14, color: Colors.grey),
                         const SizedBox(width: 4),
-                        Text(juego.version,
-                            style: const TextStyle(
-                                color: Colors.grey, fontSize: 13)),
+                        Text(
+                          juego.version,
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 13,
+                          ),
+                        ),
                         const SizedBox(width: 16),
                       ],
                       if (juego.calificacion > 0) ...[
-                        const Icon(Icons.star,
-                            size: 14, color: Colors.amber),
+                        const Icon(Icons.star, size: 14, color: Colors.amber),
                         const SizedBox(width: 4),
-                        Text('${juego.calificacion}/10',
-                            style: const TextStyle(
-                                color: Colors.grey, fontSize: 13)),
+                        Text(
+                          '${juego.calificacion}/10',
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 13,
+                          ),
+                        ),
                       ],
                     ],
                   ),
@@ -242,10 +269,11 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                       runSpacing: 6,
                       children: generos.map((g) {
                         return Chip(
-                          label: Text(g,
-                              style: const TextStyle(fontSize: 12)),
+                          label: Text(g, style: const TextStyle(fontSize: 12)),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 4, vertical: 0),
+                            horizontal: 4,
+                            vertical: 0,
+                          ),
                           visualDensity: VisualDensity.compact,
                         );
                       }).toList(),
@@ -253,18 +281,40 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                     const SizedBox(height: 16),
                   ],
 
+                  // Botón ejecutar — solo en Windows/Linux si tiene ruta
+                  if (!kIsWeb &&
+                      (Platform.isWindows || Platform.isLinux) &&
+                      juego.rutaEjecutable != null &&
+                      juego.rutaEjecutable!.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.play_arrow),
+                        label: const Text('Ejecutar juego'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green.shade700,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        onPressed: _ejecutar,
+                      ),
+                    ),
+                  ],
+
                   // Descripción
                   if (juego.descripcion.isNotEmpty) ...[
                     const Text(
                       'Descripción',
                       style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       juego.descripcion,
-                      style: const TextStyle(
-                          fontSize: 14, height: 1.5),
+                      style: const TextStyle(fontSize: 14, height: 1.5),
                     ),
                   ],
                 ],

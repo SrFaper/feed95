@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/juego.dart';
@@ -26,6 +28,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
   final versionController = TextEditingController();
   final calificacionController = TextEditingController();
   final generosController = TextEditingController();
+  final rutaEjecutableController = TextEditingController();
   String estadoSeleccionado = 'Pendiente';
   String? _imagenLocal;
 
@@ -34,6 +37,10 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
   ];
 
   bool cargando = false;
+
+  // Solo mostramos el campo de ejecutable en Windows y Linux
+  bool get _mostrarEjecutable =>
+      !kIsWeb && (Platform.isWindows || Platform.isLinux);
 
   @override
   void initState() {
@@ -47,6 +54,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
       generosController.text = widget.juego!.generos;
       estadoSeleccionado = widget.juego!.estado;
       _imagenLocal = widget.juego!.imagenLocal;
+      rutaEjecutableController.text = widget.juego!.rutaEjecutable ?? '';
     }
   }
 
@@ -61,6 +69,19 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     }
   }
 
+  Future<void> _elegirEjecutable() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['exe', 'bat', 'sh', 'app'],
+      dialogTitle: 'Seleccionar ejecutable',
+    );
+    if (result != null && result.files.single.path != null) {
+      setState(() {
+        rutaEjecutableController.text = result.files.single.path!;
+      });
+    }
+  }
+
   Future<void> guardarJuego() async {
     if (nombreController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -70,6 +91,10 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     }
 
     setState(() => cargando = true);
+
+    final rutaEjecutable = rutaEjecutableController.text.isNotEmpty
+        ? rutaEjecutableController.text
+        : null;
 
     Map<String, dynamic> respuesta;
 
@@ -84,6 +109,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
         generos: generosController.text,
         estado: estadoSeleccionado,
         usuarioId: widget.usuario.id,
+        rutaEjecutable: rutaEjecutable,
       );
     } else {
       respuesta = await ApiService.actualizarJuego(
@@ -96,6 +122,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
         calificacion: calificacionController.text,
         generos: generosController.text,
         estado: estadoSeleccionado,
+        rutaEjecutable: rutaEjecutable,
       );
     }
 
@@ -164,18 +191,17 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
             ),
             const SizedBox(height: 12),
 
-            // Vista previa
             _vistaPrevia(),
             if (_imagenLocal != null || imagenController.text.isNotEmpty)
               const SizedBox(height: 8),
 
-            // URL o galería
             Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: imagenController,
-                    decoration: const InputDecoration(labelText: 'URL de imagen'),
+                    decoration:
+                        const InputDecoration(labelText: 'URL de imagen'),
                     onChanged: (_) => setState(() => _imagenLocal = null),
                   ),
                 ),
@@ -202,7 +228,8 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
             const SizedBox(height: 12),
             TextField(
               controller: calificacionController,
-              decoration: const InputDecoration(labelText: 'Calificación (1-10)'),
+              decoration:
+                  const InputDecoration(labelText: 'Calificación (1-10)'),
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 12),
@@ -215,12 +242,53 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
               value: estadoSeleccionado,
               decoration: const InputDecoration(labelText: 'Estado'),
               items: estados.map((estado) {
-                return DropdownMenuItem(value: estado, child: Text(estado));
+                return DropdownMenuItem(
+                    value: estado, child: Text(estado));
               }).toList(),
               onChanged: (valor) {
                 setState(() => estadoSeleccionado = valor!);
               },
             ),
+
+            // Campo ejecutable — solo en Windows/Linux
+            if (_mostrarEjecutable) ...[
+              const SizedBox(height: 24),
+              const Divider(),
+              const SizedBox(height: 8),
+              const Text(
+                'Lanzador',
+                style:
+                    TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: rutaEjecutableController,
+                      decoration: const InputDecoration(
+                        labelText: 'Ruta del ejecutable',
+                        hintText: 'C:\\juegos\\myjuego.exe',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.folder_open),
+                    tooltip: 'Buscar archivo',
+                    onPressed: _elegirEjecutable,
+                  ),
+                  if (rutaEjecutableController.text.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      tooltip: 'Quitar ruta',
+                      onPressed: () =>
+                          setState(() => rutaEjecutableController.clear()),
+                    ),
+                ],
+              ),
+            ],
+
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,

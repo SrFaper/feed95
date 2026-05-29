@@ -38,7 +38,7 @@ class ApiService {
 
     return await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: (db, version) async {
         await db.execute('''
         CREATE TABLE usuarios (
@@ -59,6 +59,7 @@ class ApiService {
           calificacion INTEGER,
           generos TEXT,
           estado TEXT,
+          ruta_ejecutable TEXT,
           usuario_id INTEGER NOT NULL,
           FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
         )
@@ -71,7 +72,13 @@ class ApiService {
           );
         }
         if (oldVersion < 4) {
-          await db.execute('ALTER TABLE juegos ADD COLUMN imagen_local TEXT');
+          await db.execute('ALTER TABLE juegos ADD COLUMN imagen_local TEXT'
+          );
+        }
+        if (oldVersion < 5) {
+          await db.execute(
+            'ALTER TABLE juegos ADD COLUMN ruta_ejecutable TEXT',
+          );
         }
       },
     );
@@ -184,6 +191,7 @@ class ApiService {
     required String calificacion,
     required String generos,
     required String estado,
+    String? rutaEjecutable,
     required int usuarioId,
   }) async {
     final database = await db;
@@ -196,6 +204,7 @@ class ApiService {
       'calificacion': int.tryParse(calificacion) ?? 0,
       'generos': generos,
       'estado': estado,
+      'ruta_ejecutable': rutaEjecutable,
       'usuario_id': usuarioId,
     });
     return {'success': true, 'message': 'Juego agregado correctamente'};
@@ -211,6 +220,7 @@ class ApiService {
     required String version,
     required String calificacion,
     required String generos,
+    String? rutaEjecutable,
     required String estado,
   }) async {
     final database = await db;
@@ -224,6 +234,7 @@ class ApiService {
         'version': version,
         'calificacion': int.tryParse(calificacion) ?? 0,
         'generos': generos,
+        'ruta_ejecutable': rutaEjecutable,
         'estado': estado,
       },
       where: 'id = ?',
