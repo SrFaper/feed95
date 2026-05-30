@@ -6,17 +6,15 @@ import 'package:image_picker/image_picker.dart';
 import '../models/juego.dart';
 import '../models/usuario.dart';
 import '../services/api_service.dart';
+import '../services/gog_service.dart';
+import '../services/epic_service.dart';
 import '../services/steam_service.dart';
 
 class JuegoFormScreen extends StatefulWidget {
   final Usuario usuario;
   final Juego? juego;
 
-  const JuegoFormScreen({
-    super.key,
-    required this.usuario,
-    this.juego,
-  });
+  const JuegoFormScreen({super.key, required this.usuario, this.juego});
 
   @override
   State<JuegoFormScreen> createState() => _JuegoFormScreenState();
@@ -34,9 +32,11 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
   String? _imagenLocal;
   bool cargando = false;
   bool _buscandoSteam = false;
+  bool _buscandoGog = false;
+  bool _buscandoEpic = false;
 
   final List<String> estados = [
-    'Pendiente', 'Jugando', 'Completado', 'Abandonado'
+    'Pendiente', 'Jugando', 'Completado', 'Abandonado',
   ];
 
   bool get _mostrarEjecutable =>
@@ -58,33 +58,65 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     }
   }
 
-  Future<void> _buscarEnSteam() async {
-    final query = nombreController.text.trim();
-    if (query.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Escribe un nombre para buscar')),
+  // ── Helpers ──────────────────────────────────────────────
+
+  Widget _botonFuente({
+    required String label,
+    required bool cargando,
+    required VoidCallback onTap,
+  }) {
+    return cargando
+        ? const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        : ActionChip(
+            label: Text(label, style: const TextStyle(fontSize: 12)),
+            padding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+            onPressed: onTap,
+          );
+  }
+
+  Widget _vistaPrevia() {
+    if (_imagenLocal != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.file(
+          File(_imagenLocal!),
+          height: 160,
+          width: double.infinity,
+          fit: BoxFit.cover,
+        ),
       );
-      return;
     }
-
-    setState(() => _buscandoSteam = true);
-    final resultados = await SteamService.buscar(query);
-    setState(() => _buscandoSteam = false);
-
-    if (!mounted) return;
-
-    if (resultados.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se encontraron resultados en Steam')),
+    if (imagenController.text.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.network(
+          imagenController.text,
+          height: 160,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => const SizedBox(),
+        ),
       );
-      return;
     }
+    return const SizedBox();
+  }
 
-    // Mostrar diálogo con resultados
+  Future<void> _mostrarResultados<T>({
+    required String titulo,
+    required List<T> resultados,
+    required String Function(T) nombre,
+    required String Function(T) portada,
+    required Future<void> Function(T) onSeleccionar,
+  }) async {
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Resultados en Steam'),
+        title: Text(titulo),
         contentPadding: const EdgeInsets.symmetric(vertical: 8),
         content: SizedBox(
           width: double.maxFinite,
@@ -93,22 +125,26 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
             itemCount: resultados.length,
             itemBuilder: (context, index) {
               final r = resultados[index];
+              final url = portada(r);
               return ListTile(
-                leading: ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: Image.network(
-                    r.portada,
-                    width: 40,
-                    height: 56,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        const Icon(Icons.videogame_asset),
-                  ),
-                ),
-                title: Text(r.nombre, style: const TextStyle(fontSize: 14)),
+                leading: url.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: Image.network(
+                          url,
+                          width: 40,
+                          height: 56,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              const Icon(Icons.videogame_asset),
+                        ),
+                      )
+                    : const Icon(Icons.videogame_asset),
+                title: Text(nombre(r),
+                    style: const TextStyle(fontSize: 14)),
                 onTap: () async {
                   Navigator.pop(context);
-                  await _rellenarDesdeSteam(r.appId);
+                  await onSeleccionar(r);
                 },
               );
             },
@@ -124,28 +160,160 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     );
   }
 
-  Future<void> _rellenarDesdeSteam(int appId) async {
-    setState(() => cargando = true);
-    final detalle = await SteamService.obtenerDetalle(appId);
-    setState(() => cargando = false);
-
-    if (!mounted) return;
-
-    if (detalle == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudieron obtener los detalles')),
-      );
-      return;
-    }
-
+  void _rellenarCampos({
+    required String nombre,
+    required String descripcion,
+    required String portada,
+    required String generos,
+  }) {
     setState(() {
-      nombreController.text = detalle.nombre;
-      descripcionController.text = detalle.descripcion;
-      imagenController.text = detalle.portada;
-      generosController.text = detalle.generos;
+      nombreController.text = nombre;
+      descripcionController.text = descripcion;
+      imagenController.text = portada;
+      generosController.text = generos;
       _imagenLocal = null;
     });
   }
+
+  // ── Steam ─────────────────────────────────────────────────
+
+  Future<void> _buscarEnSteam() async {
+    final query = nombreController.text.trim();
+    if (query.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Escribe un nombre para buscar')),
+      );
+      return;
+    }
+    setState(() => _buscandoSteam = true);
+    final resultados = await SteamService.buscar(query);
+    setState(() => _buscandoSteam = false);
+    if (!mounted) return;
+    if (resultados.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se encontraron resultados en Steam')),
+      );
+      return;
+    }
+    await _mostrarResultados(
+      titulo: 'Resultados en Steam',
+      resultados: resultados,
+      nombre: (r) => r.nombre,
+      portada: (r) => r.portada,
+      onSeleccionar: (r) async {
+        setState(() => cargando = true);
+        final detalle = await SteamService.obtenerDetalle(r.appId);
+        setState(() => cargando = false);
+        if (!mounted) return;
+        if (detalle == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No se pudieron obtener los detalles')),
+          );
+          return;
+        }
+        _rellenarCampos(
+          nombre: detalle.nombre,
+          descripcion: detalle.descripcion,
+          portada: detalle.portada,
+          generos: detalle.generos,
+        );
+      },
+    );
+  }
+
+  // ── GOG ───────────────────────────────────────────────────
+
+  Future<void> _buscarEnGog() async {
+    final query = nombreController.text.trim();
+    if (query.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Escribe un nombre para buscar')),
+      );
+      return;
+    }
+    setState(() => _buscandoGog = true);
+    final resultados = await GogService.buscar(query);
+    setState(() => _buscandoGog = false);
+    if (!mounted) return;
+    if (resultados.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se encontraron resultados en GOG')),
+      );
+      return;
+    }
+    await _mostrarResultados(
+      titulo: 'Resultados en GOG',
+      resultados: resultados,
+      nombre: (r) => r.nombre,
+      portada: (r) => r.portada,
+      onSeleccionar: (r) async {
+        setState(() => cargando = true);
+        final detalle = await GogService.obtenerDetalle(r.id);
+        setState(() => cargando = false);
+        if (!mounted) return;
+        if (detalle == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No se pudieron obtener los detalles')),
+          );
+          return;
+        }
+        _rellenarCampos(
+          nombre: detalle.nombre,
+          descripcion: detalle.descripcion,
+          portada: detalle.portada,
+          generos: detalle.generos,
+        );
+      },
+    );
+  }
+
+  // ── Epic ──────────────────────────────────────────────────
+
+  Future<void> _buscarEnEpic() async {
+    final query = nombreController.text.trim();
+    if (query.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Escribe un nombre para buscar')),
+      );
+      return;
+    }
+    setState(() => _buscandoEpic = true);
+    final resultados = await EpicService.buscar(query);
+    setState(() => _buscandoEpic = false);
+    if (!mounted) return;
+    if (resultados.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se encontraron resultados en Epic')),
+      );
+      return;
+    }
+    await _mostrarResultados(
+      titulo: 'Resultados en Epic Games',
+      resultados: resultados,
+      nombre: (r) => r.nombre,
+      portada: (r) => r.portada,
+      onSeleccionar: (r) async {
+        setState(() => cargando = true);
+        final detalle = await EpicService.obtenerDetalle(r.id, r.namespace);
+        setState(() => cargando = false);
+        if (!mounted) return;
+        if (detalle == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No se pudieron obtener los detalles')),
+          );
+          return;
+        }
+        _rellenarCampos(
+          nombre: detalle.nombre,
+          descripcion: detalle.descripcion,
+          portada: detalle.portada,
+          generos: detalle.generos,
+        );
+      },
+    );
+  }
+
+  // ── Imagen ────────────────────────────────────────────────
 
   Future<void> _elegirImagen() async {
     final picker = ImagePicker();
@@ -170,6 +338,8 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
       });
     }
   }
+
+  // ── Guardar ───────────────────────────────────────────────
 
   Future<void> guardarJuego() async {
     if (nombreController.text.isEmpty) {
@@ -216,7 +386,6 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     }
 
     setState(() => cargando = false);
-
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -228,32 +397,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     }
   }
 
-  Widget _vistaPrevia() {
-    if (_imagenLocal != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.file(
-          File(_imagenLocal!),
-          height: 160,
-          width: double.infinity,
-          fit: BoxFit.cover,
-        ),
-      );
-    }
-    if (imagenController.text.isNotEmpty) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.network(
-          imagenController.text,
-          height: 160,
-          width: double.infinity,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => const SizedBox(),
-        ),
-      );
-    }
-    return const SizedBox();
-  }
+  // ── Build ─────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -268,31 +412,41 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Nombre + botón buscar en Steam
+            // Nombre
+            TextField(
+              controller: nombreController,
+              decoration: const InputDecoration(labelText: 'Nombre *'),
+            ),
+            const SizedBox(height: 8),
+
+            // Botones de fuentes
             Row(
               children: [
-                Expanded(
-                  child: TextField(
-                    controller: nombreController,
-                    decoration:
-                        const InputDecoration(labelText: 'Nombre *'),
-                  ),
-                ),
+                const Text('Buscar en:',
+                    style: TextStyle(fontSize: 12, color: Colors.grey)),
                 const SizedBox(width: 8),
-                _buscandoSteam
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : IconButton(
-                        icon: const Icon(Icons.search),
-                        tooltip: 'Buscar en Steam',
-                        onPressed: _buscarEnSteam,
-                      ),
+                _botonFuente(
+                  label: 'Steam',
+                  cargando: _buscandoSteam,
+                  onTap: _buscarEnSteam,
+                ),
+                const SizedBox(width: 6),
+                _botonFuente(
+                  label: 'GOG',
+                  cargando: _buscandoGog,
+                  onTap: _buscarEnGog,
+                ),
+                const SizedBox(width: 6),
+                _botonFuente(
+                  label: 'Epic',
+                  cargando: _buscandoEpic,
+                  onTap: _buscarEnEpic,
+                ),
               ],
             ),
             const SizedBox(height: 12),
+
+            // Descripción
             TextField(
               controller: descripcionController,
               decoration: const InputDecoration(labelText: 'Descripción'),
@@ -300,10 +454,12 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
             ),
             const SizedBox(height: 12),
 
+            // Vista previa imagen
             _vistaPrevia(),
             if (_imagenLocal != null || imagenController.text.isNotEmpty)
               const SizedBox(height: 8),
 
+            // URL imagen + galería
             Row(
               children: [
                 Expanded(
@@ -350,24 +506,22 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
             DropdownButtonFormField<String>(
               value: estadoSeleccionado,
               decoration: const InputDecoration(labelText: 'Estado'),
-              items: estados.map((estado) {
-                return DropdownMenuItem(
-                    value: estado, child: Text(estado));
-              }).toList(),
-              onChanged: (valor) {
-                setState(() => estadoSeleccionado = valor!);
-              },
+              items: estados
+                  .map((e) =>
+                      DropdownMenuItem(value: e, child: Text(e)))
+                  .toList(),
+              onChanged: (v) =>
+                  setState(() => estadoSeleccionado = v!),
             ),
 
+            // Lanzador — solo Windows/Linux
             if (_mostrarEjecutable) ...[
               const SizedBox(height: 24),
               const Divider(),
               const SizedBox(height: 8),
-              const Text(
-                'Lanzador',
-                style: TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.bold),
-              ),
+              const Text('Lanzador',
+                  style: TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               Row(
                 children: [
