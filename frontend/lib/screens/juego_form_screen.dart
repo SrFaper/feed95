@@ -3,12 +3,14 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/juego.dart';
 import '../models/usuario.dart';
 import '../services/api_service.dart';
-import '../services/gog_service.dart';
 import '../services/epic_service.dart';
 import '../services/steam_service.dart';
+import '../services/f95_service.dart';
+import 'f95_config_screen.dart';
 
 class JuegoFormScreen extends StatefulWidget {
   final Usuario usuario;
@@ -32,11 +34,15 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
   String? _imagenLocal;
   bool cargando = false;
   bool _buscandoSteam = false;
-  bool _buscandoGog = false;
   bool _buscandoEpic = false;
+  bool _buscandoF95 = false;
+  bool _f95Activado = false;
 
   final List<String> estados = [
-    'Pendiente', 'Jugando', 'Completado', 'Abandonado',
+    'Pendiente',
+    'Jugando',
+    'Completado',
+    'Abandonado',
   ];
 
   bool get _mostrarEjecutable =>
@@ -44,6 +50,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
 
   @override
   void initState() {
+    _cargarF95();
     super.initState();
     if (widget.juego != null) {
       nombreController.text = widget.juego!.nombre;
@@ -140,8 +147,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
                         ),
                       )
                     : const Icon(Icons.videogame_asset),
-                title: Text(nombre(r),
-                    style: const TextStyle(fontSize: 14)),
+                title: Text(nombre(r), style: const TextStyle(fontSize: 14)),
                 onTap: () async {
                   Navigator.pop(context);
                   await onSeleccionar(r);
@@ -158,6 +164,11 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _cargarF95() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() => _f95Activado = prefs.getBool('f95_activado') ?? false);
   }
 
   void _rellenarCampos({
@@ -207,7 +218,9 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
         if (!mounted) return;
         if (detalle == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No se pudieron obtener los detalles')),
+            const SnackBar(
+              content: Text('No se pudieron obtener los detalles'),
+            ),
           );
           return;
         }
@@ -221,9 +234,9 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     );
   }
 
-  // ── GOG ───────────────────────────────────────────────────
+  // ── Epic ──────────────────────────────────────────────────
 
-  Future<void> _buscarEnGog() async {
+  Future<void> _buscarEnF95() async {
     final query = nombreController.text.trim();
     if (query.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -231,38 +244,84 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
       );
       return;
     }
-    setState(() => _buscandoGog = true);
-    final resultados = await GogService.buscar(query);
-    setState(() => _buscandoGog = false);
+
+    // Verificar si tiene credenciales
+    final tiene = await F95Service.tieneCredenciales();
     if (!mounted) return;
+
+    if (!tiene) {
+      final configurar = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('F95Zone'),
+          content: const Text(
+            'Necesitas configurar tu cuenta de F95Zone primero.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Configurar'),
+            ),
+          ],
+        ),
+      );
+
+      if (configurar == true && mounted) {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const F95ConfigScreen()),
+        );
+      }
+      return;
+    }
+
+    setState(() => _buscandoF95 = true);
+    final resultados = await F95Service.buscar(query);
+    setState(() => _buscandoF95 = false);
+
+    if (!mounted) return;
+
     if (resultados.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se encontraron resultados en GOG')),
+        const SnackBar(
+          content: Text('No se encontraron resultados en F95Zone'),
+        ),
       );
       return;
     }
+
     await _mostrarResultados(
-      titulo: 'Resultados en GOG',
+      titulo: 'Resultados en F95Zone',
       resultados: resultados,
       nombre: (r) => r.nombre,
       portada: (r) => r.portada,
       onSeleccionar: (r) async {
         setState(() => cargando = true);
-        final detalle = await GogService.obtenerDetalle(r.id);
+        final detalle = await F95Service.obtenerDetalle(r.url);
         setState(() => cargando = false);
         if (!mounted) return;
         if (detalle == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No se pudieron obtener los detalles')),
+            const SnackBar(
+              content: Text('No se pudieron obtener los detalles'),
+            ),
           );
           return;
         }
-        _rellenarCampos(
-          nombre: detalle.nombre,
-          descripcion: detalle.descripcion,
-          portada: detalle.portada,
-          generos: detalle.generos,
-        );
+        setState(() {
+          nombreController.text = detalle.nombre;
+          descripcionController.text = detalle.descripcion;
+          imagenController.text = detalle.portada;
+          generosController.text = detalle.generos;
+          if (detalle.version.isNotEmpty) {
+            versionController.text = detalle.version;
+          }
+          _imagenLocal = null;
+        });
       },
     );
   }
@@ -299,7 +358,9 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
         if (!mounted) return;
         if (detalle == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No se pudieron obtener los detalles')),
+            const SnackBar(
+              content: Text('No se pudieron obtener los detalles'),
+            ),
           );
           return;
         }
@@ -343,9 +404,9 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
 
   Future<void> guardarJuego() async {
     if (nombreController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('El nombre es obligatorio')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('El nombre es obligatorio')));
       return;
     }
 
@@ -388,9 +449,9 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     setState(() => cargando = false);
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(respuesta['message'])),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(respuesta['message'])));
 
     if (respuesta['success'] == true) {
       Navigator.pop(context);
@@ -404,9 +465,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     final esEdicion = widget.juego != null;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(esEdicion ? 'Editar juego' : 'Nuevo juego'),
-      ),
+      appBar: AppBar(title: Text(esEdicion ? 'Editar juego' : 'Nuevo juego')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -420,10 +479,13 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
             const SizedBox(height: 8),
 
             // Botones de fuentes
+            // Botones de fuentes
             Row(
               children: [
-                const Text('Buscar en:',
-                    style: TextStyle(fontSize: 12, color: Colors.grey)),
+                const Text(
+                  'Buscar en:',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
                 const SizedBox(width: 8),
                 _botonFuente(
                   label: 'Steam',
@@ -432,16 +494,18 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
                 ),
                 const SizedBox(width: 6),
                 _botonFuente(
-                  label: 'GOG',
-                  cargando: _buscandoGog,
-                  onTap: _buscarEnGog,
-                ),
-                const SizedBox(width: 6),
-                _botonFuente(
                   label: 'Epic',
                   cargando: _buscandoEpic,
                   onTap: _buscarEnEpic,
                 ),
+                if (_f95Activado) ...[
+                  const SizedBox(width: 6),
+                  _botonFuente(
+                    label: 'F95',
+                    cargando: _buscandoF95,
+                    onTap: _buscarEnF95,
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 12),
@@ -465,8 +529,9 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
                 Expanded(
                   child: TextField(
                     controller: imagenController,
-                    decoration:
-                        const InputDecoration(labelText: 'URL de imagen'),
+                    decoration: const InputDecoration(
+                      labelText: 'URL de imagen',
+                    ),
                     onChanged: (_) => setState(() => _imagenLocal = null),
                   ),
                 ),
@@ -494,7 +559,8 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
             TextField(
               controller: calificacionController,
               decoration: const InputDecoration(
-                  labelText: 'Calificación (1-10)'),
+                labelText: 'Calificación (1-10)',
+              ),
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 12),
@@ -507,11 +573,9 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
               value: estadoSeleccionado,
               decoration: const InputDecoration(labelText: 'Estado'),
               items: estados
-                  .map((e) =>
-                      DropdownMenuItem(value: e, child: Text(e)))
+                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                   .toList(),
-              onChanged: (v) =>
-                  setState(() => estadoSeleccionado = v!),
+              onChanged: (v) => setState(() => estadoSeleccionado = v!),
             ),
 
             // Lanzador — solo Windows/Linux
@@ -519,9 +583,10 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
               const SizedBox(height: 24),
               const Divider(),
               const SizedBox(height: 8),
-              const Text('Lanzador',
-                  style: TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.bold)),
+              const Text(
+                'Lanzador',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -544,8 +609,8 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
                     IconButton(
                       icon: const Icon(Icons.close),
                       tooltip: 'Quitar ruta',
-                      onPressed: () => setState(
-                          () => rutaEjecutableController.clear()),
+                      onPressed: () =>
+                          setState(() => rutaEjecutableController.clear()),
                     ),
                 ],
               ),

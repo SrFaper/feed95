@@ -9,16 +9,13 @@ import '../main.dart';
 import 'juegos_screen.dart';
 import 'perfiles_screen.dart';
 import 'perfil_screen.dart';
+import 'f95_config_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final Usuario usuario;
   final Feed95AppState? appState;
 
-  const HomeScreen({
-    super.key,
-    required this.usuario,
-    this.appState,
-  });
+  const HomeScreen({super.key, required this.usuario, this.appState});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -26,6 +23,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late Usuario usuario;
+  int _tapContador = 0;
 
   @override
   void initState() {
@@ -52,7 +50,8 @@ class _HomeScreenState extends State<HomeScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Exportar backup no está disponible en Web')),
+            content: Text('Exportar backup no está disponible en Web'),
+          ),
         );
         return;
       }
@@ -77,9 +76,9 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al exportar: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al exportar: $e')));
     }
   }
 
@@ -89,7 +88,8 @@ class _HomeScreenState extends State<HomeScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Importar backup no está disponible en Web')),
+            content: Text('Importar backup no está disponible en Web'),
+          ),
         );
         return;
       }
@@ -132,14 +132,14 @@ class _HomeScreenState extends State<HomeScreen> {
       final respuesta = await ApiService.importarBackup(contenido);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(respuesta['message'])),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(respuesta['message'])));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al importar: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al importar: $e')));
     }
   }
 
@@ -159,11 +159,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             tooltip: 'Cambiar tema',
             onPressed: () {
-              final isDark =
-                  Theme.of(context).brightness == Brightness.dark;
-              appState?.cambiarTema(
-                isDark ? ThemeMode.light : ThemeMode.dark,
-              );
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              appState?.cambiarTema(isDark ? ThemeMode.light : ThemeMode.dark);
             },
           ),
           IconButton(
@@ -182,23 +179,45 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircleAvatar(
-              radius: 48,
-              backgroundColor: usuario.color,
-              child: Text(
-                usuario.nombre[0].toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 36,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+            GestureDetector(
+              onTap: () async {
+                _tapContador++;
+                if (_tapContador >= 5) {
+                  _tapContador = 0;
+                  final prefs = await SharedPreferences.getInstance();
+                  final activado = prefs.getBool('f95_activado') ?? false;
+                  await prefs.setBool('f95_activado', !activado);
+                  if (!mounted) return;
+                  setState(() {});
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        !activado
+                            ? 'Modo extendido activado'
+                            : 'Modo extendido desactivado',
+                      ),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
+              child: CircleAvatar(
+                radius: 48,
+                backgroundColor: usuario.color,
+                child: Text(
+                  usuario.nombre[0].toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 36,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 16),
             Text(
               'Bienvenido, ${usuario.nombre}',
-              style: const TextStyle(
-                  fontSize: 22, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             TextButton.icon(
@@ -219,6 +238,31 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                     ),
                   ),
+                );
+              },
+            ),
+            FutureBuilder<bool>(
+              future: SharedPreferences.getInstance().then(
+                (p) => p.getBool('f95_activado') ?? false,
+              ),
+              builder: (context, snapshot) {
+                if (snapshot.data != true) return const SizedBox();
+                return Column(
+                  children: [
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      icon: const Icon(Icons.settings, size: 16),
+                      label: const Text('Configurar F95Zone'),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const F95ConfigScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 );
               },
             ),
