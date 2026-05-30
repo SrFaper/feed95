@@ -52,6 +52,6 @@ jobs:
           name: "Feed95 - Versión Beta (Android)"
           body: "Versión de pruebas constante. Se sobrescribe automáticamente en cada actualización."
           # Para que sea un lanzamiento oficial solo debo cambiar el prerelease a false
-          prerelease: false
+          prerelease: true
           files: feed95.apk
           token: ${{ secrets.GITHUB_TOKEN }}

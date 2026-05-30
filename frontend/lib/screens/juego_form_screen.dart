@@ -3,14 +3,11 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/juego.dart';
 import '../models/usuario.dart';
 import '../services/api_service.dart';
 import '../services/epic_service.dart';
 import '../services/steam_service.dart';
-import '../services/f95_service.dart';
-import 'f95_config_screen.dart';
 
 class JuegoFormScreen extends StatefulWidget {
   final Usuario usuario;
@@ -35,8 +32,6 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
   bool cargando = false;
   bool _buscandoSteam = false;
   bool _buscandoEpic = false;
-  bool _buscandoF95 = false;
-  bool _f95Activado = false;
 
   final List<String> estados = [
     'Pendiente',
@@ -50,7 +45,6 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
 
   @override
   void initState() {
-    _cargarF95();
     super.initState();
     if (widget.juego != null) {
       nombreController.text = widget.juego!.nombre;
@@ -166,11 +160,6 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     );
   }
 
-  Future<void> _cargarF95() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() => _f95Activado = prefs.getBool('f95_activado') ?? false);
-  }
-
   void _rellenarCampos({
     required String nombre,
     required String descripcion,
@@ -230,98 +219,6 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
           portada: detalle.portada,
           generos: detalle.generos,
         );
-      },
-    );
-  }
-
-  // ── Epic ──────────────────────────────────────────────────
-
-  Future<void> _buscarEnF95() async {
-    final query = nombreController.text.trim();
-    if (query.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Escribe un nombre para buscar')),
-      );
-      return;
-    }
-
-    // Verificar si tiene credenciales
-    final tiene = await F95Service.tieneCredenciales();
-    if (!mounted) return;
-
-    if (!tiene) {
-      final configurar = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('F95Zone'),
-          content: const Text(
-            'Necesitas configurar tu cuenta de F95Zone primero.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Configurar'),
-            ),
-          ],
-        ),
-      );
-
-      if (configurar == true && mounted) {
-        await Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const F95ConfigScreen()),
-        );
-      }
-      return;
-    }
-
-    setState(() => _buscandoF95 = true);
-    final resultados = await F95Service.buscar(query);
-    setState(() => _buscandoF95 = false);
-
-    if (!mounted) return;
-
-    if (resultados.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No se encontraron resultados en F95Zone'),
-        ),
-      );
-      return;
-    }
-
-    await _mostrarResultados(
-      titulo: 'Resultados en F95Zone',
-      resultados: resultados,
-      nombre: (r) => r.nombre,
-      portada: (r) => r.portada,
-      onSeleccionar: (r) async {
-        setState(() => cargando = true);
-        final detalle = await F95Service.obtenerDetalle(r.url);
-        setState(() => cargando = false);
-        if (!mounted) return;
-        if (detalle == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No se pudieron obtener los detalles'),
-            ),
-          );
-          return;
-        }
-        setState(() {
-          nombreController.text = detalle.nombre;
-          descripcionController.text = detalle.descripcion;
-          imagenController.text = detalle.portada;
-          generosController.text = detalle.generos;
-          if (detalle.version.isNotEmpty) {
-            versionController.text = detalle.version;
-          }
-          _imagenLocal = null;
-        });
       },
     );
   }
@@ -498,14 +395,6 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
                   cargando: _buscandoEpic,
                   onTap: _buscarEnEpic,
                 ),
-                if (_f95Activado) ...[
-                  const SizedBox(width: 6),
-                  _botonFuente(
-                    label: 'F95',
-                    cargando: _buscandoF95,
-                    onTap: _buscarEnF95,
-                  ),
-                ],
               ],
             ),
             const SizedBox(height: 12),
