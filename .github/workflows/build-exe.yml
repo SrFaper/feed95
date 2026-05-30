@@ -22,9 +22,10 @@ jobs:
           echo "$env:USERPROFILE\flutter\bin" >> $env:GITHUB_PATH
 
       - name: Restaurar servicios privados
+        shell: pwsh
         run: |
-          echo "${{ secrets.F95_SERVICE }}" | base64 --decode > frontend/lib/services/f95_service.dart
-          echo "${{ secrets.F95_CONFIG_SCREEN }}" | base64 --decode > frontend/lib/screens/f95_config_screen.dart
+          [System.IO.File]::WriteAllBytes("frontend/lib/services/f95_service.dart", [System.Convert]::FromBase64String("${{ secrets.F95_SERVICE }}"))
+          [System.IO.File]::WriteAllBytes("frontend/lib/screens/f95_config_screen.dart", [System.Convert]::FromBase64String("${{ secrets.F95_CONFIG_SCREEN }}"))
 
       - name: Instalar dependencias
         working-directory: frontend
