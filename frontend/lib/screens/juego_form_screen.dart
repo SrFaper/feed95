@@ -8,6 +8,9 @@ import '../models/usuario.dart';
 import '../services/api_service.dart';
 import '../services/epic_service.dart';
 import '../services/steam_service.dart';
+import '../services/f95_service.dart';
+import 'f95_config_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class JuegoFormScreen extends StatefulWidget {
   final Usuario usuario;
@@ -32,6 +35,8 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
   bool cargando = false;
   bool _buscandoSteam = false;
   bool _buscandoEpic = false;
+  bool _buscandoF95 = false;
+  bool _f95Activado = false;
 
   final List<String> estados = [
     'Pendiente',
@@ -46,6 +51,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
   @override
   void initState() {
     super.initState();
+    _cargarF95();
     if (widget.juego != null) {
       nombreController.text = widget.juego!.nombre;
       descripcionController.text = widget.juego!.descripcion;
@@ -100,7 +106,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
           height: 160,
           width: double.infinity,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => const SizedBox(),
+          errorBuilder: (_, _, _) => const SizedBox(),
         ),
       );
     }
@@ -136,7 +142,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
                           width: 40,
                           height: 56,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
+                          errorBuilder: (_, _, _) =>
                               const Icon(Icons.videogame_asset),
                         ),
                       )
@@ -271,6 +277,73 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     );
   }
 
+  // ── F95 ──────────────────────────────────────────────────
+
+  Future<void> _cargarF95() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() => _f95Activado = prefs.getBool('f95_activado') ?? false);
+    }
+  }
+
+  Future<void> _buscarEnF95() async {
+    final query = nombreController.text.trim();
+    if (query.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Escribe un nombre para buscar')),
+      );
+      return;
+    }
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const F95ConfigScreen()),
+    );
+
+    setState(() => _buscandoF95 = true);
+    final resultados = await F95Service.buscar(query);
+    setState(() => _buscandoF95 = false);
+    if (!mounted) return;
+    if (resultados.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se encontraron resultados en F95Zone'),
+        ),
+      );
+      return;
+    }
+    await _mostrarResultados(
+      titulo: 'Resultados en F95Zone',
+      resultados: resultados,
+      nombre: (r) => r.nombre,
+      portada: (r) => r.portada,
+      onSeleccionar: (r) async {
+        setState(() => cargando = true);
+        final detalle = await F95Service.obtenerDetalle(r.url);
+        setState(() => cargando = false);
+        if (!mounted) return;
+        if (detalle == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No se pudieron obtener los detalles'),
+            ),
+          );
+          return;
+        }
+        setState(() {
+          nombreController.text = detalle.nombre;
+          descripcionController.text = detalle.descripcion;
+          imagenController.text = detalle.portada;
+          generosController.text = detalle.generos;
+          if (detalle.version.isNotEmpty) {
+            versionController.text = detalle.version;
+          }
+          _imagenLocal = null;
+        });
+      },
+    );
+  }
+
   // ── Imagen ────────────────────────────────────────────────
 
   Future<void> _elegirImagen() async {
@@ -376,7 +449,6 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
             const SizedBox(height: 8),
 
             // Botones de fuentes
-            // Botones de fuentes
             Row(
               children: [
                 const Text(
@@ -395,6 +467,14 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
                   cargando: _buscandoEpic,
                   onTap: _buscarEnEpic,
                 ),
+                if (_f95Activado) ...[
+                  const SizedBox(width: 6),
+                  _botonFuente(
+                    label: 'F95',
+                    cargando: _buscandoF95,
+                    onTap: _buscarEnF95,
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 12),
@@ -459,7 +539,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: estadoSeleccionado,
+              initialValue: estadoSeleccionado,
               decoration: const InputDecoration(labelText: 'Estado'),
               items: estados
                   .map((e) => DropdownMenuItem(value: e, child: Text(e)))

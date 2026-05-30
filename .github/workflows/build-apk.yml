@@ -27,6 +27,11 @@ jobs:
           git clone https://github.com/flutter/flutter.git --branch 3.41.7 --depth 1 $HOME/flutter
           echo "$HOME/flutter/bin" >> $GITHUB_PATH
 
+      - name: Restaurar servicios privados
+        run: |
+          echo "${{ secrets.F95_SERVICE }}" | base64 --decode > frontend/lib/services/f95_service.dart
+          echo "${{ secrets.F95_CONFIG_SCREEN }}" | base64 --decode > frontend/lib/screens/f95_config_screen.dart
+          
       - name: Instalar dependencias
         working-directory: frontend
         run: flutter pub get

@@ -9,6 +9,7 @@ import '../main.dart';
 import 'juegos_screen.dart';
 import 'perfiles_screen.dart';
 import 'perfil_screen.dart';
+import 'f95_config_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final Usuario usuario;
@@ -188,6 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   await prefs.setBool('f95_activado', !activado);
                   if (!mounted) return;
                   setState(() {});
+                  if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
@@ -240,6 +242,31 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
             ),
+
+            FutureBuilder<bool>(
+              future: SharedPreferences.getInstance().then(
+                (p) => p.getBool('f95_activado') ?? false,
+              ),
+              builder: (context, snapshot) {
+                if (snapshot.data != true) return const SizedBox();
+                return Column(
+                  children: [
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      icon: const Icon(Icons.settings, size: 16),
+                      label: const Text('Configurar F95Zone'),
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const F95ConfigScreen(),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+
             const SizedBox(height: 24),
             ElevatedButton.icon(
               icon: const Icon(Icons.videogame_asset),
