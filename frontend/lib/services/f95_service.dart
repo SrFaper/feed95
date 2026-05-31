@@ -1,4 +1,10 @@
-import 'package:http/http.dart' as http;
+import 'dart:io';
+import 'package:cookie_jar/cookie_jar.dart';
+import 'package:dio/dio.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class F95Resultado {
   final int id;
@@ -32,30 +38,145 @@ class F95Detalle {
 
 class F95Service {
   static const _baseUrl = 'https://f95zone.to';
+  static Dio? _dio;
+  static PersistCookieJar? _cookieJar;
 
-  static Future<List<F95Resultado>> buscar(String query) async {
+  static Future<Dio> _getDio() async {
+    if (_dio != null) return _dio!;
+
+    final appDir = await getApplicationDocumentsDirectory();
+    final cookiePath = p.join(appDir.path, 'f95_cookies');
+    await Directory(cookiePath).create(recursive: true);
+
+    _cookieJar = PersistCookieJar(storage: FileStorage(cookiePath));
+    _dio = Dio(BaseOptions(
+      baseUrl: _baseUrl,
+      followRedirects: true,
+      maxRedirects: 5,
+      receiveTimeout: const Duration(seconds: 15),
+      connectTimeout: const Duration(seconds: 10),
+      headers: {
+        'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept':
+            'text/html,application/xhtml+xml,application/json,*/*;q=0.9',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+    ));
+
+    _dio!.interceptors.add(CookieManager(_cookieJar!));
+    return _dio!;
+  }
+
+  // Verificar si hay sesión activa
+  static Future<bool> tieneSesion() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('f95_sesion_activa') ?? false;
+  }
+
+  // Login
+  static Future<bool> login({
+    required String usuario,
+    required String password,
+  }) async {
     try {
-      final uri = Uri.parse(
-        '$_baseUrl/search/1?q=${Uri.encodeComponent(query)}&t=post&c[child_nodes]=1&c[nodes][0]=2&o=relevance',
+      final dio = await _getDio();
+
+      // Paso 1: cargar página de login para obtener token CSRF
+      final loginPage = await dio.get('/login/');
+      final csrfMatch = RegExp(r'name="_xfToken" value="([^"]+)"')
+          .firstMatch(loginPage.data.toString());
+      if (csrfMatch == null) return false;
+      final csrfToken = csrfMatch.group(1)!;
+
+      // Paso 2: enviar credenciales
+      final response = await dio.post(
+        '/login/login',
+        data: {
+          'login': usuario,
+          'password': password,
+          '_xfToken': csrfToken,
+          'remember': '1',
+        },
+        options: Options(
+          contentType: 'application/x-www-form-urlencoded',
+          followRedirects: true,
+          validateStatus: (status) => status != null && status < 500,
+        ),
       );
 
-      final response = await http
-          .get(uri, headers: _headers())
-          .timeout(const Duration(seconds: 10));
+      // Verificar si el login fue exitoso buscando indicadores en la respuesta
+      final body = response.data.toString();
+      final exitoso = !body.contains('class="blockMessage blockMessage--error"') &&
+          !body.contains('incorrect password') &&
+          (response.statusCode == 200 || response.statusCode == 303);
 
-      if (response.statusCode != 200) return [];
+      if (exitoso) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('f95_sesion_activa', true);
+        await prefs.setString('f95_usuario', usuario);
+        await prefs.setString('f95_password', password);
+      }
 
+      return exitoso;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // Login automático con credenciales guardadas
+  static Future<bool> loginGuardado() async {
+    final prefs = await SharedPreferences.getInstance();
+    final usuario = prefs.getString('f95_usuario');
+    final password = prefs.getString('f95_password');
+    if (usuario == null || password == null) return false;
+    return login(usuario: usuario, password: password);
+  }
+
+  // Cerrar sesión
+  static Future<void> cerrarSesion() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('f95_sesion_activa');
+    await prefs.remove('f95_usuario');
+    await prefs.remove('f95_password');
+    await _cookieJar?.deleteAll();
+    _dio = null;
+    _cookieJar = null;
+  }
+
+  // Buscar juegos
+  static Future<List<F95Resultado>> buscar(String query) async {
+    try {
+      final sesion = await tieneSesion();
+      if (!sesion) {
+        final ok = await loginGuardado();
+        if (!ok) return [];
+      }
+
+      final dio = await _getDio();
+      final response = await dio.get(
+        '/search/1',
+        queryParameters: {
+          'q': query,
+          't': 'post',
+          'c[child_nodes]': '1',
+          'c[nodes][0]': '2',
+          'o': 'relevance',
+        },
+      );
+
+      final body = response.data.toString();
       final resultados = <F95Resultado>[];
 
       final threadRegex = RegExp(
         r'href="(https://f95zone\.to/threads/([^"]+?)\.(\d+)/)"',
       );
       final imageRegex = RegExp(
-        r'<img[^>]+class="[^"]*lazyload[^"]*"[^>]+data-src="([^"]+)"',
+        r'<img[^>]+(?:data-src|src)="(https://[^"]+attachments[^"]+)"',
       );
 
-      final threadMatches = threadRegex.allMatches(response.body).toList();
-      final imageMatches = imageRegex.allMatches(response.body).toList();
+      final threadMatches = threadRegex.allMatches(body).toList();
+      final imageMatches = imageRegex.allMatches(body).toList();
 
       for (int i = 0; i < threadMatches.length && i < 10; i++) {
         final match = threadMatches[i];
@@ -90,15 +211,12 @@ class F95Service {
     }
   }
 
+  // Obtener detalle de un juego
   static Future<F95Detalle?> obtenerDetalle(String url) async {
     try {
-      final response = await http
-          .get(Uri.parse(url), headers: _headers())
-          .timeout(const Duration(seconds: 10));
-
-      if (response.statusCode != 200) return null;
-
-      final body = response.body;
+      final dio = await _getDio();
+      final response = await dio.get(url);
+      final body = response.data.toString();
 
       // Título
       final ogTitleMatch =
@@ -156,18 +274,5 @@ class F95Service {
     } catch (_) {
       return null;
     }
-  }
-
-  static Map<String, String> _headers() {
-    return {
-      'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-      'Accept':
-          'text/html,application/xhtml+xml,application/json,*/*;q=0.9',
-      'Accept-Language': 'en-US,en;q=0.9',
-      'sec-fetch-dest': 'document',
-      'sec-fetch-mode': 'navigate',
-      'sec-fetch-site': 'none',
-    };
   }
 }

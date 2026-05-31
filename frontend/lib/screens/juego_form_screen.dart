@@ -9,8 +9,8 @@ import '../services/api_service.dart';
 import '../services/epic_service.dart';
 import '../services/steam_service.dart';
 import '../services/f95_service.dart';
-import 'f95_config_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'f95_config_screen.dart';
 
 class JuegoFormScreen extends StatefulWidget {
   final Usuario usuario;
@@ -279,6 +279,8 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
 
   // ── F95 ──────────────────────────────────────────────────
 
+  // ── F95 ──────────────────────────────────────────────────
+
   Future<void> _cargarF95() async {
     final prefs = await SharedPreferences.getInstance();
     if (mounted) {
@@ -295,15 +297,43 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
       return;
     }
 
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const F95ConfigScreen()),
-    );
+    // Verificar sesión
+    final tiene = await F95Service.tieneSesion();
+    if (!mounted) return;
 
+    if (!tiene) {
+      final confirmar = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('F95Zone'),
+          content: const Text('Necesitas iniciar sesión en F95Zone primero.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Configurar'),
+            ),
+          ],
+        ),
+      );
+      if (confirmar == true && mounted) {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const F95ConfigScreen()),
+        );
+      }
+      return;
+    }
+
+    // Buscar
     setState(() => _buscandoF95 = true);
     final resultados = await F95Service.buscar(query);
     setState(() => _buscandoF95 = false);
     if (!mounted) return;
+
     if (resultados.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -312,6 +342,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
       );
       return;
     }
+
     await _mostrarResultados(
       titulo: 'Resultados en F95Zone',
       resultados: resultados,
