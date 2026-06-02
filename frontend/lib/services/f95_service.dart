@@ -5,6 +5,7 @@ import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 
 class F95Resultado {
   final int id;
@@ -49,20 +50,22 @@ class F95Service {
     await Directory(cookiePath).create(recursive: true);
 
     _cookieJar = PersistCookieJar(storage: FileStorage(cookiePath));
-    _dio = Dio(BaseOptions(
-      baseUrl: _baseUrl,
-      followRedirects: true,
-      maxRedirects: 5,
-      receiveTimeout: const Duration(seconds: 15),
-      connectTimeout: const Duration(seconds: 10),
-      headers: {
-        'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept':
-            'text/html,application/xhtml+xml,application/json,*/*;q=0.9',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
-    ));
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: _baseUrl,
+        followRedirects: true,
+        maxRedirects: 5,
+        receiveTimeout: const Duration(seconds: 15),
+        connectTimeout: const Duration(seconds: 10),
+        headers: {
+          'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Accept':
+              'text/html,application/xhtml+xml,application/json,*/*;q=0.9',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+      ),
+    );
 
     _dio!.interceptors.add(CookieManager(_cookieJar!));
     return _dio!;
@@ -82,34 +85,70 @@ class F95Service {
     try {
       final dio = await _getDio();
 
-      // Paso 1: cargar página de login para obtener token CSRF
-      final loginPage = await dio.get('/login/');
-      final csrfMatch = RegExp(r'name="_xfToken" value="([^"]+)"')
-          .firstMatch(loginPage.data.toString());
-      if (csrfMatch == null) return false;
-      final csrfToken = csrfMatch.group(1)!;
-
-      // Paso 2: enviar credenciales
-      final response = await dio.post(
-        '/login/login',
-        data: {
-          'login': usuario,
-          'password': password,
-          '_xfToken': csrfToken,
-          'remember': '1',
-        },
+      // Paso 1: obtener página de login y token CSRF
+      final loginPage = await dio.get(
+        '/login/',
         options: Options(
-          contentType: 'application/x-www-form-urlencoded',
-          followRedirects: true,
-          validateStatus: (status) => status != null && status < 500,
+          headers: {
+            'Accept': 'text/html,application/xhtml+xml,*/*',
+            'sec-fetch-dest': 'document',
+            'sec-fetch-mode': 'navigate',
+            'sec-fetch-site': 'none',
+            'sec-fetch-user': '?1',
+            'upgrade-insecure-requests': '1',
+          },
         ),
       );
 
-      // Verificar si el login fue exitoso buscando indicadores en la respuesta
-      final body = response.data.toString();
-      final exitoso = !body.contains('class="blockMessage blockMessage--error"') &&
-          !body.contains('incorrect password') &&
-          (response.statusCode == 200 || response.statusCode == 303);
+      final pageBody = loginPage.data.toString();
+      final csrfMatch = RegExp(
+        r'name="_xfToken" value="([^"]+)"',
+      ).firstMatch(pageBody);
+      if (csrfMatch == null) return false;
+      final csrfToken = csrfMatch.group(1)!;
+
+      // Paso 2: enviar credenciales SIN seguir redirects
+      // para capturar las cookies de sesión del 303
+      final response = await dio.post(
+        '/login/login',
+        data:
+            'login=${Uri.encodeComponent(usuario)}'
+            '&password=${Uri.encodeComponent(password)}'
+            '&_xfToken=${Uri.encodeComponent(csrfToken)}'
+            '&_xfRedirect=${Uri.encodeComponent('https://f95zone.to/')}'
+            '&remember=1',
+        options: Options(
+          contentType: 'application/x-www-form-urlencoded',
+          followRedirects: false, // ← clave: no seguir el redirect
+          validateStatus: (status) => status != null && status < 500,
+          headers: {
+            'Referer': 'https://f95zone.to/login/',
+            'Origin': 'https://f95zone.to',
+            'sec-fetch-dest': 'document',
+            'sec-fetch-mode': 'navigate',
+            'sec-fetch-site': 'same-origin',
+            'sec-fetch-user': '?1',
+            'upgrade-insecure-requests': '1',
+          },
+        ),
+      );
+
+      debugPrint('LOGIN STATUS: ${response.statusCode}');
+      debugPrint('RESPONSE HEADERS: ${response.headers.map}');
+
+      final cookies = await _cookieJar?.loadForRequest(
+        Uri.parse('https://f95zone.to'),
+      );
+      debugPrint('COOKIES AFTER LOGIN: $cookies');
+
+      // Login exitoso si obtenemos 303 y la cookie xf_user
+      final tieneSessionCookie =
+          cookies?.any((c) => c.name == 'xf_user') ?? false;
+
+      final exitoso = tieneSessionCookie;
+
+      debugPrint('LOGIN LOGGED IN: $exitoso');
+      debugPrint('TIENE xf_user: $tieneSessionCookie');
 
       if (exitoso) {
         final prefs = await SharedPreferences.getInstance();
@@ -119,7 +158,8 @@ class F95Service {
       }
 
       return exitoso;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('LOGIN ERROR: $e');
       return false;
     }
   }
@@ -187,21 +227,17 @@ class F95Service {
         String nombre = slug
             .replaceAll('-', ' ')
             .split(' ')
-            .map((w) => w.isNotEmpty
-                ? w[0].toUpperCase() + w.substring(1)
-                : w)
+            .map((w) => w.isNotEmpty ? w[0].toUpperCase() + w.substring(1) : w)
             .join(' ');
 
-        final portada =
-            i < imageMatches.length ? imageMatches[i].group(1) ?? '' : '';
+        final portada = i < imageMatches.length
+            ? imageMatches[i].group(1) ?? ''
+            : '';
 
         if (id > 0 && nombre.isNotEmpty) {
-          resultados.add(F95Resultado(
-            id: id,
-            nombre: nombre,
-            portada: portada,
-            url: url,
-          ));
+          resultados.add(
+            F95Resultado(id: id, nombre: nombre, portada: portada, url: url),
+          );
         }
       }
 
@@ -219,15 +255,17 @@ class F95Service {
       final body = response.data.toString();
 
       // Título
-      final ogTitleMatch =
-          RegExp(r'<meta property="og:title" content="([^"]+)"')
-              .firstMatch(body);
+      final ogTitleMatch = RegExp(
+        r'<meta property="og:title" content="([^"]+)"',
+      ).firstMatch(body);
       String nombre = ogTitleMatch?.group(1)?.trim() ?? '';
       nombre = nombre.replaceAll(' | F95zone', '').trim();
 
       // Versión
-      final versionMatch =
-          RegExp(r'\[v([^\]]+)\]', caseSensitive: false).firstMatch(nombre);
+      final versionMatch = RegExp(
+        r'\[v([^\]]+)\]',
+        caseSensitive: false,
+      ).firstMatch(nombre);
       final version = versionMatch?.group(1)?.trim() ?? '';
       if (version.isNotEmpty) {
         nombre = nombre
@@ -237,15 +275,15 @@ class F95Service {
       }
 
       // Portada
-      final ogImageMatch =
-          RegExp(r'<meta property="og:image" content="([^"]+)"')
-              .firstMatch(body);
+      final ogImageMatch = RegExp(
+        r'<meta property="og:image" content="([^"]+)"',
+      ).firstMatch(body);
       final portada = ogImageMatch?.group(1) ?? '';
 
       // Descripción
-      final ogDescMatch =
-          RegExp(r'<meta property="og:description" content="([^"]+)"')
-              .firstMatch(body);
+      final ogDescMatch = RegExp(
+        r'<meta property="og:description" content="([^"]+)"',
+      ).firstMatch(body);
       String descripcion = ogDescMatch?.group(1)?.trim() ?? '';
       descripcion = descripcion
           .replaceAll('&quot;', '"')
@@ -255,9 +293,9 @@ class F95Service {
           .replaceAll('&gt;', '>');
 
       // Tags
-      final tagMatches =
-          RegExp(r'<a[^>]+class="[^"]*tagItem[^"]*"[^>]*>([^<]+)</a>')
-              .allMatches(body);
+      final tagMatches = RegExp(
+        r'<a[^>]+class="[^"]*tagItem[^"]*"[^>]*>([^<]+)</a>',
+      ).allMatches(body);
       final generos = tagMatches
           .map((m) => m.group(1)?.trim() ?? '')
           .where((t) => t.isNotEmpty)
