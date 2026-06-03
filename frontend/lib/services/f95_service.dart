@@ -207,22 +207,29 @@ class F95Service {
 
       final body = response.data.toString();
       final resultados = <F95Resultado>[];
+      final vistos = <int>{};
 
-      final threadRegex = RegExp(
-        r'href="(https://f95zone\.to/threads/([^"]+?)\.(\d+)/)"',
-      );
+      // Regex ajustado para URLs relativas
+      final threadRegex = RegExp(r'href="/threads/([^"]+?)\.(\d+)/"');
       final imageRegex = RegExp(
-        r'<img[^>]+(?:data-src|src)="(https://[^"]+attachments[^"]+)"',
+        r'<img[^>]+(?:data-src|src)="(https://[^"]+(?:attachments|preview)[^"]+)"',
       );
 
       final threadMatches = threadRegex.allMatches(body).toList();
       final imageMatches = imageRegex.allMatches(body).toList();
 
-      for (int i = 0; i < threadMatches.length && i < 10; i++) {
+      int imageIndex = 0;
+
+      for (int i = 0; i < threadMatches.length && resultados.length < 10; i++) {
         final match = threadMatches[i];
-        final url = match.group(1) ?? '';
-        final slug = match.group(2) ?? '';
-        final id = int.tryParse(match.group(3) ?? '') ?? 0;
+        final slug = match.group(1) ?? '';
+        final id = int.tryParse(match.group(2) ?? '') ?? 0;
+
+        // Saltar duplicados
+        if (id == 0 || vistos.contains(id)) continue;
+        vistos.add(id);
+
+        final url = 'https://f95zone.to/threads/$slug.$id/';
 
         String nombre = slug
             .replaceAll('-', ' ')
@@ -230,15 +237,14 @@ class F95Service {
             .map((w) => w.isNotEmpty ? w[0].toUpperCase() + w.substring(1) : w)
             .join(' ');
 
-        final portada = i < imageMatches.length
-            ? imageMatches[i].group(1) ?? ''
+        final portada = imageIndex < imageMatches.length
+            ? imageMatches[imageIndex].group(1) ?? ''
             : '';
+        imageIndex++;
 
-        if (id > 0 && nombre.isNotEmpty) {
-          resultados.add(
-            F95Resultado(id: id, nombre: nombre, portada: portada, url: url),
-          );
-        }
+        resultados.add(
+          F95Resultado(id: id, nombre: nombre, portada: portada, url: url),
+        );
       }
 
       return resultados;
