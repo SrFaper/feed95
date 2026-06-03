@@ -260,14 +260,14 @@ class F95Service {
       final response = await dio.get(url);
       final body = response.data.toString();
 
-      // Título
+      // Título desde og:title
       final ogTitleMatch = RegExp(
         r'<meta property="og:title" content="([^"]+)"',
       ).firstMatch(body);
       String nombre = ogTitleMatch?.group(1)?.trim() ?? '';
       nombre = nombre.replaceAll(' | F95zone', '').trim();
 
-      // Versión
+      // Versión — extraer antes de limpiar el título
       final versionMatch = RegExp(
         r'\[v([^\]]+)\]',
         caseSensitive: false,
@@ -280,13 +280,54 @@ class F95Service {
             .trim();
       }
 
-      // Portada
-      final ogImageMatch = RegExp(
-        r'<meta property="og:image" content="([^"]+)"',
-      ).firstMatch(body);
-      final portada = ogImageMatch?.group(1) ?? '';
+      // Limpiar prefijos de engine/estado: "Ren'Py - Completed - " etc.
+      // Patrón: cualquier cosa seguida de " - " repetida antes del nombre real
+      nombre = nombre.replaceAll(RegExp(r'^(?:[^-]+ - )+'), '').trim();
 
-      // Descripción
+      // Limpiar sufijo de autor: "[Autor]" al final
+      nombre = nombre.replaceAll(RegExp(r'\s*\[[^\]]+\]\s*$'), '').trim();
+
+      // Decodificar entidades HTML básicas
+      nombre = nombre
+          .replaceAll('&amp;', '&')
+          .replaceAll('&#039;', "'")
+          .replaceAll('&quot;', '"')
+          .replaceAll('&lt;', '<')
+          .replaceAll('&gt;', '>');
+
+      // Portada — intentar varias fuentes en orden de prioridad
+      String portada = '';
+
+      // 1. Primera imagen grande del post (lbContainer-zoomer)
+      final lbMatch = RegExp(
+        r'lbContainer-zoomer[^>]+data-src="(https://attachments\.f95zone\.to/[^"]+)"',
+      ).firstMatch(body);
+      if (lbMatch != null) {
+        portada = lbMatch.group(1) ?? '';
+      }
+
+      // 2. Primera bbImage con attachments
+      if (portada.isEmpty) {
+        final bbMatch = RegExp(
+          r'<img[^>]+data-src="(https://attachments\.f95zone\.to/(?!.*thumb)[^"]+)"',
+        ).firstMatch(body);
+        if (bbMatch != null) {
+          portada = bbMatch.group(1) ?? '';
+        }
+      }
+
+      // 3. og:image como último recurso (puede ser el favicon)
+      if (portada.isEmpty || portada.contains('favicon')) {
+        final ogImageMatch = RegExp(
+          r'<meta property="og:image" content="([^"]+)"',
+        ).firstMatch(body);
+        final ogImage = ogImageMatch?.group(1) ?? '';
+        if (!ogImage.contains('favicon')) {
+          portada = ogImage;
+        }
+      }
+
+      // Descripción desde og:description
       final ogDescMatch = RegExp(
         r'<meta property="og:description" content="([^"]+)"',
       ).firstMatch(body);
@@ -298,14 +339,13 @@ class F95Service {
           .replaceAll('&lt;', '<')
           .replaceAll('&gt;', '>');
 
-      // Tags
+      // Tags — sin límite
       final tagMatches = RegExp(
-        r'<a[^>]+class="[^"]*tagItem[^"]*"[^>]*>([^<]+)</a>',
+        r'<a[^>]+class="tagItem"[^>]*>([^<]+)</a>',
       ).allMatches(body);
       final generos = tagMatches
           .map((m) => m.group(1)?.trim() ?? '')
           .where((t) => t.isNotEmpty)
-          .take(8)
           .join(', ');
 
       return F95Detalle(
