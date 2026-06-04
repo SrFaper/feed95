@@ -175,7 +175,7 @@ class EpicService {
 
       // Screenshots
       final screenshots = images
-          .where((img) => img['type'] == 'Screenshot')
+          .where((img) => img['type'] == 'featuredMedia')
           .take(6)
           .map((img) => img['url'] as String? ?? '')
           .where((u) => u.isNotEmpty)

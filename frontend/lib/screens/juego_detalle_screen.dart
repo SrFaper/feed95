@@ -337,7 +337,6 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                   // Carrusel de imágenes
                   if (juego.listaImagenesExtra.isNotEmpty) ...[
                     const SizedBox(height: 16),
-
                     const Text(
                       'Imágenes',
                       style: TextStyle(
@@ -345,25 +344,41 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
                     const SizedBox(height: 8),
-
                     SizedBox(
-                      height: 160,
+                      height: 180,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: juego.listaImagenesExtra.length,
                         separatorBuilder: (_, _) => const SizedBox(width: 8),
                         itemBuilder: (context, index) {
                           final url = juego.listaImagenesExtra[index];
-
-                          return ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              url,
-                              height: 160,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => const SizedBox(),
+                          return GestureDetector(
+                            onTap: () => showDialog(
+                              context: context,
+                              builder: (context) => Dialog(
+                                backgroundColor: Colors.transparent,
+                                child: GestureDetector(
+                                  onTap: () => Navigator.pop(context),
+                                  child: InteractiveViewer(
+                                    child: Image.network(
+                                      url,
+                                      fit: BoxFit.contain,
+                                      errorBuilder: (_, _, _) =>
+                                          const SizedBox(),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(
+                                url,
+                                height: 180,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, _, _) => const SizedBox(),
+                              ),
                             ),
                           );
                         },
