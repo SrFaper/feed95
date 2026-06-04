@@ -90,20 +90,40 @@ class _TarjetaJuego extends StatelessWidget {
   const _TarjetaJuego({required this.juego, required this.onTap});
 
   Widget _imagen() {
+    // Imagen específica para el grid
+    if (juego.imagenGridLocal != null && juego.imagenGridLocal!.isNotEmpty) {
+      return Image.file(
+        File(juego.imagenGridLocal!),
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => _placeholder(),
+      );
+    }
+
+    if (juego.imagenGrid.isNotEmpty) {
+      return Image.network(
+        juego.imagenGrid,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => _placeholder(),
+      );
+    }
+
+    // Fallback a imagen principal
     if (juego.imagenLocal != null && juego.imagenLocal!.isNotEmpty) {
       return Image.file(
         File(juego.imagenLocal!),
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _placeholder(),
+        errorBuilder: (_, _, _) => _placeholder(),
       );
     }
+
     if (juego.imagen.isNotEmpty) {
       return Image.network(
         juego.imagen,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _placeholder(),
+        errorBuilder: (_, _, _) => _placeholder(),
       );
     }
+
     return _placeholder();
   }
 

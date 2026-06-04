@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
 import '../models/juego.dart';
@@ -38,7 +37,7 @@ class ApiService {
 
     return await openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: (db, version) async {
         await db.execute('''
         CREATE TABLE usuarios (
@@ -60,6 +59,9 @@ class ApiService {
           generos TEXT,
           estado TEXT,
           ruta_ejecutable TEXT,
+          imagen_grid TEXT,
+          imagen_grid_local TEXT,
+          imagenes_extra TEXT,
           usuario_id INTEGER NOT NULL,
           FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
         )
@@ -78,6 +80,13 @@ class ApiService {
           await db.execute(
             'ALTER TABLE juegos ADD COLUMN ruta_ejecutable TEXT',
           );
+        }
+        if (oldVersion < 6) {
+          await db.execute('ALTER TABLE juegos ADD COLUMN imagen_grid TEXT');
+          await db.execute(
+            'ALTER TABLE juegos ADD COLUMN imagen_grid_local TEXT',
+          );
+          await db.execute('ALTER TABLE juegos ADD COLUMN imagenes_extra TEXT');
         }
       },
     );
@@ -185,13 +194,16 @@ class ApiService {
     required String nombre,
     required String descripcion,
     required String imagen,
-    String? imagenLocal,
     required String version,
     required String calificacion,
     required String generos,
     required String estado,
-    String? rutaEjecutable,
     required int usuarioId,
+    String? imagenLocal,
+    String? rutaEjecutable,
+    String? imagenGrid,
+    String? imagenGridLocal,
+    String? imagenesExtra,
   }) async {
     final database = await db;
     await database.insert('juegos', {
@@ -204,6 +216,9 @@ class ApiService {
       'generos': generos,
       'estado': estado,
       'ruta_ejecutable': rutaEjecutable,
+      'imagen_grid': imagenGrid,
+      'imagen_grid_local': imagenGridLocal,
+      'imagenes_extra': imagenesExtra,
       'usuario_id': usuarioId,
     });
     return {'success': true, 'message': 'Juego agregado correctamente'};
@@ -215,12 +230,15 @@ class ApiService {
     required String nombre,
     required String descripcion,
     required String imagen,
-    String? imagenLocal,
     required String version,
     required String calificacion,
     required String generos,
-    String? rutaEjecutable,
     required String estado,
+    String? rutaEjecutable,
+    String? imagenLocal,
+    String? imagenGrid,
+    String? imagenGridLocal,
+    String? imagenesExtra,
   }) async {
     final database = await db;
     await database.update(
@@ -235,6 +253,9 @@ class ApiService {
         'generos': generos,
         'ruta_ejecutable': rutaEjecutable,
         'estado': estado,
+        'imagen_grid': imagenGrid,
+        'imagen_grid_local': imagenGridLocal,
+        'imagenes_extra': imagenesExtra ?? '',
       },
       where: 'id = ?',
       whereArgs: [id],
@@ -332,6 +353,9 @@ class ApiService {
             'generos': j['generos'],
             'estado': j['estado'],
             'ruta_ejecutable': j['ruta_ejecutable'],
+            'imagen_grid': j['imagen_grid'],
+            'imagen_grid_local': j['imagen_grid_local'],
+            'imagenes_extra': j['imagenes_extra'],
             'usuario_id': idNuevo,
           });
         } catch (_) {

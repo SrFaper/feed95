@@ -25,13 +25,16 @@ class JuegoFormScreen extends StatefulWidget {
 class _JuegoFormScreenState extends State<JuegoFormScreen> {
   final nombreController = TextEditingController();
   final descripcionController = TextEditingController();
-  final imagenController = TextEditingController();
   final versionController = TextEditingController();
   final calificacionController = TextEditingController();
   final generosController = TextEditingController();
   final rutaEjecutableController = TextEditingController();
+  final imagenDetalleController = TextEditingController();
+  final imagenGridController = TextEditingController();
+  String? _imagenDetalleLocal;
+  String? _imagenGridLocal;
+  String _imagenesExtra = '';
   String estadoSeleccionado = 'Pendiente';
-  String? _imagenLocal;
   bool cargando = false;
   bool _buscandoSteam = false;
   bool _buscandoEpic = false;
@@ -55,12 +58,15 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     if (widget.juego != null) {
       nombreController.text = widget.juego!.nombre;
       descripcionController.text = widget.juego!.descripcion;
-      imagenController.text = widget.juego!.imagen;
       versionController.text = widget.juego!.version;
       calificacionController.text = widget.juego!.calificacion.toString();
       generosController.text = widget.juego!.generos;
       estadoSeleccionado = widget.juego!.estado;
-      _imagenLocal = widget.juego!.imagenLocal;
+      imagenDetalleController.text = widget.juego!.imagen;
+      imagenGridController.text = widget.juego!.imagenGrid;
+      _imagenDetalleLocal = widget.juego!.imagenLocal;
+      _imagenGridLocal = widget.juego!.imagenGridLocal;
+      _imagenesExtra = widget.juego!.imagenesExtra;
       rutaEjecutableController.text = widget.juego!.rutaEjecutable ?? '';
     }
   }
@@ -86,24 +92,24 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
           );
   }
 
-  Widget _vistaPrevia() {
-    if (_imagenLocal != null) {
+  Widget _vistaPrevia(String url, String? local) {
+    if (local != null) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: Image.file(
-          File(_imagenLocal!),
-          height: 160,
+          File(local),
+          height: 120,
           width: double.infinity,
           fit: BoxFit.cover,
         ),
       );
     }
-    if (imagenController.text.isNotEmpty) {
+    if (url.isNotEmpty) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: Image.network(
-          imagenController.text,
-          height: 160,
+          url,
+          height: 120,
           width: double.infinity,
           fit: BoxFit.cover,
           errorBuilder: (_, _, _) => const SizedBox(),
@@ -170,14 +176,19 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     required String nombre,
     required String descripcion,
     required String portada,
+    required String portadaGrid,
     required String generos,
+    String imagenesExtra = '',
   }) {
     setState(() {
       nombreController.text = nombre;
       descripcionController.text = descripcion;
-      imagenController.text = portada;
+      imagenDetalleController.text = portada;
+      imagenGridController.text = portadaGrid;
       generosController.text = generos;
-      _imagenLocal = null;
+      _imagenDetalleLocal = null;
+      _imagenGridLocal = null;
+      _imagenesExtra = imagenesExtra;
     });
   }
 
@@ -223,7 +234,9 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
           nombre: detalle.nombre,
           descripcion: detalle.descripcion,
           portada: detalle.portada,
+          portadaGrid: detalle.portadaGrid,
           generos: detalle.generos,
+          imagenesExtra: detalle.imagenesExtra,
         );
       },
     );
@@ -271,13 +284,13 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
           nombre: detalle.nombre,
           descripcion: detalle.descripcion,
           portada: detalle.portada,
+          portadaGrid: detalle.portadaGrid,
           generos: detalle.generos,
+          imagenesExtra: detalle.imagenesExtra,
         );
       },
     );
   }
-
-  // ── F95 ──────────────────────────────────────────────────
 
   // ── F95 ──────────────────────────────────────────────────
 
@@ -361,29 +374,33 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
           );
           return;
         }
-        setState(() {
-          nombreController.text = detalle.nombre;
-          descripcionController.text = detalle.descripcion;
-          imagenController.text = detalle.portada;
-          generosController.text = detalle.generos;
-          if (detalle.version.isNotEmpty) {
-            versionController.text = detalle.version;
-          }
-          _imagenLocal = null;
-        });
+        _rellenarCampos(
+          nombre: detalle.nombre,
+          descripcion: detalle.descripcion,
+          portada: detalle.portada,
+          portadaGrid: r.portada.isNotEmpty ? r.portada : detalle.portada,
+          generos: detalle.generos,
+          imagenesExtra: detalle.imagenesExtra,
+        );
       },
     );
   }
 
   // ── Imagen ────────────────────────────────────────────────
 
-  Future<void> _elegirImagen() async {
+  Future<void> _elegirImagen({required bool esGrid}) async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
+
     if (picked != null) {
       setState(() {
-        _imagenLocal = picked.path;
-        imagenController.clear();
+        if (esGrid) {
+          _imagenGridLocal = picked.path;
+          imagenGridController.clear();
+        } else {
+          _imagenDetalleLocal = picked.path;
+          imagenDetalleController.clear();
+        }
       });
     }
   }
@@ -423,8 +440,11 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
       respuesta = await ApiService.crearJuego(
         nombre: nombreController.text,
         descripcion: descripcionController.text,
-        imagen: imagenController.text,
-        imagenLocal: _imagenLocal,
+        imagen: imagenDetalleController.text,
+        imagenLocal: _imagenDetalleLocal,
+        imagenGrid: imagenGridController.text,
+        imagenGridLocal: _imagenGridLocal,
+        imagenesExtra: _imagenesExtra,
         version: versionController.text,
         calificacion: calificacionController.text,
         generos: generosController.text,
@@ -437,8 +457,11 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
         id: widget.juego!.id,
         nombre: nombreController.text,
         descripcion: descripcionController.text,
-        imagen: imagenController.text,
-        imagenLocal: _imagenLocal,
+        imagen: imagenDetalleController.text,
+        imagenLocal: _imagenDetalleLocal,
+        imagenGrid: imagenGridController.text,
+        imagenGridLocal: _imagenGridLocal,
+        imagenesExtra: _imagenesExtra,
         version: versionController.text,
         calificacion: calificacionController.text,
         generos: generosController.text,
@@ -518,37 +541,84 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
             ),
             const SizedBox(height: 12),
 
-            // Vista previa imagen
-            _vistaPrevia(),
-            if (_imagenLocal != null || imagenController.text.isNotEmpty)
+            // Imagen del detalle
+            const Text(
+              'Imagen del detalle',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 4),
+
+            _vistaPrevia(imagenDetalleController.text, _imagenDetalleLocal),
+
+            if (_imagenDetalleLocal != null ||
+                imagenDetalleController.text.isNotEmpty)
               const SizedBox(height: 8),
 
-            // URL imagen + galería
             Row(
               children: [
                 Expanded(
                   child: TextField(
-                    controller: imagenController,
+                    controller: imagenDetalleController,
                     decoration: const InputDecoration(
-                      labelText: 'URL de imagen',
+                      labelText: 'URL imagen detalle',
                     ),
-                    onChanged: (_) => setState(() => _imagenLocal = null),
+                    onChanged: (_) =>
+                        setState(() => _imagenDetalleLocal = null),
                   ),
                 ),
                 const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(Icons.photo_library),
-                  tooltip: 'Elegir desde galería',
-                  onPressed: _elegirImagen,
+                  onPressed: () => _elegirImagen(esGrid: false),
                 ),
-                if (_imagenLocal != null)
+                if (_imagenDetalleLocal != null)
                   IconButton(
                     icon: const Icon(Icons.close),
-                    tooltip: 'Quitar imagen',
-                    onPressed: () => setState(() => _imagenLocal = null),
+                    onPressed: () => setState(() => _imagenDetalleLocal = null),
                   ),
               ],
             ),
+
+            // Imagen del grid
+            const SizedBox(height: 12),
+
+            const Text(
+              'Imagen del grid',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+
+            const SizedBox(height: 4),
+
+            _vistaPrevia(imagenGridController.text, _imagenGridLocal),
+
+            if (_imagenGridLocal != null ||
+                imagenGridController.text.isNotEmpty)
+              const SizedBox(height: 8),
+
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: imagenGridController,
+                    decoration: const InputDecoration(
+                      labelText: 'URL imagen grid',
+                    ),
+                    onChanged: (_) => setState(() => _imagenGridLocal = null),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.photo_library),
+                  onPressed: () => _elegirImagen(esGrid: true),
+                ),
+                if (_imagenGridLocal != null)
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => setState(() => _imagenGridLocal = null),
+                  ),
+              ],
+            ),
+
             const SizedBox(height: 12),
 
             TextField(

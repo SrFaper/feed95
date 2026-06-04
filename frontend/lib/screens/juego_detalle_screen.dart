@@ -58,8 +58,10 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Eliminar',
-                style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Eliminar',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -78,9 +80,9 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
       await Process.run(juego.rutaEjecutable!, [], runInShell: true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo ejecutar: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('No se pudo ejecutar: $e')));
     }
   }
 
@@ -91,7 +93,7 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
         width: double.infinity,
         height: 280,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _placeholder(),
+        errorBuilder: (_, _, _) => _placeholder(),
       );
     }
     if (juego.imagen.isNotEmpty) {
@@ -100,7 +102,7 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
         width: double.infinity,
         height: 280,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _placeholder(),
+        errorBuilder: (_, _, _) => _placeholder(),
       );
     }
     return _placeholder();
@@ -125,7 +127,8 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
         .where((g) => g.isNotEmpty)
         .toList();
 
-    final tieneEjecutable = !kIsWeb &&
+    final tieneEjecutable =
+        !kIsWeb &&
         (Platform.isWindows || Platform.isLinux) &&
         juego.rutaEjecutable != null &&
         juego.rutaEjecutable!.isNotEmpty;
@@ -150,10 +153,12 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                       ),
                     ),
                   );
-                  final juegos =
-                      await ApiService.obtenerJuegos(widget.usuario.id);
-                  final actualizado =
-                      juegos.where((j) => j.id == juego.id).toList();
+                  final juegos = await ApiService.obtenerJuegos(
+                    widget.usuario.id,
+                  );
+                  final actualizado = juegos
+                      .where((j) => j.id == juego.id)
+                      .toList();
                   if (actualizado.isNotEmpty && mounted) {
                     setState(() => juego = actualizado.first);
                   }
@@ -193,7 +198,6 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-
                   // Título + botón ejecutar
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -213,11 +217,17 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                           icon: const Icon(Icons.play_arrow, size: 18),
                           label: const Text('Jugar'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                const Color.fromARGB(255, 255, 54, 71),
+                            backgroundColor: const Color.fromARGB(
+                              255,
+                              255,
+                              54,
+                              71,
+                            ),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 10),
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
                           ),
                           onPressed: _ejecutar,
                         ),
@@ -236,13 +246,14 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.tag,
-                                size: 14, color: Colors.grey),
+                            const Icon(Icons.tag, size: 14, color: Colors.grey),
                             const SizedBox(width: 4),
                             Text(
                               juego.version,
                               style: const TextStyle(
-                                  color: Colors.grey, fontSize: 13),
+                                color: Colors.grey,
+                                fontSize: 13,
+                              ),
                             ),
                           ],
                         ),
@@ -250,19 +261,26 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.star,
-                                size: 14, color: Colors.amber),
+                            const Icon(
+                              Icons.star,
+                              size: 14,
+                              color: Colors.amber,
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               '${juego.calificacion}/10',
                               style: const TextStyle(
-                                  color: Colors.grey, fontSize: 13),
+                                color: Colors.grey,
+                                fontSize: 13,
+                              ),
                             ),
                           ],
                         ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: _colorEstado(juego.estado),
                           borderRadius: BorderRadius.circular(20),
@@ -287,10 +305,11 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                       runSpacing: 6,
                       children: generos.map((g) {
                         return Chip(
-                          label: Text(g,
-                              style: const TextStyle(fontSize: 12)),
+                          label: Text(g, style: const TextStyle(fontSize: 12)),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 4, vertical: 0),
+                            horizontal: 4,
+                            vertical: 0,
+                          ),
                           visualDensity: VisualDensity.compact,
                         );
                       }).toList(),
@@ -299,17 +318,56 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                   ],
 
                   // Descripción
+                  // Descripción
                   if (juego.descripcion.isNotEmpty) ...[
                     const Text(
                       'Descripción',
                       style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       juego.descripcion,
-                      style:
-                          const TextStyle(fontSize: 14, height: 1.5),
+                      style: const TextStyle(fontSize: 14, height: 1.5),
+                    ),
+                  ],
+
+                  // Carrusel de imágenes
+                  if (juego.listaImagenesExtra.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+
+                    const Text(
+                      'Imágenes',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    SizedBox(
+                      height: 160,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: juego.listaImagenesExtra.length,
+                        separatorBuilder: (_, _) => const SizedBox(width: 8),
+                        itemBuilder: (context, index) {
+                          final url = juego.listaImagenesExtra[index];
+
+                          return ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              url,
+                              height: 160,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => const SizedBox(),
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ],
                 ],

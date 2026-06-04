@@ -17,13 +17,17 @@ class SteamDetalle {
   final String nombre;
   final String descripcion;
   final String portada;
+  final String portadaGrid;
   final String generos;
+  final String imagenesExtra;
 
   SteamDetalle({
     required this.nombre,
     required this.descripcion,
     required this.portada,
+    required this.portadaGrid,
     required this.generos,
+    required this.imagenesExtra,
   });
 }
 
@@ -45,7 +49,8 @@ class SteamService {
         return SteamResultado(
           appId: appId,
           nombre: item['name'] ?? '',
-          portada: 'https://cdn.akamai.steamstatic.com/steam/apps/$appId/library_600x900.jpg',
+          portada:
+              'https://cdn.akamai.steamstatic.com/steam/apps/$appId/library_600x900.jpg',
         );
       }).toList();
     } catch (_) {
@@ -72,17 +77,33 @@ class SteamService {
           .join(', ');
 
       // Limpiar HTML básico de la descripción
-      final descripcionRaw =
-          (info['short_description'] ?? '') as String;
+      final descripcionRaw = (info['short_description'] ?? '') as String;
       final descripcion = descripcionRaw
           .replaceAll(RegExp(r'<[^>]*>'), '')
           .trim();
 
+      // Portada horizontal (para detalle)
+      final portada =
+          'https://cdn.akamai.steamstatic.com/steam/apps/$appId/header.jpg';
+
+      // Portada vertical (para grid)
+      final portadaGrid =
+          'https://cdn.akamai.steamstatic.com/steam/apps/$appId/library_600x900.jpg';
+
+      // Screenshots del carrusel
+      final screenshots = (info['screenshots'] as List? ?? [])
+          .take(6)
+          .map((s) => s['path_full'] as String? ?? '')
+          .where((s) => s.isNotEmpty)
+          .join(',');
+
       return SteamDetalle(
         nombre: info['name'] ?? '',
         descripcion: descripcion,
-        portada: 'https://cdn.akamai.steamstatic.com/steam/apps/$appId/library_600x900.jpg',
+        portada: portada,
+        portadaGrid: portadaGrid,
         generos: generos,
+        imagenesExtra: screenshots,
       );
     } catch (_) {
       return null;

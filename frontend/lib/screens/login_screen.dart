@@ -39,14 +39,16 @@ class _LoginScreenState extends State<LoginScreen> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('usuario_id', respuesta['usuario']['id'] as int);
       final usuario = ApiService.convertirUsuario(respuesta['usuario']);
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => HomeScreen(usuario: usuario)),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(respuesta['message'])),
-      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(respuesta['message'])));
     }
   }
 
@@ -85,7 +87,9 @@ class _LoginScreenState extends State<LoginScreen> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const RegistroScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const RegistroScreen(),
+                  ),
                 );
               },
               child: const Text('¿No tienes cuenta? Créala aquí'),

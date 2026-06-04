@@ -19,18 +19,21 @@ class EpicDetalle {
   final String nombre;
   final String descripcion;
   final String portada;
+  final String portadaGrid;
   final String generos;
+  final String imagenesExtra;
 
   EpicDetalle({
     required this.nombre,
     required this.descripcion,
     required this.portada,
+    required this.portadaGrid,
     required this.generos,
+    required this.imagenesExtra,
   });
 }
 
 class EpicService {
-
   static Future<List<EpicResultado>> buscar(String query) async {
     try {
       final queryLimpia = query.replaceAll('"', ''); // ← agrega esto
@@ -140,10 +143,6 @@ class EpicService {
       if (offer == null) return null;
 
       final images = offer['keyImages'] as List? ?? [];
-      final portadaMap = images.firstWhere(
-        (img) => img['type'] == 'OfferImageTall',
-        orElse: () => images.isNotEmpty ? images.first : {},
-      );
 
       final tags = (offer['tags'] as List? ?? [])
           .map((t) => t['name'] as String? ?? '')
@@ -156,11 +155,39 @@ class EpicService {
           .replaceAll(RegExp(r'<[^>]*>'), '')
           .trim();
 
+      final portadaGrid =
+          images.firstWhere(
+                (img) => img['type'] == 'OfferImageTall',
+                orElse: () => images.isNotEmpty ? images.first : {},
+              )['url']
+              as String? ??
+          '';
+
+      final portada =
+          images.firstWhere(
+                (img) =>
+                    img['type'] == 'OfferImageWide' ||
+                    img['type'] == 'DieselGameBoxWide',
+                orElse: () => images.isNotEmpty ? images.first : {},
+              )['url']
+              as String? ??
+          '';
+
+      // Screenshots
+      final screenshots = images
+          .where((img) => img['type'] == 'Screenshot')
+          .take(6)
+          .map((img) => img['url'] as String? ?? '')
+          .where((u) => u.isNotEmpty)
+          .join(',');
+
       return EpicDetalle(
         nombre: offer['title'] as String? ?? '',
         descripcion: descripcion,
-        portada: portadaMap['url'] as String? ?? '',
+        portada: portada,
+        portadaGrid: portadaGrid,
         generos: tags,
+        imagenesExtra: screenshots,
       );
     } catch (_) {
       return null;

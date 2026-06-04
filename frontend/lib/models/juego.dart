@@ -4,6 +4,9 @@ class Juego {
   final String descripcion;
   final String imagen;
   final String? imagenLocal;
+  final String imagenGrid;
+  final String? imagenGridLocal;
+  final String imagenesExtra;
   final String version;
   final int calificacion;
   final String generos;
@@ -17,6 +20,9 @@ class Juego {
     required this.descripcion,
     required this.imagen,
     this.imagenLocal,
+    required this.imagenGrid,
+    this.imagenGridLocal,
+    required this.imagenesExtra,
     required this.version,
     required this.calificacion,
     required this.generos,
@@ -32,6 +38,9 @@ class Juego {
       descripcion: json['descripcion'] ?? '',
       imagen: json['imagen'] ?? '',
       imagenLocal: json['imagen_local'],
+      imagenGrid: json['imagen_grid'] ?? json['imagen'] ?? '',
+      imagenGridLocal: json['imagen_grid_local'],
+      imagenesExtra: json['imagenes_extra'] ?? '',
       version: json['version'] ?? '',
       calificacion: int.parse(json['calificacion'].toString()),
       generos: json['generos'] ?? '',
@@ -40,4 +49,11 @@ class Juego {
       rutaEjecutable: json['ruta_ejecutable'],
     );
   }
+
+  // Lista de URLs del carrusel
+  List<String> get listaImagenesExtra => imagenesExtra
+      .split(',')
+      .map((u) => u.trim())
+      .where((u) => u.isNotEmpty)
+      .toList();
 }
