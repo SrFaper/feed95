@@ -5,6 +5,7 @@ import '../models/juego.dart';
 import '../models/usuario.dart';
 import '../services/api_service.dart';
 import 'juego_form_screen.dart';
+import 'package:flutter/gestures.dart';
 
 class JuegoDetalleScreen extends StatefulWidget {
   final Juego juego;
@@ -347,41 +348,55 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                     const SizedBox(height: 8),
                     SizedBox(
                       height: 180,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: juego.listaImagenesExtra.length,
-                        separatorBuilder: (_, _) => const SizedBox(width: 8),
-                        itemBuilder: (context, index) {
-                          final url = juego.listaImagenesExtra[index];
-                          return GestureDetector(
-                            onTap: () => showDialog(
-                              context: context,
-                              builder: (context) => Dialog(
-                                backgroundColor: Colors.transparent,
-                                child: GestureDetector(
-                                  onTap: () => Navigator.pop(context),
-                                  child: InteractiveViewer(
-                                    child: Image.network(
-                                      url,
-                                      fit: BoxFit.contain,
-                                      errorBuilder: (_, _, _) =>
-                                          const SizedBox(),
+                      child: ScrollConfiguration(
+                        behavior: ScrollConfiguration.of(context).copyWith(
+                          dragDevices: {
+                            PointerDeviceKind.touch,
+                            PointerDeviceKind.mouse,
+                            PointerDeviceKind.trackpad,
+                          },
+                        ),
+                        child: Scrollbar(
+                          thumbVisibility: false,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: juego.listaImagenesExtra.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(width: 8),
+                            itemBuilder: (context, index) {
+                              final url = juego.listaImagenesExtra[index];
+
+                              return GestureDetector(
+                                onTap: () => showDialog(
+                                  context: context,
+                                  builder: (context) => Dialog(
+                                    backgroundColor: Colors.transparent,
+                                    child: GestureDetector(
+                                      onTap: () => Navigator.pop(context),
+                                      child: InteractiveViewer(
+                                        child: Image.network(
+                                          url,
+                                          fit: BoxFit.contain,
+                                          errorBuilder: (_, _, _) =>
+                                              const SizedBox(),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.network(
-                                url,
-                                height: 180,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, _, _) => const SizedBox(),
-                              ),
-                            ),
-                          );
-                        },
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(
+                                    url,
+                                    height: 180,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, _, _) => const SizedBox(),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
                       ),
                     ),
                   ],

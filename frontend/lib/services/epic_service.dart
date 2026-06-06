@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 
 class EpicResultado {
   final String id;
@@ -105,28 +106,34 @@ class EpicService {
 
       final graphqlQuery =
           '''
-      {
-        Catalog {
-          catalogOffer(
-            namespace: "$namespace"
-            id: "$id"
-          ) {
-            title
-            description
-            keyImages {
-              type
-              url
-            }
-            categories {
-              path
-            }
-            tags {
-              name
+    {
+      Catalog {
+        catalogOffer(
+          namespace: "$namespace"
+          id: "$id"
+        ) {
+          title
+          description
+          keyImages {
+            type
+            url
+          }
+          categories {
+            path
+          }
+          tags {
+            name
+          }
+          catalogNs {
+            mappings(pageType: "productHome") {
+              pageSlug
+              pageType
             }
           }
         }
       }
-      ''';
+    }
+    ''';
 
       final response = await http
           .post(
@@ -141,45 +148,87 @@ class EpicService {
       final data = jsonDecode(response.body);
       final offer = data['data']?['Catalog']?['catalogOffer'];
       if (offer == null) return null;
-
       final images = offer['keyImages'] as List? ?? [];
-
+      final mappings = offer['catalogNs']?['mappings'] as List? ?? [];
       final tags = (offer['tags'] as List? ?? [])
           .map((t) => t['name'] as String? ?? '')
           .where((t) => t.isNotEmpty)
           .take(5)
           .join(', ');
-
       final descripcionRaw = offer['description'] as String? ?? '';
       final descripcion = descripcionRaw
           .replaceAll(RegExp(r'<[^>]*>'), '')
           .trim();
-
       final portadaGrid =
-          images.firstWhere(
+          (images.firstWhere(
                 (img) => img['type'] == 'OfferImageTall',
                 orElse: () => images.isNotEmpty ? images.first : {},
               )['url']
-              as String? ??
+              as String?) ??
           '';
-
       final portada =
-          images.firstWhere(
+          (images.firstWhere(
                 (img) =>
                     img['type'] == 'OfferImageWide' ||
                     img['type'] == 'DieselGameBoxWide',
                 orElse: () => images.isNotEmpty ? images.first : {},
               )['url']
-              as String? ??
+              as String?) ??
           '';
 
-      // Screenshots
-      final screenshots = images
+      // Obtener screenshots desde el storefront usando el pageSlug
+      String imagenesExtra = images
           .where((img) => img['type'] == 'featuredMedia')
-          .take(6)
+          .take(8)
           .map((img) => img['url'] as String? ?? '')
           .where((u) => u.isNotEmpty)
           .join(',');
+
+      try {
+        final slug = mappings.isNotEmpty
+            ? mappings.first['pageSlug'] as String? ?? ''
+            : '';
+
+        if (slug.isNotEmpty) {
+          final screenshotUri = Uri.parse(
+            'https://store-content.ak.epicgames.com/api/en-US/content/products/$slug',
+          );
+
+          final screenshotResponse = await http.get(screenshotUri);
+
+          if (screenshotResponse.statusCode == 200) {
+            final screenshotData = jsonDecode(screenshotResponse.body);
+
+            final pages = screenshotData['pages'];
+
+            if (pages is List && pages.isNotEmpty) {
+              final firstPage = pages.first as Map<String, dynamic>;
+
+              final pageData = firstPage['data'] as Map<String, dynamic>?;
+
+              if (pageData != null && imagenesExtra.isEmpty) {
+                final carousel = pageData['carousel'];
+
+                if (carousel != null) {
+                  final items = carousel['items'] as List? ?? [];
+
+                  final urls = items
+                      .map((item) => item['image']?['src'] as String? ?? '')
+                      .where((url) => url.isNotEmpty)
+                      .take(8)
+                      .toList();
+
+                  if (urls.isNotEmpty) {
+                    imagenesExtra = urls.join(',');
+                  }
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('SLUG ERROR: $e');
+      }
 
       return EpicDetalle(
         nombre: offer['title'] as String? ?? '',
@@ -187,7 +236,7 @@ class EpicService {
         portada: portada,
         portadaGrid: portadaGrid,
         generos: tags,
-        imagenesExtra: screenshots,
+        imagenesExtra: imagenesExtra,
       );
     } catch (_) {
       return null;

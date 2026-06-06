@@ -35,8 +35,8 @@ class Feed95AppState extends State<Feed95App> {
       _themeMode = tema == 'dark'
           ? ThemeMode.dark
           : tema == 'light'
-              ? ThemeMode.light
-              : ThemeMode.system;
+          ? ThemeMode.light
+          : ThemeMode.system;
     });
   }
 
@@ -47,29 +47,166 @@ class Feed95AppState extends State<Feed95App> {
       modo == ThemeMode.dark
           ? 'dark'
           : modo == ThemeMode.light
-              ? 'light'
-              : 'system',
+          ? 'light'
+          : 'system',
     );
     setState(() => _themeMode = modo);
   }
 
-  @override
+    @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Feed95',
       debugShowCheckedModeBanner: false,
+
+      // Usa el tema seleccionado por el usuario:
+      // ThemeMode.system = sigue Windows/Android
+      // ThemeMode.light = siempre claro
+      // ThemeMode.dark = siempre oscuro
       themeMode: _themeMode,
+
+      // ==========================================================
+      // TEMA CLARO
+      // ==========================================================
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.dark,
+
+        colorScheme: const ColorScheme.light(
+
+          // Color principal de la aplicación.
+          // Botones, switches, controles activos, etc.
+          primary: Color.fromARGB(255, 255, 54, 71),
+
+          // Color secundario utilizado en algunos widgets.
+          secondary: Color.fromARGB(255, 255, 54, 71),
+
+          // Color de tarjetas, dialogs y superficies elevadas.
+          surface: Colors.white,
         ),
-        useMaterial3: true,
+
+        // Fondo general de todas las pantallas.
+        scaffoldBackgroundColor: Colors.white,
+
+        // Barra superior (AppBar).
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0,
+        ),
+
+        // Tarjetas (Card).
+        cardTheme: const CardThemeData(
+          color: Colors.white,
+        ),
+
+        // Botones elevados (ElevatedButton).
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+
+            // Fondo del botón.
+            backgroundColor: Color.fromARGB(255, 255, 54, 71),
+
+            // Texto e iconos del botón.
+            foregroundColor: Colors.white,
+          ),
+        ),
+
+        // Campos de texto (TextField).
+        inputDecorationTheme: InputDecorationTheme(
+
+          // Borde normal.
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+
+          // Borde cuando tiene foco.
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(
+              color: Color.fromARGB(255, 255, 54, 71),
+              width: 2,
+            ),
+          ),
+        ),
       ),
+
+      // ==========================================================
+      // TEMA OSCURO
+      // ==========================================================
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.dark,
+
+        // Fondo principal de la aplicación.
+        // Similar al modo oscuro que usa ChatGPT.
+        scaffoldBackgroundColor: const Color(0xFF121212),
+
+        colorScheme: const ColorScheme.dark(
+
+          // Color de acento principal.
+          // Botones, sliders, switches, etc.
+          primary: Color.fromARGB(255, 255, 54, 71),
+
+          // Segundo color de acento.
+          secondary: Color.fromARGB(255, 255, 54, 71),
+
+          // Color de tarjetas y superficies elevadas.
+          surface: Color(0xFF222222),
+        ),
+
+        // Barra superior.
+        appBarTheme: const AppBarTheme(
+
+          // Fondo de la AppBar.
+          backgroundColor: Color(0xFF1E1E1E),
+
+          // Color del texto e iconos.
+          foregroundColor: Colors.white,
+
+          elevation: 0,
+        ),
+
+        // Tarjetas (Card).
+        cardTheme: const CardThemeData(
+
+          // Fondo de las tarjetas.
+          color: Color(0xFF262626),
+        ),
+
+        // Botones elevados.
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+
+            // Fondo rojo fuerte.
+            backgroundColor: Color.fromARGB(255, 255, 54, 71),
+
+            // Texto blanco.
+            foregroundColor: Colors.white,
+          ),
+        ),
+
+        // Campos de texto.
+        inputDecorationTheme: InputDecorationTheme(
+
+          // Borde normal.
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+
+          // Borde cuando tiene foco.
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(
+              color: Color.fromARGB(255, 255, 54, 71),
+              width: 2,
+            ),
+          ),
+        ),
+
+        // Color del divisor entre elementos.
+        dividerColor: Colors.white24,
+      ),
+
       home: const SplashScreen(),
     );
   }
@@ -99,10 +236,8 @@ class _SplashScreenState extends State<SplashScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => HomeScreen(
-              usuario: usuario,
-              appState: Feed95App.of(context),
-            ),
+            builder: (context) =>
+                HomeScreen(usuario: usuario, appState: Feed95App.of(context)),
           ),
         );
         return;
@@ -119,8 +254,6 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
-    );
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }
