@@ -92,7 +92,7 @@ class SteamService {
 
       // Screenshots del carrusel
       final screenshots = (info['screenshots'] as List? ?? [])
-          .take(6)
+          .take(10)
           .map((s) => s['path_full'] as String? ?? '')
           .where((s) => s.isNotEmpty)
           .join(',');

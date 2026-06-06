@@ -179,7 +179,7 @@ class EpicService {
       // Obtener screenshots desde el storefront usando el pageSlug
       String imagenesExtra = images
           .where((img) => img['type'] == 'featuredMedia')
-          .take(8)
+          .take(10)
           .map((img) => img['url'] as String? ?? '')
           .where((u) => u.isNotEmpty)
           .join(',');
@@ -215,7 +215,7 @@ class EpicService {
                   final urls = items
                       .map((item) => item['image']?['src'] as String? ?? '')
                       .where((url) => url.isNotEmpty)
-                      .take(8)
+                      .take(10)
                       .toList();
 
                   if (urls.isNotEmpty) {
