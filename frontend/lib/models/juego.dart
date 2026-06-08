@@ -13,6 +13,8 @@ class Juego {
   final String estado;
   final int usuarioId;
   final String? rutaEjecutable;
+  final int catalogo; // 0 = principal, 1 = secundario
+  final int? categoriaId;
 
   Juego({
     required this.id,
@@ -29,6 +31,8 @@ class Juego {
     required this.estado,
     required this.usuarioId,
     this.rutaEjecutable,
+    this.catalogo = 0,
+    this.categoriaId,
   });
 
   factory Juego.fromJson(Map<String, dynamic> json) {
@@ -47,6 +51,8 @@ class Juego {
       estado: json['estado'] ?? '',
       usuarioId: int.parse(json['usuario_id'].toString()),
       rutaEjecutable: json['ruta_ejecutable'],
+      catalogo: json['catalogo'] as int? ?? 0,
+      categoriaId: json['categoria_id'] as int?,
     );
   }
 

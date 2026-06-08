@@ -15,8 +15,14 @@ import 'f95_config_screen.dart';
 class JuegoFormScreen extends StatefulWidget {
   final Usuario usuario;
   final Juego? juego;
+  final int catalogoInicial;
 
-  const JuegoFormScreen({super.key, required this.usuario, this.juego});
+  const JuegoFormScreen({
+    super.key,
+    required this.usuario,
+    this.juego,
+    this.catalogoInicial = 0,
+  });
 
   @override
   State<JuegoFormScreen> createState() => _JuegoFormScreenState();
@@ -451,6 +457,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
         estado: estadoSeleccionado,
         usuarioId: widget.usuario.id,
         rutaEjecutable: rutaEjecutable,
+        catalogo: widget.catalogoInicial,
       );
     } else {
       respuesta = await ApiService.actualizarJuego(
@@ -467,6 +474,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
         generos: generosController.text,
         estado: estadoSeleccionado,
         rutaEjecutable: rutaEjecutable,
+        catalogo: widget.juego?.catalogo ?? widget.catalogoInicial,
       );
     }
 

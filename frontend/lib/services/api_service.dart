@@ -6,6 +6,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
 import '../models/juego.dart';
 import '../models/usuario.dart';
+import '../models/categoria.dart';
 
 class ApiService {
   static Database? _db;
@@ -37,7 +38,7 @@ class ApiService {
 
     return await openDatabase(
       path,
-      version: 6,
+      version: 7,
       onCreate: (db, version) async {
         await db.execute('''
         CREATE TABLE usuarios (
@@ -63,6 +64,18 @@ class ApiService {
           imagen_grid_local TEXT,
           imagenes_extra TEXT,
           usuario_id INTEGER NOT NULL,
+          catalogo INTEGER NOT NULL DEFAULT 0,
+          categoria_id INTEGER,
+          FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+        )
+      ''');
+        await db.execute('''
+        CREATE TABLE categorias (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          nombre TEXT NOT NULL,
+          imagen TEXT,
+          catalogo INTEGER NOT NULL DEFAULT 0,
+          usuario_id INTEGER NOT NULL,
           FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
         )
       ''');
@@ -87,6 +100,24 @@ class ApiService {
             'ALTER TABLE juegos ADD COLUMN imagen_grid_local TEXT',
           );
           await db.execute('ALTER TABLE juegos ADD COLUMN imagenes_extra TEXT');
+        }
+        if (oldVersion < 7) {
+          await db.execute(
+            'ALTER TABLE juegos ADD COLUMN catalogo INTEGER NOT NULL DEFAULT 0',
+          );
+          await db.execute(
+            'ALTER TABLE juegos ADD COLUMN categoria_id INTEGER',
+          );
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS categorias (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              nombre TEXT NOT NULL,
+              imagen TEXT,
+              catalogo INTEGER NOT NULL DEFAULT 0,
+              usuario_id INTEGER NOT NULL,
+              FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+          )
+        ''');
         }
       },
     );
@@ -179,12 +210,15 @@ class ApiService {
   }
 
   // Listar juegos del usuario
-  static Future<List<Juego>> obtenerJuegos(int usuarioId) async {
+  static Future<List<Juego>> obtenerJuegos(
+    int usuarioId, {
+    int catalogo = 0,
+  }) async {
     final database = await db;
     final result = await database.query(
       'juegos',
-      where: 'usuario_id = ?',
-      whereArgs: [usuarioId],
+      where: 'usuario_id = ? AND catalogo = ?',
+      whereArgs: [usuarioId, catalogo],
     );
     return result.map((item) => Juego.fromJson(item)).toList();
   }
@@ -204,6 +238,8 @@ class ApiService {
     String? imagenGrid,
     String? imagenGridLocal,
     String? imagenesExtra,
+    int catalogo = 0,
+    int? categoriaId,
   }) async {
     final database = await db;
     await database.insert('juegos', {
@@ -220,6 +256,8 @@ class ApiService {
       'imagen_grid_local': imagenGridLocal,
       'imagenes_extra': imagenesExtra,
       'usuario_id': usuarioId,
+      'catalogo': catalogo,
+      'categoria_id': categoriaId,
     });
     return {'success': true, 'message': 'Juego agregado correctamente'};
   }
@@ -239,6 +277,8 @@ class ApiService {
     String? imagenGrid,
     String? imagenGridLocal,
     String? imagenesExtra,
+    int catalogo = 0,
+    int? categoriaId,
   }) async {
     final database = await db;
     await database.update(
@@ -256,6 +296,8 @@ class ApiService {
         'imagen_grid': imagenGrid,
         'imagen_grid_local': imagenGridLocal,
         'imagenes_extra': imagenesExtra ?? '',
+        'catalogo': catalogo,
+        'categoria_id': categoriaId,
       },
       where: 'id = ?',
       whereArgs: [id],
@@ -270,10 +312,84 @@ class ApiService {
     return {'success': true, 'message': 'Juego eliminado correctamente'};
   }
 
+  // Listar categorías del usuario
+  static Future<List<Categoria>> obtenerCategorias(
+    int usuarioId,
+    int catalogo,
+  ) async {
+    final database = await db;
+    final result = await database.query(
+      'categorias',
+      where: 'usuario_id = ? AND catalogo = ?',
+      whereArgs: [usuarioId, catalogo],
+      orderBy: 'nombre ASC',
+    );
+    return result.map((item) => Categoria.fromJson(item)).toList();
+  }
+
+  // Crear categoría
+  static Future<Map<String, dynamic>> crearCategoria({
+    required String nombre,
+    String? imagen,
+    required int usuarioId,
+    required int catalogo,
+  }) async {
+    final database = await db;
+    await database.insert('categorias', {
+      'nombre': nombre,
+      'imagen': imagen,
+      'usuario_id': usuarioId,
+      'catalogo': catalogo,
+    });
+    return {'success': true, 'message': 'Categoría creada'};
+  }
+
+  //  Editar categoría
+  static Future<Map<String, dynamic>> editarCategoria({
+    required int id,
+    required String nombre,
+    String? imagen,
+  }) async {
+    final database = await db;
+    await database.update(
+      'categorias',
+      {'nombre': nombre, 'imagen': imagen},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    return {'success': true, 'message': 'Categoría actualizada'};
+  }
+
+  // Eliminar categoría (desasigna juegos)
+  static Future<void> eliminarCategoria(int id) async {
+    final database = await db;
+    // Desasignar juegos de esta categoría
+    await database.update(
+      'juegos',
+      {'categoria_id': null},
+      where: 'categoria_id = ?',
+      whereArgs: [id],
+    );
+    await database.delete('categorias', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // Asignar categoría a juego
+  static Future<void> asignarCategoria(int juegoId, int? categoriaId) async {
+    final database = await db;
+    await database.update(
+      'juegos',
+      {'categoria_id': categoriaId},
+      where: 'id = ?',
+      whereArgs: [juegoId],
+    );
+  }
+
+  // Convertir JSON a Usuario
   static Usuario convertirUsuario(Map<String, dynamic> json) {
     return Usuario.fromJson(json);
   }
 
+  // Obtener usuario por ID
   static Future<Usuario?> obtenerUsuarioPorId(int id) async {
     final database = await db;
     final result = await database.query(
