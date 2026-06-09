@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/juego.dart';
 import '../models/usuario.dart';
 import '../models/categoria.dart';
@@ -21,6 +22,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
   List<Categoria> categorias = [];
   bool cargando = true;
   bool panelAbierto = false;
+  bool _modosExtrasActivos = false;
   int catalogoActual = 0; // 0 = principal, 1 = secundario
   String busqueda = '';
   String? filtroEstado;
@@ -33,7 +35,18 @@ class _JuegosScreenState extends State<JuegosScreen> {
   @override
   void initState() {
     super.initState();
+    _cargarModosExtras();
     cargarTodo();
+  }
+
+  Future<void> _cargarModosExtras() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if (mounted) {
+      setState(() {
+        _modosExtrasActivos = prefs.getBool('f95_activado') ?? false;
+      });
+    }
   }
 
   Future<void> cargarTodo() async {
@@ -375,27 +388,29 @@ class _JuegosScreenState extends State<JuegosScreen> {
             onPressed: () => setState(() => panelAbierto = !panelAbierto),
           ),
           // Switcher de catálogo
-          IconButton(
-            icon: Icon(
-              catalogoActual == 0 ? Icons.lock_open : Icons.lock,
-              color: catalogoActual == 1
-                  ? const Color.fromARGB(255, 255, 54, 71)
-                  : null,
+          if (_modosExtrasActivos)
+            IconButton(
+              icon: Icon(
+                catalogoActual == 0 ? Icons.lock_open : Icons.lock,
+                color: catalogoActual == 1
+                    ? const Color.fromARGB(255, 255, 54, 71)
+                    : null,
+              ),
+              tooltip: catalogoActual == 0
+                  ? 'Ir a $nombreCatalogoSecundario'
+                  : 'Ir al catálogo principal',
+              onPressed: () {
+                setState(() {
+                  catalogoActual = catalogoActual == 0 ? 1 : 0;
+                  filtroCategoria = null;
+                  filtroEstado = null;
+                  busqueda = '';
+                  _busquedaController.clear();
+                });
+
+                cargarTodo();
+              },
             ),
-            tooltip: catalogoActual == 0
-                ? 'Ir a $nombreCatalogoSecundario'
-                : 'Ir al catálogo principal',
-            onPressed: () {
-              setState(() {
-                catalogoActual = catalogoActual == 0 ? 1 : 0;
-                filtroCategoria = null;
-                filtroEstado = null;
-                busqueda = '';
-                _busquedaController.clear();
-              });
-              cargarTodo();
-            },
-          ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
