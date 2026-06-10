@@ -27,6 +27,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
   String busqueda = '';
   String? filtroEstado;
   int? filtroCategoria; // null = todas
+  bool _modoReorden = false;
   final TextEditingController _busquedaController = TextEditingController();
 
   // Nombre editable del catálogo secundario
@@ -344,6 +345,115 @@ class _JuegosScreenState extends State<JuegosScreen> {
     );
   }
 
+  Widget _vistaGrid(List<Juego> lista) {
+    return GridView.builder(
+      padding: const EdgeInsets.all(12),
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 180,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: 0.65,
+      ),
+      itemCount: lista.length,
+      itemBuilder: (context, index) {
+        final juego = lista[index];
+        return _TarjetaJuego(
+          juego: juego,
+          categorias: categorias,
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    JuegoDetalleScreen(juego: juego, usuario: widget.usuario),
+              ),
+            );
+            cargarTodo();
+          },
+          onAsignarCategoria: (catId) async {
+            await ApiService.asignarCategoria(juego.id, catId);
+            cargarTodo();
+          },
+        );
+      },
+    );
+  }
+
+  Widget _vistaReorden(List<Juego> lista) {
+    return ReorderableListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: lista.length,
+      onReorder: (oldIndex, newIndex) async {
+        if (newIndex > oldIndex) newIndex--;
+        setState(() {
+          final item = juegos.removeAt(
+            juegos.indexWhere((j) => j.id == lista[oldIndex].id),
+          );
+          juegos.insert(
+            juegos.indexWhere((j) => j.id == lista[newIndex].id) + 1,
+            item,
+          );
+        });
+        await ApiService.guardarOrden(juegos.map((j) => j.id).toList());
+      },
+      itemBuilder: (context, index) {
+        final juego = lista[index];
+        return ListTile(
+          key: ValueKey(juego.id),
+          leading: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: juego.imagenGrid.isNotEmpty
+                ? Image.network(
+                    juego.imagenGrid,
+                    width: 40,
+                    height: 56,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) =>
+                        const Icon(Icons.videogame_asset),
+                  )
+                : const Icon(Icons.videogame_asset),
+          ),
+          title: Text(juego.nombre),
+          subtitle: Text(
+            '${juego.estado}${juego.version.isNotEmpty ? ' · v${juego.version}' : ''}',
+            style: const TextStyle(fontSize: 12),
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (juego.calificacion > 0)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.star, size: 14, color: Colors.amber),
+                      const SizedBox(width: 2),
+                      Text(
+                        '${juego.calificacion}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              const Icon(Icons.drag_handle),
+            ],
+          ),
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    JuegoDetalleScreen(juego: juego, usuario: widget.usuario),
+              ),
+            );
+            cargarTodo();
+          },
+        );
+      },
+    );
+  }
+
   void _mostrarMenuCategoria(Categoria cat) {
     showModalBottomSheet(
       context: context,
@@ -381,6 +491,12 @@ class _JuegosScreenState extends State<JuegosScreen> {
           catalogoActual == 0 ? 'Mi catálogo' : nombreCatalogoSecundario,
         ),
         actions: [
+          // Toggle modo reordenar
+          IconButton(
+            icon: Icon(_modoReorden ? Icons.grid_view : Icons.reorder),
+            tooltip: _modoReorden ? 'Ver grid' : 'Reordenar',
+            onPressed: () => setState(() => _modoReorden = !_modoReorden),
+          ),
           // Toggle panel lateral
           IconButton(
             icon: Icon(panelAbierto ? Icons.menu_open : Icons.menu),
@@ -441,7 +557,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
                       : const SizedBox.shrink(),
                 ),
 
-                // Grid principal
+                // Contenido Grid principal
                 Expanded(
                   child: juegosMostrados.isEmpty
                       ? Center(
@@ -453,43 +569,9 @@ class _JuegosScreenState extends State<JuegosScreen> {
                                 : 'No hay juegos en este catálogo',
                           ),
                         )
-                      : GridView.builder(
-                          padding: const EdgeInsets.all(12),
-                          gridDelegate:
-                              const SliverGridDelegateWithMaxCrossAxisExtent(
-                                maxCrossAxisExtent: 180,
-                                mainAxisSpacing: 12,
-                                crossAxisSpacing: 12,
-                                childAspectRatio: 0.65,
-                              ),
-                          itemCount: juegosMostrados.length,
-                          itemBuilder: (context, index) {
-                            final juego = juegosMostrados[index];
-                            return _TarjetaJuego(
-                              juego: juego,
-                              categorias: categorias,
-                              onTap: () async {
-                                await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => JuegoDetalleScreen(
-                                      juego: juego,
-                                      usuario: widget.usuario,
-                                    ),
-                                  ),
-                                );
-                                cargarTodo();
-                              },
-                              onAsignarCategoria: (catId) async {
-                                await ApiService.asignarCategoria(
-                                  juego.id,
-                                  catId,
-                                );
-                                cargarTodo();
-                              },
-                            );
-                          },
-                        ),
+                      : _modoReorden
+                      ? _vistaReorden(juegosMostrados)
+                      : _vistaGrid(juegosMostrados),
                 ),
               ],
             ),

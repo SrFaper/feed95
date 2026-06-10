@@ -38,7 +38,7 @@ class ApiService {
 
     return await openDatabase(
       path,
-      version: 7,
+      version: 8,
       onCreate: (db, version) async {
         await db.execute('''
         CREATE TABLE usuarios (
@@ -66,6 +66,7 @@ class ApiService {
           usuario_id INTEGER NOT NULL,
           catalogo INTEGER NOT NULL DEFAULT 0,
           categoria_id INTEGER,
+          posicion INTEGER NOT NULL DEFAULT 0,
           FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
         )
       ''');
@@ -118,6 +119,11 @@ class ApiService {
               FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
           )
         ''');
+        }
+        if (oldVersion < 8) {
+          await db.execute(
+            'ALTER TABLE juegos ADD COLUMN posicion INTEGER NOT NULL DEFAULT 0',
+          );
         }
       },
     );
@@ -219,6 +225,7 @@ class ApiService {
       'juegos',
       where: 'usuario_id = ? AND catalogo = ?',
       whereArgs: [usuarioId, catalogo],
+      orderBy: 'posicion ASC, id ASC',
     );
     return result.map((item) => Juego.fromJson(item)).toList();
   }
@@ -384,6 +391,21 @@ class ApiService {
     );
   }
 
+  // Guardar orden de juegos
+  static Future<void> guardarOrden(List<int> idsOrdenados) async {
+    final database = await db;
+    final batch = database.batch();
+    for (int i = 0; i < idsOrdenados.length; i++) {
+      batch.update(
+        'juegos',
+        {'posicion': i},
+        where: 'id = ?',
+        whereArgs: [idsOrdenados[i]],
+      );
+    }
+    await batch.commit(noResult: true);
+  }
+
   // Convertir JSON a Usuario
   static Usuario convertirUsuario(Map<String, dynamic> json) {
     return Usuario.fromJson(json);
@@ -406,12 +428,14 @@ class ApiService {
     final database = await db;
     final usuarios = await database.query('usuarios');
     final juegos = await database.query('juegos');
+    final categorias = await database.query('categorias');
 
     final backup = {
       'version': 1,
       'fecha': DateTime.now().toIso8601String(),
       'usuarios': usuarios,
       'juegos': juegos,
+      'categorias': categorias,
     };
 
     return jsonEncode(backup);
@@ -426,6 +450,8 @@ class ApiService {
       final usuarios = (backup['usuarios'] as List)
           .cast<Map<String, dynamic>>();
       final juegos = (backup['juegos'] as List).cast<Map<String, dynamic>>();
+      final categorias = (backup['categorias'] as List? ?? [])
+          .cast<Map<String, dynamic>>();
 
       // Insertar usuarios — si el nombre ya existe se omite
       for (final u in usuarios) {
@@ -440,16 +466,40 @@ class ApiService {
         }
       }
 
-      // Obtener mapa de nombres a IDs nuevos para reasignar juegos
+      // Obtener mapa de nombres a IDs nuevos para reasignar usuarios
       final usuariosNuevos = await database.query('usuarios');
+
       final mapaIds = <int, int>{};
+
       for (final u in usuarios) {
         final encontrado = usuariosNuevos.where(
           (n) => n['nombre'] == u['nombre'],
         );
+
         if (encontrado.isNotEmpty) {
           mapaIds[u['id'] as int] = encontrado.first['id'] as int;
         }
+      }
+
+      // Mapa de categorías viejas -> nuevas
+      final mapaCategorias = <int, int>{};
+
+      for (final c in categorias) {
+        final idUsuarioOriginal = c['usuario_id'] as int;
+        final idUsuarioNuevo = mapaIds[idUsuarioOriginal];
+
+        if (idUsuarioNuevo == null) continue;
+
+        try {
+          final nuevaId = await database.insert('categorias', {
+            'nombre': c['nombre'],
+            'imagen': c['imagen'],
+            'catalogo': c['catalogo'] ?? 0,
+            'usuario_id': idUsuarioNuevo,
+          });
+
+          mapaCategorias[c['id'] as int] = nuevaId;
+        } catch (_) {}
       }
 
       // Insertar juegos reasignando usuario_id
@@ -459,6 +509,11 @@ class ApiService {
         if (idNuevo == null) continue;
 
         try {
+          int? categoriaNueva;
+
+          if (j['categoria_id'] != null) {
+            categoriaNueva = mapaCategorias[j['categoria_id']];
+          }
           await database.insert('juegos', {
             'nombre': j['nombre'],
             'descripcion': j['descripcion'],
@@ -472,6 +527,9 @@ class ApiService {
             'imagen_grid': j['imagen_grid'],
             'imagen_grid_local': j['imagen_grid_local'],
             'imagenes_extra': j['imagenes_extra'],
+            'catalogo': j['catalogo'] ?? 0,
+            'categoria_id': categoriaNueva,
+            'posicion': j['posicion'] ?? 0,
             'usuario_id': idNuevo,
           });
         } catch (_) {
@@ -482,7 +540,7 @@ class ApiService {
       return {
         'success': true,
         'message':
-            'Backup restaurado: ${usuarios.length} perfil(es), ${juegos.length} juego(s)',
+            'Backup restaurado: ${usuarios.length} perfil(es), ${categorias.length} categoría(s), ${juegos.length} juego(s)',
       };
     } catch (e) {
       return {'success': false, 'message': 'Archivo de backup inválido'};
