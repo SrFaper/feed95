@@ -381,74 +381,95 @@ class _JuegosScreenState extends State<JuegosScreen> {
 
   Widget _vistaReorden(List<Juego> lista) {
     return ReorderableListView.builder(
+      buildDefaultDragHandles: false,
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: lista.length,
+      // El backend espera el orden completo, así que le pasamos la lista entera de IDs
       onReorder: (oldIndex, newIndex) async {
-        if (newIndex > oldIndex) newIndex--;
+        if (newIndex > oldIndex) {
+          newIndex--;
+        }
+        // Actualizar orden localmente
         setState(() {
-          final item = juegos.removeAt(
-            juegos.indexWhere((j) => j.id == lista[oldIndex].id),
-          );
-          juegos.insert(
-            juegos.indexWhere((j) => j.id == lista[newIndex].id) + 1,
-            item,
-          );
+          final item = lista.removeAt(oldIndex);
+          lista.insert(newIndex, item);
         });
+        // Guardar nuevo orden en el backend
         await ApiService.guardarOrden(juegos.map((j) => j.id).toList());
       },
       itemBuilder: (context, index) {
         final juego = lista[index];
-        return ListTile(
+
+        return Container(
           key: ValueKey(juego.id),
-          leading: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: juego.imagenGrid.isNotEmpty
-                ? Image.network(
-                    juego.imagenGrid,
-                    width: 40,
-                    height: 56,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) =>
-                        const Icon(Icons.videogame_asset),
-                  )
-                : const Icon(Icons.videogame_asset),
-          ),
-          title: Text(juego.nombre),
-          subtitle: Text(
-            '${juego.estado}${juego.version.isNotEmpty ? ' · v${juego.version}' : ''}',
-            style: const TextStyle(fontSize: 12),
-          ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (juego.calificacion > 0)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.star, size: 14, color: Colors.amber),
-                      const SizedBox(width: 2),
-                      Text(
-                        '${juego.calificacion}',
-                        style: const TextStyle(fontSize: 12),
+          child: ListTile(
+            leading: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: juego.imagenGrid.isNotEmpty
+                  ? Image.network(
+                      juego.imagenGrid,
+                      width: 40,
+                      height: 56,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) =>
+                          const Icon(Icons.videogame_asset),
+                    )
+                  : const Icon(Icons.videogame_asset),
+            ),
+            title: Text(juego.nombre),
+            subtitle: Text(
+              '${juego.estado}${juego.version.isNotEmpty ? ' · v${juego.version}' : ''}',
+              style: const TextStyle(fontSize: 12),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (juego.calificacion > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.star, size: 14, color: Colors.amber),
+                        const SizedBox(width: 2),
+                        Text(
+                          '${juego.calificacion}',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                ReorderableDragStartListener(
+                  index: index,
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.grab,
+                    child: Container(
+                      width: 90,
+                      height: 90,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ],
+                      child: const Center(
+                        child: Icon(Icons.drag_handle, color: Colors.grey),
+                      ),
+                    ),
                   ),
                 ),
-              const Icon(Icons.drag_handle),
-            ],
+              ],
+            ),
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      JuegoDetalleScreen(juego: juego, usuario: widget.usuario),
+                ),
+              );
+              cargarTodo();
+            },
           ),
-          onTap: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) =>
-                    JuegoDetalleScreen(juego: juego, usuario: widget.usuario),
-              ),
-            );
-            cargarTodo();
-          },
         );
       },
     );
@@ -483,7 +504,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final juegosMostrados = juegosFiltrados;
+    final juegosMostrados = _modoReorden ? juegos : juegosFiltrados;
 
     return Scaffold(
       appBar: AppBar(
@@ -493,7 +514,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
         actions: [
           // Toggle modo reordenar
           IconButton(
-            icon: Icon(_modoReorden ? Icons.grid_view : Icons.reorder),
+            icon: Icon(_modoReorden ? Icons.grid_view : Icons.swap_vert),
             tooltip: _modoReorden ? 'Ver grid' : 'Reordenar',
             onPressed: () => setState(() => _modoReorden = !_modoReorden),
           ),
@@ -529,21 +550,23 @@ class _JuegosScreenState extends State<JuegosScreen> {
             ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => JuegoFormScreen(
-                usuario: widget.usuario,
-                catalogoInicial: catalogoActual,
-              ),
+      floatingActionButton: _modoReorden
+          ? null
+          : FloatingActionButton(
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => JuegoFormScreen(
+                      usuario: widget.usuario,
+                      catalogoInicial: catalogoActual,
+                    ),
+                  ),
+                );
+                cargarTodo();
+              },
+              child: const Icon(Icons.add),
             ),
-          );
-          cargarTodo();
-        },
-        child: const Icon(Icons.add),
-      ),
       body: cargando
           ? const Center(child: CircularProgressIndicator())
           : Row(
