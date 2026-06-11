@@ -439,7 +439,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
                       ],
                     ),
                   ),
-
+                // Drag handle personalizado
                 ReorderableDragStartListener(
                   index: index,
                   child: MouseRegion(

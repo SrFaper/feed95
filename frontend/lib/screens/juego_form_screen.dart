@@ -9,8 +9,10 @@ import '../services/api_service.dart';
 import '../services/epic_service.dart';
 import '../services/steam_service.dart';
 import '../services/f95_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'f95_config_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../services/igdb_service.dart';
+import 'igdb_config_screen.dart';
 
 class JuegoFormScreen extends StatefulWidget {
   final Usuario usuario;
@@ -46,6 +48,8 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
   bool _buscandoEpic = false;
   bool _buscandoF95 = false;
   bool _f95Activado = false;
+  bool _buscandoIgdb = false;
+  bool _igdbConfigurado = false;
 
   final List<String> estados = [
     'Pendiente',
@@ -61,6 +65,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
   void initState() {
     super.initState();
     _cargarF95();
+    _cargarIgdb();
     if (widget.juego != null) {
       nombreController.text = widget.juego!.nombre;
       descripcionController.text = widget.juego!.descripcion;
@@ -307,6 +312,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     }
   }
 
+  // Busca el juego usando el nombre como consulta. Si no hay sesión, ofrece ir a configuración.
   Future<void> _buscarEnF95() async {
     final query = nombreController.text.trim();
     if (query.isEmpty) {
@@ -385,6 +391,96 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
           descripcion: detalle.descripcion,
           portada: detalle.portada,
           portadaGrid: r.portada.isNotEmpty ? r.portada : detalle.portada,
+          generos: detalle.generos,
+          imagenesExtra: detalle.imagenesExtra,
+        );
+      },
+    );
+  }
+
+  // ── IGDB ─────────────────────────────────────────────────
+
+  Future<void> _cargarIgdb() async {
+    final tiene = await IgdbService.tieneCredenciales();
+    if (mounted) {
+      setState(() {
+        _igdbConfigurado = tiene;
+      });
+    }
+  }
+
+  Future<void> _buscarEnIgdb() async {
+    final query = nombreController.text.trim();
+    if (query.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Escribe un nombre para buscar')),
+      );
+      return;
+    }
+
+    if (!_igdbConfigurado) {
+      final navigator = Navigator.of(context);
+      final configurar = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('IGDB'),
+          content: const Text('Necesitas configurar IGDB primero.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Configurar'),
+            ),
+          ],
+        ),
+      );
+      if (configurar == true) {
+        await navigator.push(
+          MaterialPageRoute(builder: (context) => const IgdbConfigScreen()),
+        );
+        _cargarIgdb();
+      }
+      return;
+    }
+
+    setState(() => _buscandoIgdb = true);
+    final resultados = await IgdbService.buscar(query);
+    setState(() => _buscandoIgdb = false);
+    if (!mounted) return;
+
+    if (resultados.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se encontraron resultados en IGDB')),
+      );
+      return;
+    }
+
+    await _mostrarResultados(
+      titulo: 'Resultados en IGDB',
+      resultados: resultados,
+      nombre: (r) => r.nombre,
+      portada: (r) => r.portada,
+      onSeleccionar: (r) async {
+        setState(() => cargando = true);
+        final detalle = await IgdbService.obtenerDetalle(r.id);
+        setState(() => cargando = false);
+        if (!mounted) return;
+        if (detalle == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No se pudieron obtener los detalles'),
+            ),
+          );
+          return;
+        }
+        _rellenarCampos(
+          nombre: detalle.nombre,
+          descripcion: detalle.descripcion,
+          portada: detalle.portada,
+          portadaGrid: detalle.portadaGrid,
           generos: detalle.generos,
           imagenesExtra: detalle.imagenesExtra,
         );
@@ -517,18 +613,28 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
                   'Buscar en:',
                   style: TextStyle(fontSize: 12, color: Colors.grey),
                 ),
+                // Botón Steam siempre disponible
                 const SizedBox(width: 8),
                 _botonFuente(
                   label: 'Steam',
                   cargando: _buscandoSteam,
                   onTap: _buscarEnSteam,
                 ),
+                // Botón Epic siempre disponible
                 const SizedBox(width: 6),
                 _botonFuente(
                   label: 'Epic',
                   cargando: _buscandoEpic,
                   onTap: _buscarEnEpic,
                 ),
+                // Botón IGDB siempre disponible
+                const SizedBox(width: 6),
+                _botonFuente(
+                  label: 'IGDB',
+                  cargando: _buscandoIgdb,
+                  onTap: _buscarEnIgdb,
+                ),
+                // Botón F95 solo si está activado y configurado
                 if (_f95Activado) ...[
                   const SizedBox(width: 6),
                   _botonFuente(

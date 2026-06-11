@@ -9,6 +9,7 @@ import '../main.dart';
 import 'juegos_screen.dart';
 import 'perfiles_screen.dart';
 import 'perfil_screen.dart';
+import 'igdb_config_screen.dart';
 import 'f95_config_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -221,6 +222,8 @@ class _HomeScreenState extends State<HomeScreen> {
               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
+
+            // Botón para editar perfil
             TextButton.icon(
               icon: const Icon(Icons.edit, size: 16),
               label: const Text('Editar perfil'),
@@ -243,6 +246,20 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
 
+            // Botón para configurar IGDB
+            const SizedBox(height: 8),
+            TextButton.icon(
+              icon: const Icon(Icons.sports_esports, size: 16),
+              label: const Text('Configurar IGDB'),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const IgdbConfigScreen(),
+                ),
+              ),
+            ),
+
+            // Mostrar botón de configuración de F95Zone si está activado
             FutureBuilder<bool>(
               future: SharedPreferences.getInstance().then(
                 (p) => p.getBool('f95_activado') ?? false,
