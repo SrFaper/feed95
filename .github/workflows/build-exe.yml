@@ -56,7 +56,7 @@ jobs:
         with:
           tag_name: beta-windows
           name: "Feed95 - Versión Beta (Windows)"
-          body: "Versión de pruebas para Windows. Se sobrescribe automáticamente."
+          body: "Versión beta de la aplicación para Windows."
           # Para que sea un lanzamiento oficial solo debo cambiar el prerelease a false
           prerelease: true
           files: feed95.zip

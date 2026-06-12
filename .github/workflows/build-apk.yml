@@ -55,7 +55,7 @@ jobs:
         with:
           tag_name: beta-android
           name: "Feed95 - Versión Beta (Android)"
-          body: "Versión de pruebas constante. Se sobrescribe automáticamente en cada actualización."
+          body: "Versión beta de la aplicación para Android."
           # Para que sea un lanzamiento oficial solo debo cambiar el prerelease a false
           prerelease: true
           files: feed95.apk

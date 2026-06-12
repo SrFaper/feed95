@@ -363,7 +363,7 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         }
       },
-      child: AvatarUsuario(usuario: usuario, size: 130),
+      child: AvatarUsuario(usuario: usuario, size: 150),
     );
 
     final colAvatar = Column(
