@@ -86,7 +86,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
           ElevatedButton(
             onPressed: () {
               setState(() => colorSeleccionado = colorTemporal);
-              widget.appState?.cambiarColor(colorTemporal);
               Navigator.pop(context);
             },
             child: const Text('Aplicar'),

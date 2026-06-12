@@ -276,14 +276,14 @@ class _JuegosScreenState extends State<JuegosScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         color: seleccionado
-            ? const Color.fromARGB(255, 255, 54, 71).withValues(alpha: 0.15)
+            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.15)
             : null,
         child: Text(
           label,
           style: TextStyle(
             fontSize: 13,
             fontWeight: seleccionado ? FontWeight.bold : FontWeight.normal,
-            color: seleccionado ? const Color.fromARGB(255, 255, 54, 71) : null,
+            color: seleccionado ? Theme.of(context).colorScheme.primary : null,
           ),
         ),
       ),
@@ -300,7 +300,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         color: seleccionada
-            ? const Color.fromARGB(255, 255, 54, 71).withValues(alpha: 0.15)
+            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.15)
             : null,
         child: Row(
           children: [
@@ -333,7 +333,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
                       ? FontWeight.bold
                       : FontWeight.normal,
                   color: seleccionada
-                      ? const Color.fromARGB(255, 255, 54, 71)
+                      ? Theme.of(context).colorScheme.primary
                       : null,
                 ),
                 overflow: TextOverflow.ellipsis,
@@ -530,7 +530,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
               icon: Icon(
                 catalogoActual == 0 ? Icons.lock_open : Icons.lock,
                 color: catalogoActual == 1
-                    ? const Color.fromARGB(255, 255, 54, 71)
+                    ? Theme.of(context).colorScheme.primary
                     : null,
               ),
               tooltip: catalogoActual == 0
@@ -721,7 +721,7 @@ class _TarjetaJuego extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorEstado = _colorEstado(juego.estado);
+    final colorEstado = _colorEstado(juego.estado, context);
 
     return GestureDetector(
       onTap: onTap,
@@ -819,16 +819,17 @@ class _TarjetaJuego extends StatelessWidget {
     );
   }
 
-  Color _colorEstado(String estado) {
+  Color _colorEstado(String estado, BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     switch (estado) {
       case 'Jugando':
-        return const Color.fromARGB(255, 255, 54, 71);
+        return primary;
       case 'Completado':
-        return const Color.fromARGB(255, 255, 82, 98);
+        return primary.withValues(alpha: 0.75);
       case 'Abandonado':
-        return const Color.fromARGB(255, 90, 42, 54);
+        return Colors.grey.shade700;
       default:
-        return const Color.fromARGB(255, 122, 122, 122);
+        return Colors.grey.shade500;
     }
   }
 }

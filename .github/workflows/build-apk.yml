@@ -47,13 +47,13 @@ jobs:
         uses: dev-drprasad/delete-tag-and-release@v1.1
         with:
           delete_release: true
-          tag_name: beta
+          tag_name: beta-android
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Crear Pre-release 'beta'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: beta
+          tag_name: beta-android
           name: "Feed95 - Versión Beta (Android)"
           body: "Versión de pruebas constante. Se sobrescribe automáticamente en cada actualización."
           # Para que sea un lanzamiento oficial solo debo cambiar el prerelease a false

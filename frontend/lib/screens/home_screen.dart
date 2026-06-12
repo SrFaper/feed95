@@ -72,8 +72,8 @@ class _HomeScreenState extends State<HomeScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content:
-                  Text('Exportar backup no está disponible en Web')),
+            content: Text('Exportar backup no está disponible en Web'),
+          ),
         );
         return;
       }
@@ -93,8 +93,9 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Error al exportar: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al exportar: $e')));
     }
   }
 
@@ -104,8 +105,8 @@ class _HomeScreenState extends State<HomeScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content:
-                  Text('Importar backup no está disponible en Web')),
+            content: Text('Importar backup no está disponible en Web'),
+          ),
         );
         return;
       }
@@ -121,15 +122,18 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (context) => AlertDialog(
           title: const Text('Importar backup'),
           content: const Text(
-              'Se agregarán los perfiles y juegos del backup. '
-              'Los perfiles con el mismo nombre serán omitidos.'),
+            'Se agregarán los perfiles y juegos del backup. '
+            'Los perfiles con el mismo nombre serán omitidos.',
+          ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancelar')),
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar'),
+            ),
             ElevatedButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Importar')),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Importar'),
+            ),
           ],
         ),
       );
@@ -138,12 +142,14 @@ class _HomeScreenState extends State<HomeScreen> {
       final contenido = await archivo.readAsString();
       final respuesta = await ApiService.importarBackup(contenido);
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(respuesta['message'])));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(respuesta['message'])));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Error al importar: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al importar: $e')));
     }
   }
 
@@ -180,12 +186,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('CONFIGURACIONES',
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey.shade500,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.2)),
+                      Text(
+                        'CONFIGURACIONES',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade500,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
                       const SizedBox(height: 10),
                       _botonSheet(
                         icon: Icons.sports_esports,
@@ -195,7 +204,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (_) => const IgdbConfigScreen()),
+                              builder: (_) => const IgdbConfigScreen(),
+                            ),
                           );
                         },
                       ),
@@ -209,7 +219,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (_) => const F95ConfigScreen()),
+                                builder: (_) => const F95ConfigScreen(),
+                              ),
                             );
                           },
                         ),
@@ -223,12 +234,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('SISTEMA',
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey.shade500,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.2)),
+                      Text(
+                        'SISTEMA',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade500,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
                       const SizedBox(height: 10),
                       _botonSheet(
                         icon: Icons.upload,
@@ -267,8 +281,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: Theme.of(context).brightness == Brightness.dark
               ? const Color(0xFF2A2A2A)
@@ -285,9 +298,11 @@ class _HomeScreenState extends State<HomeScreen> {
             Icon(icon, size: 16, color: Colors.grey.shade500),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(label,
-                  style: const TextStyle(fontSize: 13),
-                  overflow: TextOverflow.ellipsis),
+              child: Text(
+                label,
+                style: const TextStyle(fontSize: 13),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
@@ -299,14 +314,18 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(valor,
-            style: const TextStyle(
-                fontSize: 18, fontWeight: FontWeight.bold)),
-        Text(etiqueta.toUpperCase(),
-            style: TextStyle(
-                fontSize: 10,
-                color: Colors.grey.shade500,
-                letterSpacing: 0.5)),
+        Text(
+          valor,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        Text(
+          etiqueta.toUpperCase(),
+          style: TextStyle(
+            fontSize: 10,
+            color: Colors.grey.shade500,
+            letterSpacing: 0.5,
+          ),
+        ),
       ],
     );
   }
@@ -334,15 +353,17 @@ class _HomeScreenState extends State<HomeScreen> {
           if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(!activado
-                  ? 'Modo extendido activado'
-                  : 'Modo extendido desactivado'),
+              content: Text(
+                !activado
+                    ? 'Modo extendido activado'
+                    : 'Modo extendido desactivado',
+              ),
               duration: const Duration(seconds: 2),
             ),
           );
         }
       },
-      child: AvatarUsuario(usuario: usuario, size: 96),
+      child: AvatarUsuario(usuario: usuario, size: 130),
     );
 
     final colAvatar = Column(
@@ -351,8 +372,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 10),
         TextButton.icon(
           icon: const Icon(Icons.edit, size: 14),
-          label: const Text('Editar perfil',
-              style: TextStyle(fontSize: 13)),
+          label: const Text('Editar perfil', style: TextStyle(fontSize: 13)),
           style: TextButton.styleFrom(
             foregroundColor: Theme.of(context).colorScheme.primary,
             padding: EdgeInsets.zero,
@@ -367,8 +387,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   usuario: usuario,
                   appState: widget.appState,
                   onActualizado: () async {
-                    final actualizado =
-                        await ApiService.obtenerUsuarioPorId(usuario.id);
+                    final actualizado = await ApiService.obtenerUsuarioPorId(
+                      usuario.id,
+                    );
                     if (actualizado != null && mounted) {
                       setState(() => usuario = actualizado);
                       widget.appState?.cambiarColor(actualizado.color);
@@ -390,8 +411,7 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         Text(
           'Bienvenido, ${usuario.nombre}',
-          style: const TextStyle(
-              fontSize: 22, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           textAlign: esAncho ? TextAlign.left : TextAlign.center,
         ),
         const SizedBox(height: 14),
@@ -400,23 +420,26 @@ class _HomeScreenState extends State<HomeScreen> {
             await Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) =>
-                    JuegosScreen(usuario: usuario),
+                builder: (context) => JuegosScreen(usuario: usuario),
               ),
             );
             _cargarTodo();
           },
           style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 20, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
           child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.videogame_asset, size: 18),
               SizedBox(width: 8),
-              Text('Mi catálogo',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
+              Text(
+                'Mi catálogo',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
               SizedBox(width: 8),
               Icon(Icons.arrow_forward, size: 16),
             ],
@@ -427,15 +450,13 @@ class _HomeScreenState extends State<HomeScreen> {
         Container(
           decoration: BoxDecoration(
             border: Border(
-              top: BorderSide(
-                  color: Theme.of(context).dividerColor, width: 1),
+              top: BorderSide(color: Theme.of(context).dividerColor, width: 1),
             ),
           ),
           child: Padding(
             padding: const EdgeInsets.only(top: 12),
             child: Row(
-              mainAxisSize:
-                  esAncho ? MainAxisSize.min : MainAxisSize.max,
+              mainAxisSize: esAncho ? MainAxisSize.min : MainAxisSize.max,
               mainAxisAlignment: esAncho
                   ? MainAxisAlignment.start
                   : MainAxisAlignment.center,
@@ -463,13 +484,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       );
     } else {
-      return Column(
-        children: [
-          colAvatar,
-          const SizedBox(height: 20),
-          colInfo,
-        ],
-      );
+      return Column(children: [colAvatar, const SizedBox(height: 20), colInfo]);
     }
   }
 
@@ -480,8 +495,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Feed95',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Feed95',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(
             icon: Icon(
@@ -491,10 +508,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             tooltip: 'Cambiar tema',
             onPressed: () {
-              final isDark =
-                  Theme.of(context).brightness == Brightness.dark;
-              appState?.cambiarTema(
-                  isDark ? ThemeMode.light : ThemeMode.dark);
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              appState?.cambiarTema(isDark ? ThemeMode.light : ThemeMode.dark);
             },
           ),
           IconButton(
@@ -521,8 +536,8 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           border: Border(
-              top:
-                  BorderSide(color: Theme.of(context).dividerColor)),
+            top: BorderSide(color: Theme.of(context).dividerColor),
+          ),
         ),
         child: SafeArea(
           child: InkWell(
@@ -537,9 +552,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     'Configuraciones y Backup',
                     style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey.shade600),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade600,
+                    ),
                   ),
                 ],
               ),

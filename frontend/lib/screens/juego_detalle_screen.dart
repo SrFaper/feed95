@@ -31,15 +31,16 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
   }
 
   Color _colorEstado(String estado) {
+    final primary = Theme.of(context).colorScheme.primary;
     switch (estado) {
       case 'Jugando':
-        return const Color.fromARGB(255, 255, 54, 71);
+        return primary;
       case 'Completado':
-        return const Color.fromARGB(255, 255, 82, 98);
+        return primary.withValues(alpha: 0.75);
       case 'Abandonado':
-        return const Color.fromARGB(255, 90, 42, 54);
+        return Colors.grey.shade700;
       default:
-        return const Color.fromARGB(255, 122, 122, 122);
+        return Colors.grey.shade500;
     }
   }
 
