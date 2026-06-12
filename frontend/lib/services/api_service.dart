@@ -38,7 +38,7 @@ class ApiService {
 
     return await openDatabase(
       path,
-      version: 8,
+      version: 9,
       onCreate: (db, version) async {
         await db.execute('''
         CREATE TABLE usuarios (
@@ -46,6 +46,7 @@ class ApiService {
           nombre TEXT NOT NULL UNIQUE,
           password TEXT NOT NULL,
           color INTEGER NOT NULL DEFAULT 4280391411
+          imagen_perfil TEXT,
         )
       ''');
         await db.execute('''
@@ -125,6 +126,11 @@ class ApiService {
             'ALTER TABLE juegos ADD COLUMN posicion INTEGER NOT NULL DEFAULT 0',
           );
         }
+        if (oldVersion < 9) {
+          await db.execute(
+            'ALTER TABLE usuarios ADD COLUMN imagen_perfil TEXT',
+          );
+        }
       },
     );
   }
@@ -192,6 +198,8 @@ class ApiService {
     required String nombre,
     String? password,
     int? color,
+    String? imagenPerfil,
+    bool limpiarImagen = false,
   }) async {
     final database = await db;
     try {
@@ -200,6 +208,11 @@ class ApiService {
         data['password'] = _hashPassword(password);
       }
       if (color != null) data['color'] = color;
+      if (limpiarImagen) {
+        data['imagen_perfil'] = null;
+      } else if (imagenPerfil != null) {
+        data['imagen_perfil'] = imagenPerfil;
+      }
       await database.update('usuarios', data, where: 'id = ?', whereArgs: [id]);
       return {'success': true, 'message': 'Perfil actualizado correctamente'};
     } catch (e) {
@@ -404,6 +417,33 @@ class ApiService {
       );
     }
     await batch.commit(noResult: true);
+  }
+
+  // Obtener estadísticas del usuario
+  static Future<Map<String, dynamic>> obtenerEstadisticas(int usuarioId) async {
+    final database = await db;
+    final total =
+        (await database.rawQuery(
+              'SELECT COUNT(*) as c FROM juegos WHERE usuario_id = ?',
+              [usuarioId],
+            )).first['c']
+            as int? ??
+        0;
+    final completados =
+        (await database.rawQuery(
+              'SELECT COUNT(*) as c FROM juegos WHERE usuario_id = ? AND estado = ?',
+              [usuarioId, 'Completado'],
+            )).first['c']
+            as int? ??
+        0;
+    final jugando =
+        (await database.rawQuery(
+              'SELECT COUNT(*) as c FROM juegos WHERE usuario_id = ? AND estado = ?',
+              [usuarioId, 'Jugando'],
+            )).first['c']
+            as int? ??
+        0;
+    return {'total': total, 'completados': completados, 'jugando': jugando};
   }
 
   // Convertir JSON a Usuario

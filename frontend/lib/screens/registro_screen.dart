@@ -1,12 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../services/api_service.dart';
-
-const List<Color> coloresDisponibles = [
-  Color(0xFF607D8B), Color(0xFFE91E63), Color(0xFF9C27B0),
-  Color(0xFF3F51B5), Color(0xFF2196F3), Color(0xFF009688),
-  Color(0xFF4CAF50), Color(0xFFFF9800), Color(0xFFF44336),
-  Color(0xFF795548), Color(0xFF00BCD4), Color(0xFFFFEB3B),
-];
 
 class RegistroScreen extends StatefulWidget {
   const RegistroScreen({super.key});
@@ -19,8 +13,41 @@ class _RegistroScreenState extends State<RegistroScreen> {
   final nombreController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmarPasswordController = TextEditingController();
-  Color colorSeleccionado = coloresDisponibles[0];
+  Color colorSeleccionado = const Color.fromARGB(255, 255, 54, 71);
   bool cargando = false;
+
+  void _abrirColorPicker() {
+    Color colorTemporal = colorSeleccionado;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Elige un color'),
+        content: SingleChildScrollView(
+          child: ColorPicker(
+            pickerColor: colorTemporal,
+            onColorChanged: (color) => colorTemporal = color,
+            pickerAreaHeightPercent: 0.7,
+            enableAlpha: false,
+            hexInputBar: true,
+            displayThumbColor: true,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() => colorSeleccionado = colorTemporal);
+              Navigator.pop(context);
+            },
+            child: const Text('Aplicar'),
+          ),
+        ],
+      ),
+    );
+  }
 
   Future<void> registrar() async {
     if (nombreController.text.isEmpty ||
@@ -31,30 +58,25 @@ class _RegistroScreenState extends State<RegistroScreen> {
       );
       return;
     }
-
     if (passwordController.text != confirmarPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Las contraseñas no coinciden')),
+        const SnackBar(
+            content: Text('Las contraseñas no coinciden')),
       );
       return;
     }
 
     setState(() => cargando = true);
-
     final respuesta = await ApiService.registrarUsuario(
       nombre: nombreController.text,
       password: passwordController.text,
       color: colorSeleccionado.toARGB32(),
     );
-
     setState(() => cargando = false);
-
     if (!mounted) return;
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(respuesta['message'])),
     );
-
     if (respuesta['success'] == true) {
       Navigator.pop(context);
     }
@@ -62,6 +84,10 @@ class _RegistroScreenState extends State<RegistroScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final inicial = nombreController.text.isNotEmpty
+        ? nombreController.text[0].toUpperCase()
+        : '?';
+
     return Scaffold(
       appBar: AppBar(title: const Text('Nuevo perfil')),
       body: Padding(
@@ -72,65 +98,68 @@ class _RegistroScreenState extends State<RegistroScreen> {
             children: [
               const SizedBox(height: 16),
               Center(
-                child: CircleAvatar(
-                  radius: 48,
-                  backgroundColor: colorSeleccionado,
-                  child: Text(
-                    nombreController.text.isNotEmpty
-                        ? nombreController.text[0].toUpperCase()
-                        : '?',
-                    style: const TextStyle(fontSize: 40, color: Colors.white, fontWeight: FontWeight.bold),
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: colorSeleccionado,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: Text(
+                      inicial,
+                      style: const TextStyle(
+                          fontSize: 36,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
               ),
               const SizedBox(height: 24),
               TextField(
                 controller: nombreController,
-                decoration: const InputDecoration(labelText: 'Usuario'),
+                decoration:
+                    const InputDecoration(labelText: 'Usuario'),
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: passwordController,
-                decoration: const InputDecoration(labelText: 'Contraseña'),
+                decoration:
+                    const InputDecoration(labelText: 'Contraseña'),
                 obscureText: true,
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: confirmarPasswordController,
-                decoration: const InputDecoration(labelText: 'Repetir contraseña'),
+                decoration: const InputDecoration(
+                    labelText: 'Repetir contraseña'),
                 obscureText: true,
               ),
               const SizedBox(height: 24),
-              const Text('Color del perfil', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('Color del perfil',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: coloresDisponibles.map((color) {
-                  final seleccionado = color == colorSeleccionado;
-                  return GestureDetector(
-                    onTap: () => setState(() => colorSeleccionado = color),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                        border: seleccionado
-                            ? Border.all(color: Colors.white, width: 3)
-                            : null,
-                        boxShadow: seleccionado
-                            ? [BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 8)]
-                            : null,
-                      ),
-                      child: seleccionado
-                          ? const Icon(Icons.check, color: Colors.white, size: 20)
-                          : null,
-                    ),
-                  );
-                }).toList(),
+              GestureDetector(
+                onTap: _abrirColorPicker,
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: colorSeleccionado,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: Colors.grey.shade400, width: 2),
+                  ),
+                  child:
+                      const Icon(Icons.colorize, color: Colors.white),
+                ),
               ),
+              const SizedBox(height: 8),
+              Text('Toca para elegir un color',
+                  style: TextStyle(
+                      fontSize: 12, color: Colors.grey.shade500)),
               const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,

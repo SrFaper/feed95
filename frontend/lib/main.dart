@@ -21,22 +21,26 @@ class Feed95App extends StatefulWidget {
 
 class Feed95AppState extends State<Feed95App> {
   ThemeMode _themeMode = ThemeMode.system;
+  Color _accentColor = const Color.fromARGB(255, 255, 54, 71);
 
   @override
   void initState() {
     super.initState();
-    _cargarTema();
+    _cargarPreferencias();
   }
 
-  Future<void> _cargarTema() async {
+  Future<void> _cargarPreferencias() async {
     final prefs = await SharedPreferences.getInstance();
     final tema = prefs.getString('theme_mode') ?? 'system';
+    final colorInt = prefs.getInt('accent_color') ??
+        const Color.fromARGB(255, 255, 54, 71).toARGB32();
     setState(() {
       _themeMode = tema == 'dark'
           ? ThemeMode.dark
           : tema == 'light'
-          ? ThemeMode.light
-          : ThemeMode.system;
+              ? ThemeMode.light
+              : ThemeMode.system;
+      _accentColor = Color(colorInt);
     });
   }
 
@@ -47,166 +51,86 @@ class Feed95AppState extends State<Feed95App> {
       modo == ThemeMode.dark
           ? 'dark'
           : modo == ThemeMode.light
-          ? 'light'
-          : 'system',
+              ? 'light'
+              : 'system',
     );
     setState(() => _themeMode = modo);
   }
 
-    @override
+  Future<void> cambiarColor(Color color) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('accent_color', color.toARGB32());
+    setState(() => _accentColor = color);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Feed95',
       debugShowCheckedModeBanner: false,
-
-      // Usa el tema seleccionado por el usuario:
-      // ThemeMode.system = sigue Windows/Android
-      // ThemeMode.light = siempre claro
-      // ThemeMode.dark = siempre oscuro
       themeMode: _themeMode,
-
-      // ==========================================================
-      // TEMA CLARO
-      // ==========================================================
       theme: ThemeData(
         useMaterial3: true,
-
-        colorScheme: const ColorScheme.light(
-
-          // Color principal de la aplicación.
-          // Botones, switches, controles activos, etc.
-          primary: Color.fromARGB(255, 255, 54, 71),
-
-          // Color secundario utilizado en algunos widgets.
-          secondary: Color.fromARGB(255, 255, 54, 71),
-
-          // Color de tarjetas, dialogs y superficies elevadas.
+        colorScheme: ColorScheme.light(
+          primary: _accentColor,
+          secondary: _accentColor,
           surface: Colors.white,
         ),
-
-        // Fondo general de todas las pantallas.
         scaffoldBackgroundColor: Colors.white,
-
-        // Barra superior (AppBar).
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
           elevation: 0,
         ),
-
-        // Tarjetas (Card).
-        cardTheme: const CardThemeData(
-          color: Colors.white,
-        ),
-
-        // Botones elevados (ElevatedButton).
+        cardTheme: const CardThemeData(color: Colors.white),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-
-            // Fondo del botón.
-            backgroundColor: Color.fromARGB(255, 255, 54, 71),
-
-            // Texto e iconos del botón.
+            backgroundColor: _accentColor,
             foregroundColor: Colors.white,
           ),
         ),
-
-        // Campos de texto (TextField).
         inputDecorationTheme: InputDecorationTheme(
-
-          // Borde normal.
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-
-          // Borde cuando tiene foco.
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(
-              color: Color.fromARGB(255, 255, 54, 71),
-              width: 2,
-            ),
+            borderSide: BorderSide(color: _accentColor, width: 2),
           ),
         ),
       ),
-
-      // ==========================================================
-      // TEMA OSCURO
-      // ==========================================================
       darkTheme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
-
-        // Fondo principal de la aplicación.
-        // Similar al modo oscuro que usa ChatGPT.
         scaffoldBackgroundColor: const Color(0xFF121212),
-
-        colorScheme: const ColorScheme.dark(
-
-          // Color de acento principal.
-          // Botones, sliders, switches, etc.
-          primary: Color.fromARGB(255, 255, 54, 71),
-
-          // Segundo color de acento.
-          secondary: Color.fromARGB(255, 255, 54, 71),
-
-          // Color de tarjetas y superficies elevadas.
-          surface: Color(0xFF222222),
+        colorScheme: ColorScheme.dark(
+          primary: _accentColor,
+          secondary: _accentColor,
+          surface: const Color(0xFF222222),
         ),
-
-        // Barra superior.
         appBarTheme: const AppBarTheme(
-
-          // Fondo de la AppBar.
           backgroundColor: Color(0xFF1E1E1E),
-
-          // Color del texto e iconos.
           foregroundColor: Colors.white,
-
           elevation: 0,
         ),
-
-        // Tarjetas (Card).
-        cardTheme: const CardThemeData(
-
-          // Fondo de las tarjetas.
-          color: Color(0xFF262626),
-        ),
-
-        // Botones elevados.
+        cardTheme: const CardThemeData(color: Color(0xFF262626)),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-
-            // Fondo rojo fuerte.
-            backgroundColor: Color.fromARGB(255, 255, 54, 71),
-
-            // Texto blanco.
+            backgroundColor: _accentColor,
             foregroundColor: Colors.white,
           ),
         ),
-
-        // Campos de texto.
         inputDecorationTheme: InputDecorationTheme(
-
-          // Borde normal.
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-
-          // Borde cuando tiene foco.
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(
-              color: Color.fromARGB(255, 255, 54, 71),
-              width: 2,
-            ),
+            borderSide: BorderSide(color: _accentColor, width: 2),
           ),
         ),
-
-        // Color del divisor entre elementos.
         dividerColor: Colors.white24,
       ),
-
       home: const SplashScreen(),
     );
   }
@@ -229,21 +153,21 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _verificarSesion() async {
     final prefs = await SharedPreferences.getInstance();
     final usuarioId = prefs.getInt('usuario_id');
-
     if (usuarioId != null) {
       final usuario = await ApiService.obtenerUsuarioPorId(usuarioId);
       if (usuario != null && mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                HomeScreen(usuario: usuario, appState: Feed95App.of(context)),
+            builder: (context) => HomeScreen(
+              usuario: usuario,
+              appState: Feed95App.of(context),
+            ),
           ),
         );
         return;
       }
     }
-
     if (mounted) {
       Navigator.pushReplacement(
         context,
@@ -254,6 +178,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    return const Scaffold(
+        body: Center(child: CircularProgressIndicator()));
   }
 }
