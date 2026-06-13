@@ -18,15 +18,15 @@ No accounts. No servers. No internet. Just your games, on your device.
 
 ### Características
 
-- **Múltiples perfiles locales** — Cada perfil tiene su propia contraseña, color de acento e imagen. Comparte el dispositivo sin mezclar catálogos.
-- **100% offline** — Todo se guarda en una base de datos SQLite local. Sin cuentas, sin nube, sin conexión obligatoria. Tus datos no salen de tu dispositivo.
-- **Búsqueda automática de metadatos** — Importa portada, descripción, géneros y capturas desde Steam, Epic Games o IGDB con un clic.
-- **Categorías y filtros** — Organiza tu catálogo con categorías personalizadas. Filtra por estado, categoría o búsqueda de texto.
-- **Estados y calificaciones** — Marca cada juego como Pendiente, Jugando, Completado o Abandonado. Puntúa del 1 al 10. Reordena tu catálogo a mano.
-- **Catálogo secundario opcional** — Un segundo catálogo separado del principal, ideal para mantener colecciones distintas bajo el mismo perfil.
-- **Lanzador integrado** — Vincula el ejecutable de cada juego y árrancalo directo desde la app. Solo en Windows.
-- **Backup y restauración** — Exporta toda tu colección a un archivo JSON e impórtala en cualquier dispositivo cuando quieras.
-- **Tema claro / oscuro con acento personalizable** — La interfaz se adapta al color que elijas para cada perfil.
+- **Múltiples perfiles locales** - Cada perfil tiene su propia contraseña, color de acento e imagen. Comparte el dispositivo sin mezclar catálogos.
+- **100% offline** - Todo se guarda en una base de datos SQLite local. Sin cuentas, sin nube, sin conexión obligatoria. Tus datos no salen de tu dispositivo.
+- **Búsqueda automática de metadatos** - Importa portada, descripción, géneros y capturas desde Steam, Epic Games o IGDB con un clic.
+- **Categorías y filtros** - Organiza tu catálogo con categorías personalizadas. Filtra por estado, categoría o búsqueda de texto.
+- **Estados y calificaciones** - Marca cada juego como Pendiente, Jugando, Completado o Abandonado. Puntúa del 1 al 10. Reordena tu catálogo a mano.
+- **Catálogo secundario opcional** - Un segundo catálogo separado del principal, ideal para mantener colecciones distintas bajo el mismo perfil.
+- **Lanzador integrado** - Vincula el ejecutable de cada juego y árrancalo directo desde la app. Solo en Windows.
+- **Backup y restauración** - Exporta toda tu colección a un archivo JSON e impórtala en cualquier dispositivo cuando quieras.
+- **Tema claro / oscuro con acento personalizable** - La interfaz se adapta al color que elijas para cada perfil.
 
 ### Descarga e instalación
 
@@ -55,11 +55,11 @@ Para configurar IGDB: visita [dev.twitch.tv](https://dev.twitch.tv), crea una ap
 
 ### Construido con
 
-- [Flutter](https://flutter.dev/) — Framework multiplataforma
-- [SQLite / sqflite](https://pub.dev/packages/sqflite) — Base de datos local
-- [dio](https://pub.dev/packages/dio) + [cookie_jar](https://pub.dev/packages/cookie_jar) — Peticiones HTTP
-- [flutter_colorpicker](https://pub.dev/packages/flutter_colorpicker) — Selector de color de perfil
-- [file_picker](https://pub.dev/packages/file_picker) / [image_picker](https://pub.dev/packages/image_picker) — Selección de archivos e imágenes
+- [Flutter](https://flutter.dev/) - Framework multiplataforma
+- [SQLite / sqflite](https://pub.dev/packages/sqflite) - Base de datos local
+- [dio](https://pub.dev/packages/dio) + [cookie_jar](https://pub.dev/packages/cookie_jar) - Peticiones HTTP
+- [flutter_colorpicker](https://pub.dev/packages/flutter_colorpicker) - Selector de color de perfil
+- [file_picker](https://pub.dev/packages/file_picker) / [image_picker](https://pub.dev/packages/image_picker) - Selección de archivos e imágenes
 
 ### Licencia
 
