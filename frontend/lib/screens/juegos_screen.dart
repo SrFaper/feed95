@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/juego.dart';
 import '../models/usuario.dart';
@@ -23,14 +24,14 @@ class _JuegosScreenState extends State<JuegosScreen> {
   bool cargando = true;
   bool panelAbierto = false;
   bool _modosExtrasActivos = false;
-  int catalogoActual = 0; // 0 = principal, 1 = secundario
+  int catalogoActual = 0;
   String busqueda = '';
   String? filtroEstado;
-  int? filtroCategoria; // null = todas
+  int? filtroCategoria;
   bool _modoReorden = false;
+  bool _reordenEnGrid = false;
   final TextEditingController _busquedaController = TextEditingController();
 
-  // Nombre editable del catálogo secundario
   String nombreCatalogoSecundario = 'NSFW';
 
   @override
@@ -42,7 +43,6 @@ class _JuegosScreenState extends State<JuegosScreen> {
 
   Future<void> _cargarModosExtras() async {
     final prefs = await SharedPreferences.getInstance();
-
     if (mounted) {
       setState(() {
         _modosExtrasActivos = prefs.getBool('f95_activado') ?? false;
@@ -94,9 +94,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
           ElevatedButton(
             onPressed: () async {
               if (controller.text.isEmpty) return;
-
               final navigator = Navigator.of(context);
-
               if (editar == null) {
                 await ApiService.crearCategoria(
                   nombre: controller.text,
@@ -109,9 +107,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
                   nombre: controller.text,
                 );
               }
-
               if (!mounted) return;
-
               navigator.pop();
               cargarTodo();
             },
@@ -138,10 +134,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              'Eliminar',
-              style: TextStyle(color: Colors.white),
-            ),
+            child: const Text('Eliminar', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -155,6 +148,30 @@ class _JuegosScreenState extends State<JuegosScreen> {
     }
   }
 
+  Future<void> _moverJuegoAPosicion(
+    List<Juego> lista,
+    int juegoIndex,
+    int nuevaPosicion1Based,
+  ) async {
+    final total = lista.length;
+    final destino = nuevaPosicion1Based.clamp(1, total) - 1;
+    if (destino == juegoIndex) return;
+    final item = lista.removeAt(juegoIndex);
+    lista.insert(destino, item);
+    setState(() {});
+    await ApiService.guardarOrden(juegos.map((j) => j.id).toList());
+  }
+
+  // Drag & drop en grid: intercambia el juego arrastrado con el destino
+  Future<void> _intercambiarEnGrid(int fromIndex, int toIndex) async {
+    if (fromIndex == toIndex) return;
+    setState(() {
+      final item = juegos.removeAt(fromIndex);
+      juegos.insert(toIndex, item);
+    });
+    await ApiService.guardarOrden(juegos.map((j) => j.id).toList());
+  }
+
   Widget _panelLateral() {
     return Container(
       width: 220,
@@ -166,7 +183,6 @@ class _JuegosScreenState extends State<JuegosScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Búsqueda
           Padding(
             padding: const EdgeInsets.all(12),
             child: TextField(
@@ -191,8 +207,6 @@ class _JuegosScreenState extends State<JuegosScreen> {
               onChanged: (v) => setState(() => busqueda = v),
             ),
           ),
-
-          // Filtro por estado
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             child: Text(
@@ -222,10 +236,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
                 () => filtroEstado = filtroEstado == estado ? null : estado,
               ),
             ),
-
           const Divider(indent: 12, endIndent: 12),
-
-          // Categorías
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             child: Row(
@@ -256,9 +267,8 @@ class _JuegosScreenState extends State<JuegosScreen> {
           ),
           Expanded(
             child: ListView(
-              children: categorias.map((cat) {
-                return _itemCategoria(cat);
-              }).toList(),
+              children:
+                  categorias.map((cat) => _itemCategoria(cat)).toList(),
             ),
           ),
         ],
@@ -283,7 +293,8 @@ class _JuegosScreenState extends State<JuegosScreen> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: seleccionado ? FontWeight.bold : FontWeight.normal,
-            color: seleccionado ? Theme.of(context).colorScheme.primary : null,
+            color:
+                seleccionado ? Theme.of(context).colorScheme.primary : null,
           ),
         ),
       ),
@@ -329,9 +340,8 @@ class _JuegosScreenState extends State<JuegosScreen> {
                 cat.nombre,
                 style: TextStyle(
                   fontSize: 13,
-                  fontWeight: seleccionada
-                      ? FontWeight.bold
-                      : FontWeight.normal,
+                  fontWeight:
+                      seleccionada ? FontWeight.bold : FontWeight.normal,
                   color: seleccionada
                       ? Theme.of(context).colorScheme.primary
                       : null,
@@ -344,6 +354,8 @@ class _JuegosScreenState extends State<JuegosScreen> {
       ),
     );
   }
+
+  // ── Vista catálogo normal ────────────────────────────────────────────────────
 
   Widget _vistaGrid(List<Juego> lista) {
     return GridView.builder(
@@ -379,42 +391,50 @@ class _JuegosScreenState extends State<JuegosScreen> {
     );
   }
 
-  Widget _vistaReorden(List<Juego> lista) {
+  // ── Vista reordenar: lista vertical ─────────────────────────────────────────
+
+  Widget _vistaReordenLista(List<Juego> lista) {
     return ReorderableListView.builder(
       buildDefaultDragHandles: false,
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: lista.length,
-      // El backend espera el orden completo, así que le pasamos la lista entera de IDs
       onReorder: (oldIndex, newIndex) async {
-        if (newIndex > oldIndex) {
-          newIndex--;
-        }
-        // Actualizar orden localmente
+        if (newIndex > oldIndex) newIndex--;
         setState(() {
           final item = lista.removeAt(oldIndex);
           lista.insert(newIndex, item);
         });
-        // Guardar nuevo orden en el backend
         await ApiService.guardarOrden(juegos.map((j) => j.id).toList());
       },
       itemBuilder: (context, index) {
         final juego = lista[index];
-
         return Container(
           key: ValueKey(juego.id),
           child: ListTile(
-            leading: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: juego.imagenGrid.isNotEmpty
-                  ? Image.network(
-                      juego.imagenGrid,
-                      width: 40,
-                      height: 56,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) =>
-                          const Icon(Icons.videogame_asset),
-                    )
-                  : const Icon(Icons.videogame_asset),
+            leading: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _InputPosicion(
+                  posicionActual: index + 1,
+                  total: lista.length,
+                  onConfirmar: (nuevaPos) =>
+                      _moverJuegoAPosicion(lista, index, nuevaPos),
+                ),
+                const SizedBox(width: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: juego.imagenGrid.isNotEmpty
+                      ? Image.network(
+                          juego.imagenGrid,
+                          width: 40,
+                          height: 56,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) =>
+                              const Icon(Icons.videogame_asset),
+                        )
+                      : const Icon(Icons.videogame_asset),
+                ),
+              ],
             ),
             title: Text(juego.nombre),
             subtitle: Text(
@@ -439,17 +459,16 @@ class _JuegosScreenState extends State<JuegosScreen> {
                       ],
                     ),
                   ),
-                // Drag handle personalizado
                 ReorderableDragStartListener(
                   index: index,
                   child: MouseRegion(
                     cursor: SystemMouseCursors.grab,
                     child: Container(
-                      width: 90,
-                      height: 90,
+                      width: 44,
+                      height: 44,
                       decoration: BoxDecoration(
                         color: Colors.grey.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Center(
                         child: Icon(Icons.drag_handle, color: Colors.grey),
@@ -471,6 +490,29 @@ class _JuegosScreenState extends State<JuegosScreen> {
             },
           ),
         );
+      },
+    );
+  }
+
+  // ── Vista reordenar: cuadrícula con drag & drop ──────────────────────────────
+
+  Widget _vistaReordenGrid(List<Juego> lista) {
+    // Índice que se está arrastrando actualmente (-1 = ninguno)
+    // Lo mantenemos en el State padre para poder ocultarlo en el grid
+    return _ReordenGrid(
+      juegos: lista,
+      onReorder: _intercambiarEnGrid,
+      onMoverAPosicion: (index, nuevaPos) =>
+          _moverJuegoAPosicion(lista, index, nuevaPos),
+      onTapJuego: (juego) async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                JuegoDetalleScreen(juego: juego, usuario: widget.usuario),
+          ),
+        );
+        cargarTodo();
       },
     );
   }
@@ -512,19 +554,35 @@ class _JuegosScreenState extends State<JuegosScreen> {
           catalogoActual == 0 ? 'Mi catálogo' : nombreCatalogoSecundario,
         ),
         actions: [
-          // Toggle modo reordenar
+          if (_modoReorden) ...[
+            // Toggle lista / cuadrícula (solo en modo reordenar)
+            IconButton(
+              icon: Icon(
+                _reordenEnGrid ? Icons.view_list : Icons.grid_view,
+              ),
+              tooltip: _reordenEnGrid ? 'Vista lista' : 'Vista cuadrícula',
+              onPressed: () =>
+                  setState(() => _reordenEnGrid = !_reordenEnGrid),
+            ),
+          ] else ...[
+            // Filtros (solo en modo catálogo)
+            IconButton(
+              icon: Icon(panelAbierto ? Icons.menu_open : Icons.menu),
+              tooltip: 'Filtros y categorías',
+              onPressed: () => setState(() => panelAbierto = !panelAbierto),
+            ),
+          ],
+          // Botón salir/entrar modo reordenar — icono distinto según estado
           IconButton(
-            icon: Icon(_modoReorden ? Icons.grid_view : Icons.swap_vert),
-            tooltip: _modoReorden ? 'Ver grid' : 'Reordenar',
+            icon: Icon(
+              _modoReorden
+                  ? Icons.check_circle_outline  // "listo, volver al catálogo"
+                  : Icons.swap_vert,            // "entrar a reordenar"
+            ),
+            tooltip: _modoReorden ? 'Ver catálogo' : 'Reordenar',
             onPressed: () => setState(() => _modoReorden = !_modoReorden),
           ),
-          // Toggle panel lateral
-          IconButton(
-            icon: Icon(panelAbierto ? Icons.menu_open : Icons.menu),
-            tooltip: 'Filtros y categorías',
-            onPressed: () => setState(() => panelAbierto = !panelAbierto),
-          ),
-          // Switcher de catálogo
+          // Switcher catálogo secundario
           if (_modosExtrasActivos)
             IconButton(
               icon: Icon(
@@ -544,7 +602,6 @@ class _JuegosScreenState extends State<JuegosScreen> {
                   busqueda = '';
                   _busquedaController.clear();
                 });
-
                 cargarTodo();
               },
             ),
@@ -571,30 +628,32 @@ class _JuegosScreenState extends State<JuegosScreen> {
           ? const Center(child: CircularProgressIndicator())
           : Row(
               children: [
-                // Panel lateral animado
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: panelAbierto ? 220 : 0,
-                  child: panelAbierto
-                      ? ClipRect(child: _panelLateral())
-                      : const SizedBox.shrink(),
-                ),
-
-                // Contenido Grid principal
+                if (!_modoReorden)
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: panelAbierto ? 220 : 0,
+                    child: panelAbierto
+                        ? ClipRect(child: _panelLateral())
+                        : const SizedBox.shrink(),
+                  ),
                 Expanded(
                   child: juegosMostrados.isEmpty
                       ? Center(
                           child: Text(
-                            busqueda.isNotEmpty ||
-                                    filtroEstado != null ||
-                                    filtroCategoria != null
-                                ? 'No hay juegos con esos filtros'
-                                : 'No hay juegos en este catálogo',
+                            _modoReorden
+                                ? 'No hay juegos para reordenar'
+                                : (busqueda.isNotEmpty ||
+                                        filtroEstado != null ||
+                                        filtroCategoria != null
+                                    ? 'No hay juegos con esos filtros'
+                                    : 'No hay juegos en este catálogo'),
                           ),
                         )
                       : _modoReorden
-                      ? _vistaReorden(juegosMostrados)
-                      : _vistaGrid(juegosMostrados),
+                          ? (_reordenEnGrid
+                              ? _vistaReordenGrid(juegosMostrados)
+                              : _vistaReordenLista(juegosMostrados))
+                          : _vistaGrid(juegosMostrados),
                 ),
               ],
             ),
@@ -602,20 +661,358 @@ class _JuegosScreenState extends State<JuegosScreen> {
   }
 }
 
-class _TarjetaJuego extends StatelessWidget {
-  final Juego juego;
-  final List<Categoria> categorias;
-  final VoidCallback onTap;
-  final Function(int?) onAsignarCategoria;
+// ── Grid con drag & drop nativo ──────────────────────────────────────────────
 
-  const _TarjetaJuego({
-    required this.juego,
-    required this.categorias,
-    required this.onTap,
-    required this.onAsignarCategoria,
+class _ReordenGrid extends StatefulWidget {
+  final List<Juego> juegos;
+  final Future<void> Function(int from, int to) onReorder;
+  final void Function(int index, int nuevaPos) onMoverAPosicion;
+  final void Function(Juego juego) onTapJuego;
+
+  const _ReordenGrid({
+    required this.juegos,
+    required this.onReorder,
+    required this.onMoverAPosicion,
+    required this.onTapJuego,
   });
 
-  Widget _imagen() {
+  @override
+  State<_ReordenGrid> createState() => _ReordenGridState();
+}
+
+class _ReordenGridState extends State<_ReordenGrid> {
+  int? _draggingIndex;
+  int? _hoverIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      padding: const EdgeInsets.all(12),
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 160,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+        childAspectRatio: 0.68,
+      ),
+      itemCount: widget.juegos.length,
+      itemBuilder: (context, index) {
+        final juego = widget.juegos[index];
+        final isDragging = _draggingIndex == index;
+        final isHover = _hoverIndex == index && _draggingIndex != index;
+
+        return DragTarget<int>(
+          onWillAcceptWithDetails: (details) {
+            if (details.data != index) {
+              setState(() => _hoverIndex = index);
+            }
+            return details.data != index;
+          },
+          onLeave: (_) => setState(() => _hoverIndex = null),
+          onAcceptWithDetails: (details) {
+            setState(() => _hoverIndex = null);
+            widget.onReorder(details.data, index);
+          },
+          builder: (context, candidateData, rejectedData) {
+            return LongPressDraggable<int>(
+              data: index,
+              delay: const Duration(milliseconds: 300),
+              onDragStarted: () => setState(() => _draggingIndex = index),
+              onDragEnd: (_) =>
+                  setState(() => _draggingIndex = null),
+              onDraggableCanceled: (_, _) =>
+                  setState(() => _draggingIndex = null),
+              // Feedback: miniatura semitransparente que sigue al dedo
+              feedback: SizedBox(
+                width: 120,
+                height: 120 / 0.68,
+                child: Opacity(
+                  opacity: 0.85,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: _ImagenJuego(juego: juego),
+                  ),
+                ),
+              ),
+              // El hueco que queda en el grid mientras se arrastra
+              childWhenDragging: AnimatedOpacity(
+                opacity: 0.25,
+                duration: const Duration(milliseconds: 150),
+                child: _TarjetaReordenGrid(
+                  juego: juego,
+                  posicion: index + 1,
+                  total: widget.juegos.length,
+                  onTap: () {},
+                  onMover: (_) {},
+                  mostrarInput: false,
+                ),
+              ),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  border: isHover
+                      ? Border.all(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 2.5,
+                        )
+                      : null,
+                  boxShadow: isHover
+                      ? [
+                          BoxShadow(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withValues(alpha: 0.4),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                          ),
+                        ]
+                      : null,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(
+                    isHover ? 8 : 10,
+                  ),
+                  child: isDragging
+                      ? _TarjetaReordenGrid(
+                          juego: juego,
+                          posicion: index + 1,
+                          total: widget.juegos.length,
+                          onTap: () {},
+                          onMover: (_) {},
+                          mostrarInput: false,
+                        )
+                      : _TarjetaReordenGrid(
+                          juego: juego,
+                          posicion: index + 1,
+                          total: widget.juegos.length,
+                          onTap: () => widget.onTapJuego(juego),
+                          onMover: (nuevaPos) =>
+                              widget.onMoverAPosicion(index, nuevaPos),
+                        ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+// ── Input de posición (lista y grid) ────────────────────────────────────────
+
+class _InputPosicion extends StatefulWidget {
+  final int posicionActual;
+  final int total;
+  final void Function(int nuevaPos) onConfirmar;
+  final bool esGrid;
+  final bool fondoOscuro;
+
+  const _InputPosicion({
+    required this.posicionActual,
+    required this.total,
+    required this.onConfirmar,
+    this.esGrid = false,
+    this.fondoOscuro = false,
+  });
+
+  @override
+  State<_InputPosicion> createState() => _InputPosicionState();
+}
+
+class _InputPosicionState extends State<_InputPosicion> {
+  late TextEditingController _ctrl;
+  late FocusNode _focus;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: '${widget.posicionActual}');
+    _focus = FocusNode();
+    _focus.addListener(() {
+      if (_focus.hasFocus) {
+        _ctrl.selection = TextSelection(
+          baseOffset: 0,
+          extentOffset: _ctrl.text.length,
+        );
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(_InputPosicion old) {
+    super.didUpdateWidget(old);
+    if (!_focus.hasFocus && old.posicionActual != widget.posicionActual) {
+      _ctrl.text = '${widget.posicionActual}';
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
+
+  void _confirmar() {
+    final valor = int.tryParse(_ctrl.text);
+    if (valor != null) {
+      widget.onConfirmar(valor);
+    } else {
+      _ctrl.text = '${widget.posicionActual}';
+    }
+    _focus.unfocus();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final ancho = widget.esGrid ? 36.0 : 42.0;
+    final alto = widget.esGrid ? 26.0 : 32.0;
+    final fontSize = widget.esGrid ? 11.0 : 13.0;
+
+    // En modo oscuro: fondo negro semitransparente, texto blanco para contraste
+    final fillColor = widget.fondoOscuro
+        ? Colors.black.withValues(alpha: 0.72)
+        : primary.withValues(alpha: 0.08);
+    final textColor = widget.fondoOscuro ? Colors.white : primary;
+    final borderColor = widget.fondoOscuro
+        ? Colors.white.withValues(alpha: 0.45)
+        : primary.withValues(alpha: 0.4);
+    final borderColorFocus = widget.fondoOscuro ? Colors.white : primary;
+
+    return SizedBox(
+      width: ancho,
+      height: alto,
+      child: TextField(
+        controller: _ctrl,
+        focusNode: _focus,
+        textAlign: TextAlign.center,
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        style: TextStyle(
+          fontSize: fontSize,
+          fontWeight: FontWeight.bold,
+          color: textColor,
+        ),
+        decoration: InputDecoration(
+          isDense: true,
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(6),
+            borderSide: BorderSide(color: borderColor),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(6),
+            borderSide: BorderSide(color: borderColor),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(6),
+            borderSide: BorderSide(color: borderColorFocus, width: 2),
+          ),
+          filled: true,
+          fillColor: fillColor,
+        ),
+        onSubmitted: (_) => _confirmar(),
+        onTapOutside: (_) {
+          if (_focus.hasFocus) _confirmar();
+        },
+      ),
+    );
+  }
+}
+
+// ── Tarjeta en modo reordenamiento grid ─────────────────────────────────────
+
+class _TarjetaReordenGrid extends StatelessWidget {
+  final Juego juego;
+  final int posicion;
+  final int total;
+  final VoidCallback onTap;
+  final void Function(int nuevaPos) onMover;
+  final bool mostrarInput;
+
+  const _TarjetaReordenGrid({
+    required this.juego,
+    required this.posicion,
+    required this.total,
+    required this.onTap,
+    required this.onMover,
+    this.mostrarInput = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Imagen de fondo
+          _ImagenJuego(juego: juego),
+          // Gradiente inferior
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.82),
+                  ],
+                  stops: const [0.42, 1.0],
+                ),
+              ),
+            ),
+          ),
+          // Nombre
+          Positioned(
+            left: 6,
+            right: 6,
+            bottom: 6,
+            child: Text(
+              juego.nombre,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 11,
+                shadows: [Shadow(blurRadius: 4, color: Colors.black)],
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          // Input de posición — esquina superior izquierda
+          if (mostrarInput)
+            Positioned(
+              top: 6,
+              left: 6,
+              child: _InputPosicion(
+                posicionActual: posicion,
+                total: total,
+                onConfirmar: onMover,
+                esGrid: true,
+                fondoOscuro: true,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Widget imagen reutilizable ───────────────────────────────────────────────
+
+class _ImagenJuego extends StatelessWidget {
+  final Juego juego;
+
+  const _ImagenJuego({required this.juego});
+
+  @override
+  Widget build(BuildContext context) {
     if (juego.imagenGridLocal != null && juego.imagenGridLocal!.isNotEmpty) {
       return Image.file(
         File(juego.imagenGridLocal!),
@@ -651,10 +1048,26 @@ class _TarjetaJuego extends StatelessWidget {
     return Container(
       color: Colors.grey.shade800,
       child: const Center(
-        child: Icon(Icons.videogame_asset, size: 48, color: Colors.white38),
+        child: Icon(Icons.videogame_asset, size: 32, color: Colors.white38),
       ),
     );
   }
+}
+
+// ── Tarjeta normal del catálogo ──────────────────────────────────────────────
+
+class _TarjetaJuego extends StatelessWidget {
+  final Juego juego;
+  final List<Categoria> categorias;
+  final VoidCallback onTap;
+  final Function(int?) onAsignarCategoria;
+
+  const _TarjetaJuego({
+    required this.juego,
+    required this.categorias,
+    required this.onTap,
+    required this.onAsignarCategoria,
+  });
 
   void _mostrarMenuContextual(BuildContext context) {
     showModalBottomSheet(
@@ -732,7 +1145,7 @@ class _TarjetaJuego extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            _imagen(),
+            _ImagenJuego(juego: juego),
             Positioned.fill(
               child: DecoratedBox(
                 decoration: BoxDecoration(
@@ -798,7 +1211,8 @@ class _TarjetaJuego extends StatelessWidget {
               top: 8,
               left: 8,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
                   color: colorEstado.withValues(alpha: 0.85),
                   borderRadius: BorderRadius.circular(6),
