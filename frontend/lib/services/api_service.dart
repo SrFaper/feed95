@@ -262,6 +262,18 @@ class ApiService {
     int? categoriaId,
   }) async {
     final database = await db;
+    // Obtener la última posición usada
+    final maxResult = await database.rawQuery(
+      '''
+      SELECT MAX(posicion) as max
+      FROM juegos
+      WHERE usuario_id = ? AND catalogo = ?
+      ''',
+      [usuarioId, catalogo],
+    );
+
+    final maxPos = (maxResult.first['max'] as int?) ?? -1;
+
     await database.insert('juegos', {
       'nombre': nombre,
       'descripcion': descripcion,
@@ -278,6 +290,7 @@ class ApiService {
       'usuario_id': usuarioId,
       'catalogo': catalogo,
       'categoria_id': categoriaId,
+      'posicion': maxPos + 1,
     });
     return {'success': true, 'message': 'Juego agregado correctamente'};
   }
