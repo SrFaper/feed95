@@ -5,6 +5,7 @@ import '../services/api_service.dart';
 import '../main.dart';
 import 'home_screen.dart';
 import 'registro_screen.dart';
+import 'package:frontend/l10n/app_localizations.dart';
 
 class PerfilesScreen extends StatefulWidget {
   const PerfilesScreen({super.key});
@@ -30,6 +31,7 @@ class _PerfilesScreenState extends State<PerfilesScreen> {
   }
 
   Future<void> _seleccionarPerfil(Usuario usuario) async {
+    final l10n = AppLocalizations.of(context)!;
     final passwordController = TextEditingController();
 
     final confirmar = await showDialog<bool>(
@@ -38,18 +40,18 @@ class _PerfilesScreenState extends State<PerfilesScreen> {
         title: Text(usuario.nombre),
         content: TextField(
           controller: passwordController,
-          decoration: const InputDecoration(labelText: 'Contraseña'),
+          decoration: InputDecoration(labelText: l10n.perfilesInputPassword),
           obscureText: true,
           autofocus: true,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
+            child: Text(l10n.btnCancelar),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Entrar'),
+            child: Text(l10n.btnEnter),
           ),
         ],
       ),
@@ -76,32 +78,32 @@ class _PerfilesScreenState extends State<PerfilesScreen> {
       }
     } else {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Contraseña incorrecta')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.perfilesPasswordIncorrecta)),
+        );
       }
     }
   }
 
   Future<void> _eliminarPerfil(Usuario usuario) async {
+    final l10n = AppLocalizations.of(context)!;
+
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Eliminar perfil'),
-        content: Text(
-          '¿Eliminar a ${usuario.nombre}? Se borrarán todos sus juegos.',
-        ),
+        title: Text(l10n.perfilesEliminarTitulo),
+        content: Text(l10n.perfilesEliminarContenido(usuario.nombre)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
+            child: Text(l10n.btnCancelar),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              'Eliminar',
-              style: TextStyle(color: Colors.white),
+            child: Text(
+              l10n.btnEliminar,
+              style: const TextStyle(color: Colors.white),
             ),
           ),
         ],
@@ -117,8 +119,10 @@ class _PerfilesScreenState extends State<PerfilesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Feed95 — Perfiles')),
+      appBar: AppBar(title: Text(l10n.perfilesTitulo)),
       body: cargando
           ? const Center(child: CircularProgressIndicator())
           : perfiles.isEmpty
@@ -132,11 +136,11 @@ class _PerfilesScreenState extends State<PerfilesScreen> {
                     color: Colors.grey,
                   ),
                   const SizedBox(height: 16),
-                  const Text('No hay perfiles todavía'),
+                  Text(l10n.perfilesVacio),
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
                     icon: const Icon(Icons.add),
-                    label: const Text('Crear perfil'),
+                    label: Text(l10n.btnCrearPerfil),
                     onPressed: () async {
                       await Navigator.push(
                         context,
@@ -200,7 +204,7 @@ class _PerfilesScreenState extends State<PerfilesScreen> {
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
                     icon: const Icon(Icons.add),
-                    label: const Text('Nuevo perfil'),
+                    label: Text(l10n.btnNuevoPerfil),
                     onPressed: () async {
                       await Navigator.push(
                         context,

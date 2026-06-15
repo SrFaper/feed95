@@ -13,6 +13,7 @@ import 'f95_config_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/igdb_service.dart';
 import 'igdb_config_screen.dart';
+import 'package:frontend/l10n/app_localizations.dart';
 
 class JuegoFormScreen extends StatefulWidget {
   final Usuario usuario;
@@ -42,7 +43,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
   String? _imagenDetalleLocal;
   String? _imagenGridLocal;
   String _imagenesExtra = '';
-  String estadoSeleccionado = 'Pendiente';
+  String estadoSeleccionado = 'Pending';
   bool cargando = false;
   bool _buscandoSteam = false;
   bool _buscandoEpic = false;
@@ -50,13 +51,6 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
   bool _f95Activado = false;
   bool _buscandoIgdb = false;
   bool _igdbConfigurado = false;
-
-  final List<String> estados = [
-    'Pendiente',
-    'Jugando',
-    'Completado',
-    'Abandonado',
-  ];
 
   bool get _mostrarEjecutable =>
       !kIsWeb && (Platform.isWindows || Platform.isLinux);
@@ -137,6 +131,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     required String Function(T) portada,
     required Future<void> Function(T) onSeleccionar,
   }) async {
+    final l10n = AppLocalizations.of(context)!;
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -176,7 +171,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+            child: Text(l10n.btnCancelar),
           ),
         ],
       ),
@@ -206,11 +201,12 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
   // ── Steam ─────────────────────────────────────────────────
 
   Future<void> _buscarEnSteam() async {
+    final l10n = AppLocalizations.of(context)!;
     final query = nombreController.text.trim();
     if (query.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Escribe un nombre para buscar')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.juegoFormNoBusqueda)));
       return;
     }
     setState(() => _buscandoSteam = true);
@@ -218,13 +214,13 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     setState(() => _buscandoSteam = false);
     if (!mounted) return;
     if (resultados.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se encontraron resultados en Steam')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.juegoFormSinResultadosSteam)));
       return;
     }
     await _mostrarResultados(
-      titulo: 'Resultados en Steam',
+      titulo: l10n.juegoFormResultadosSteam,
       resultados: resultados,
       nombre: (r) => r.nombre,
       portada: (r) => r.portada,
@@ -234,11 +230,9 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
         setState(() => cargando = false);
         if (!mounted) return;
         if (detalle == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No se pudieron obtener los detalles'),
-            ),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.juegoFormErrorDetalles)));
           return;
         }
         _rellenarCampos(
@@ -256,11 +250,12 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
   // ── Epic ──────────────────────────────────────────────────
 
   Future<void> _buscarEnEpic() async {
+    final l10n = AppLocalizations.of(context)!;
     final query = nombreController.text.trim();
     if (query.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Escribe un nombre para buscar')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.juegoFormNoBusqueda)));
       return;
     }
     setState(() => _buscandoEpic = true);
@@ -268,13 +263,13 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     setState(() => _buscandoEpic = false);
     if (!mounted) return;
     if (resultados.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se encontraron resultados en Epic')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.juegoFormSinResultadosEpic)));
       return;
     }
     await _mostrarResultados(
-      titulo: 'Resultados en Epic Games',
+      titulo: l10n.juegoFormResultadosEpic,
       resultados: resultados,
       nombre: (r) => r.nombre,
       portada: (r) => r.portada,
@@ -284,11 +279,9 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
         setState(() => cargando = false);
         if (!mounted) return;
         if (detalle == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No se pudieron obtener los detalles'),
-            ),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.juegoFormErrorDetalles)));
           return;
         }
         _rellenarCampos(
@@ -312,17 +305,16 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     }
   }
 
-  // Busca el juego usando el nombre como consulta. Si no hay sesión, ofrece ir a configuración.
   Future<void> _buscarEnF95() async {
+    final l10n = AppLocalizations.of(context)!;
     final query = nombreController.text.trim();
     if (query.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Escribe un nombre para buscar')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.juegoFormNoBusqueda)));
       return;
     }
 
-    // Verificar sesión
     final tiene = await F95Service.tieneSesion();
     if (!mounted) return;
 
@@ -330,16 +322,16 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
       final confirmar = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('F95Zone'),
-          content: const Text('Necesitas iniciar sesión en F95Zone primero.'),
+          title: Text(l10n.f95Titulo),
+          content: Text(l10n.f95NecesitaSesion),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar'),
+              child: Text(l10n.btnCancelar),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Configurar'),
+              child: Text(l10n.btnConfigurar),
             ),
           ],
         ),
@@ -353,23 +345,20 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
       return;
     }
 
-    // Buscar
     setState(() => _buscandoF95 = true);
     final resultados = await F95Service.buscar(query);
     setState(() => _buscandoF95 = false);
     if (!mounted) return;
 
     if (resultados.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No se encontraron resultados en F95Zone'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.juegoFormSinResultadosF95)));
       return;
     }
 
     await _mostrarResultados(
-      titulo: 'Resultados en F95Zone',
+      titulo: l10n.juegoFormResultadosF95,
       resultados: resultados,
       nombre: (r) => r.nombre,
       portada: (r) => r.portada,
@@ -379,11 +368,9 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
         setState(() => cargando = false);
         if (!mounted) return;
         if (detalle == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No se pudieron obtener los detalles'),
-            ),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.juegoFormErrorDetalles)));
           return;
         }
         _rellenarCampos(
@@ -403,18 +390,17 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
   Future<void> _cargarIgdb() async {
     final tiene = await IgdbService.tieneCredenciales();
     if (mounted) {
-      setState(() {
-        _igdbConfigurado = tiene;
-      });
+      setState(() => _igdbConfigurado = tiene);
     }
   }
 
   Future<void> _buscarEnIgdb() async {
+    final l10n = AppLocalizations.of(context)!;
     final query = nombreController.text.trim();
     if (query.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Escribe un nombre para buscar')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.juegoFormNoBusqueda)));
       return;
     }
 
@@ -423,16 +409,16 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
       final configurar = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('IGDB'),
-          content: const Text('Necesitas configurar IGDB primero.'),
+          title: Text(l10n.igdbTitulo),
+          content: Text(l10n.igdbNecesitaConfiguracion),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar'),
+              child: Text(l10n.btnCancelar),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Configurar'),
+              child: Text(l10n.btnConfigurar),
             ),
           ],
         ),
@@ -452,14 +438,14 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     if (!mounted) return;
 
     if (resultados.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se encontraron resultados en IGDB')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.juegoFormSinResultadosIgdb)));
       return;
     }
 
     await _mostrarResultados(
-      titulo: 'Resultados en IGDB',
+      titulo: l10n.juegoFormResultadosIgdb,
       resultados: resultados,
       nombre: (r) => r.nombre,
       portada: (r) => r.portada,
@@ -469,11 +455,9 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
         setState(() => cargando = false);
         if (!mounted) return;
         if (detalle == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No se pudieron obtener los detalles'),
-            ),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.juegoFormErrorDetalles)));
           return;
         }
         _rellenarCampos(
@@ -493,7 +477,6 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
   Future<void> _elegirImagen({required bool esGrid}) async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
-
     if (picked != null) {
       setState(() {
         if (esGrid) {
@@ -508,10 +491,11 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
   }
 
   Future<void> _elegirEjecutable() async {
+    final l10n = AppLocalizations.of(context)!;
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['exe', 'bat', 'sh', 'app'],
-      dialogTitle: 'Seleccionar ejecutable',
+      dialogTitle: l10n.juegoFormBuscarArchivo,
     );
     if (result != null && result.files.single.path != null) {
       setState(() {
@@ -523,10 +507,11 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
   // ── Guardar ───────────────────────────────────────────────
 
   Future<void> guardarJuego() async {
+    final l10n = AppLocalizations.of(context)!;
     if (nombreController.text.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('El nombre es obligatorio')));
+      ).showSnackBar(SnackBar(content: Text(l10n.juegoFormNombreObligatorio)));
       return;
     }
 
@@ -577,12 +562,25 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     setState(() => cargando = false);
     if (!mounted) return;
 
+    final key = respuesta['messageKey'] as String? ?? '';
+    final mensaje = _traducirClave(l10n, key);
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text(respuesta['message'])));
+    ).showSnackBar(SnackBar(content: Text(mensaje)));
 
     if (respuesta['success'] == true) {
       Navigator.pop(context);
+    }
+  }
+
+  String _traducirClave(AppLocalizations l10n, String key) {
+    switch (key) {
+      case 'juegoFormAgregado':
+        return l10n.juegoFormAgregado;
+      case 'juegoFormActualizado':
+        return l10n.juegoFormActualizado;
+      default:
+        return key;
     }
   }
 
@@ -590,51 +588,63 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final esEdicion = widget.juego != null;
 
+    // Los estados se leen del l10n para que el dropdown también esté traducido
+    final estados = {
+      'Pending': l10n.estadoPendiente,
+      'Playing': l10n.estadoJugando,
+      'Completed': l10n.estadoCompletado,
+      'Abandoned': l10n.estadoAbandonado,
+    };
+
+    // Asegurar que el estado guardado tenga equivalente en el idioma actual
+    if (!estados.containsKey(estadoSeleccionado)) {
+      estadoSeleccionado = estados.keys.first;
+    }
+
     return Scaffold(
-      appBar: AppBar(title: Text(esEdicion ? 'Editar juego' : 'Nuevo juego')),
+      appBar: AppBar(
+        title: Text(
+          esEdicion ? l10n.juegoFormEditarTitulo : l10n.juegoFormNuevoTitulo,
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Nombre
             TextField(
               controller: nombreController,
-              decoration: const InputDecoration(labelText: 'Nombre *'),
+              decoration: InputDecoration(labelText: l10n.juegoFormNombre),
             ),
             const SizedBox(height: 8),
 
-            // Botones de fuentes
             Row(
               children: [
-                const Text(
-                  'Buscar en:',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                Text(
+                  l10n.juegoFormBuscarEn,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
-                // Botón Steam siempre disponible
                 const SizedBox(width: 8),
                 _botonFuente(
                   label: 'Steam',
                   cargando: _buscandoSteam,
                   onTap: _buscarEnSteam,
                 ),
-                // Botón Epic siempre disponible
                 const SizedBox(width: 6),
                 _botonFuente(
                   label: 'Epic',
                   cargando: _buscandoEpic,
                   onTap: _buscarEnEpic,
                 ),
-                // Botón IGDB siempre disponible
                 const SizedBox(width: 6),
                 _botonFuente(
                   label: 'IGDB',
                   cargando: _buscandoIgdb,
                   onTap: _buscarEnIgdb,
                 ),
-                // Botón F95 solo si está activado y configurado
                 if (_f95Activado) ...[
                   const SizedBox(width: 6),
                   _botonFuente(
@@ -647,34 +657,29 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
             ),
             const SizedBox(height: 12),
 
-            // Descripción
             TextField(
               controller: descripcionController,
-              decoration: const InputDecoration(labelText: 'Descripción'),
+              decoration: InputDecoration(labelText: l10n.juegoFormDescripcion),
               maxLines: 3,
             ),
             const SizedBox(height: 12),
 
-            // Imagen del detalle
-            const Text(
-              'Imagen del detalle',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+            Text(
+              l10n.juegoFormImagenDetalle,
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
             const SizedBox(height: 4),
-
             _vistaPrevia(imagenDetalleController.text, _imagenDetalleLocal),
-
             if (_imagenDetalleLocal != null ||
                 imagenDetalleController.text.isNotEmpty)
               const SizedBox(height: 8),
-
             Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: imagenDetalleController,
-                    decoration: const InputDecoration(
-                      labelText: 'URL imagen detalle',
+                    decoration: InputDecoration(
+                      labelText: l10n.juegoFormUrlImagenDetalle,
                     ),
                     onChanged: (_) =>
                         setState(() => _imagenDetalleLocal = null),
@@ -693,29 +698,23 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
               ],
             ),
 
-            // Imagen del grid
             const SizedBox(height: 12),
-
-            const Text(
-              'Imagen del grid',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+            Text(
+              l10n.juegoFormImagenGrid,
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
-
             const SizedBox(height: 4),
-
             _vistaPrevia(imagenGridController.text, _imagenGridLocal),
-
             if (_imagenGridLocal != null ||
                 imagenGridController.text.isNotEmpty)
               const SizedBox(height: 8),
-
             Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: imagenGridController,
-                    decoration: const InputDecoration(
-                      labelText: 'URL imagen grid',
+                    decoration: InputDecoration(
+                      labelText: l10n.juegoFormUrlImagenGrid,
                     ),
                     onChanged: (_) => setState(() => _imagenGridLocal = null),
                   ),
@@ -734,42 +733,44 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
             ),
 
             const SizedBox(height: 12),
-
             TextField(
               controller: versionController,
-              decoration: const InputDecoration(labelText: 'Versión'),
+              decoration: InputDecoration(labelText: l10n.juegoFormVersion),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: calificacionController,
-              decoration: const InputDecoration(
-                labelText: 'Calificación (1-10)',
+              decoration: InputDecoration(
+                labelText: l10n.juegoFormCalificacion,
               ),
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 12),
             TextField(
               controller: generosController,
-              decoration: const InputDecoration(labelText: 'Géneros'),
+              decoration: InputDecoration(labelText: l10n.juegoFormGeneros),
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               initialValue: estadoSeleccionado,
-              decoration: const InputDecoration(labelText: 'Estado'),
-              items: estados
-                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+              items: estados.entries
+                  .map(
+                    (e) => DropdownMenuItem(value: e.key, child: Text(e.value)),
+                  )
                   .toList(),
               onChanged: (v) => setState(() => estadoSeleccionado = v!),
             ),
 
-            // Lanzador — solo Windows/Linux
             if (_mostrarEjecutable) ...[
               const SizedBox(height: 24),
               const Divider(),
               const SizedBox(height: 8),
-              const Text(
-                'Lanzador',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              Text(
+                l10n.juegoFormLanzador,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               Row(
@@ -777,22 +778,22 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
                   Expanded(
                     child: TextField(
                       controller: rutaEjecutableController,
-                      decoration: const InputDecoration(
-                        labelText: 'Ruta del ejecutable',
-                        hintText: 'C:\\juegos\\myjuego.exe',
+                      decoration: InputDecoration(
+                        labelText: l10n.juegoFormRutaEjecutable,
+                        hintText: l10n.juegoFormRutaEjecutableHint,
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   IconButton(
                     icon: const Icon(Icons.folder_open),
-                    tooltip: 'Buscar archivo',
+                    tooltip: l10n.juegoFormBuscarArchivo,
                     onPressed: _elegirEjecutable,
                   ),
                   if (rutaEjecutableController.text.isNotEmpty)
                     IconButton(
                       icon: const Icon(Icons.close),
-                      tooltip: 'Quitar ruta',
+                      tooltip: l10n.juegoFormQuitarRuta,
                       onPressed: () =>
                           setState(() => rutaEjecutableController.clear()),
                     ),
@@ -807,7 +808,11 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
                 onPressed: cargando ? null : guardarJuego,
                 child: cargando
                     ? const CircularProgressIndicator()
-                    : Text(esEdicion ? 'Actualizar' : 'Guardar'),
+                    : Text(
+                        esEdicion
+                            ? l10n.juegoFormBtnActualizar
+                            : l10n.juegoFormBtnGuardar,
+                      ),
               ),
             ),
           ],

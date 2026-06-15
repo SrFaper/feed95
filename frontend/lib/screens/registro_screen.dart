@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../services/api_service.dart';
+import 'package:frontend/l10n/app_localizations.dart';
 
 class RegistroScreen extends StatefulWidget {
   const RegistroScreen({super.key});
@@ -17,11 +18,12 @@ class _RegistroScreenState extends State<RegistroScreen> {
   bool cargando = false;
 
   void _abrirColorPicker() {
+    final l10n = AppLocalizations.of(context)!;
     Color colorTemporal = colorSeleccionado;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Elige un color'),
+        title: Text(l10n.registroElegirColor),
         content: SingleChildScrollView(
           child: ColorPicker(
             pickerColor: colorTemporal,
@@ -35,14 +37,14 @@ class _RegistroScreenState extends State<RegistroScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+            child: Text(l10n.btnCancelar),
           ),
           ElevatedButton(
             onPressed: () {
               setState(() => colorSeleccionado = colorTemporal);
               Navigator.pop(context);
             },
-            child: const Text('Aplicar'),
+            child: Text(l10n.registroColorAplicar),
           ),
         ],
       ),
@@ -50,18 +52,19 @@ class _RegistroScreenState extends State<RegistroScreen> {
   }
 
   Future<void> registrar() async {
+    final l10n = AppLocalizations.of(context)!;
+
     if (nombreController.text.isEmpty ||
         passwordController.text.isEmpty ||
         confirmarPasswordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Complete todos los campos')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.registroCamposObligatorios)));
       return;
     }
     if (passwordController.text != confirmarPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Las contraseñas no coinciden')),
+        SnackBar(content: Text(l10n.registroPasswordsNoCoinciden)),
       );
       return;
     }
@@ -74,9 +77,13 @@ class _RegistroScreenState extends State<RegistroScreen> {
     );
     setState(() => cargando = false);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(respuesta['message'])),
-    );
+    final key = respuesta['messageKey'] as String? ?? '';
+    final mensaje = key == 'apiPerfilCreadoOk'
+        ? l10n.apiPerfilCreadoOk
+        : l10n.apiNombreDuplicado;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(mensaje)));
     if (respuesta['success'] == true) {
       Navigator.pop(context);
     }
@@ -84,12 +91,13 @@ class _RegistroScreenState extends State<RegistroScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final inicial = nombreController.text.isNotEmpty
         ? nombreController.text[0].toUpperCase()
         : '?';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Nuevo perfil')),
+      appBar: AppBar(title: Text(l10n.registroTitulo)),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: SingleChildScrollView(
@@ -109,9 +117,10 @@ class _RegistroScreenState extends State<RegistroScreen> {
                     child: Text(
                       inicial,
                       style: const TextStyle(
-                          fontSize: 36,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold),
+                        fontSize: 36,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -119,27 +128,28 @@ class _RegistroScreenState extends State<RegistroScreen> {
               const SizedBox(height: 24),
               TextField(
                 controller: nombreController,
-                decoration:
-                    const InputDecoration(labelText: 'Usuario'),
+                decoration: InputDecoration(labelText: l10n.registroUsuario),
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: passwordController,
-                decoration:
-                    const InputDecoration(labelText: 'Contraseña'),
+                decoration: InputDecoration(labelText: l10n.registroPassword),
                 obscureText: true,
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: confirmarPasswordController,
-                decoration: const InputDecoration(
-                    labelText: 'Repetir contraseña'),
+                decoration: InputDecoration(
+                  labelText: l10n.registroRepetirPassword,
+                ),
                 obscureText: true,
               ),
               const SizedBox(height: 24),
-              const Text('Color del perfil',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(
+                l10n.registroColorPerfil,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 12),
               GestureDetector(
                 onTap: _abrirColorPicker,
@@ -149,17 +159,16 @@ class _RegistroScreenState extends State<RegistroScreen> {
                   decoration: BoxDecoration(
                     color: colorSeleccionado,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                        color: Colors.grey.shade400, width: 2),
+                    border: Border.all(color: Colors.grey.shade400, width: 2),
                   ),
-                  child:
-                      const Icon(Icons.colorize, color: Colors.white),
+                  child: const Icon(Icons.colorize, color: Colors.white),
                 ),
               ),
               const SizedBox(height: 8),
-              Text('Toca para elegir un color',
-                  style: TextStyle(
-                      fontSize: 12, color: Colors.grey.shade500)),
+              Text(
+                l10n.registroTocaColor,
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+              ),
               const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
@@ -167,7 +176,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
                   onPressed: cargando ? null : registrar,
                   child: cargando
                       ? const CircularProgressIndicator()
-                      : const Text('Crear perfil'),
+                      : Text(l10n.btnCrearPerfil),
                 ),
               ),
             ],

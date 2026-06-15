@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/igdb_service.dart';
+import 'package:frontend/l10n/app_localizations.dart';
 
 class IgdbConfigScreen extends StatefulWidget {
   const IgdbConfigScreen({super.key});
@@ -28,11 +29,12 @@ class _IgdbConfigScreenState extends State<IgdbConfigScreen> {
   }
 
   Future<void> _guardar() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_clientIdController.text.isEmpty ||
         _clientSecretController.text.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Completa ambos campos')));
+      ).showSnackBar(SnackBar(content: Text(l10n.igdbCamposObligatorios)));
       return;
     }
     setState(() => _cargando = true);
@@ -45,11 +47,9 @@ class _IgdbConfigScreenState extends State<IgdbConfigScreen> {
     if (!validas) {
       setState(() => _cargando = false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Credenciales inválidas. Verifica tus datos.'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.igdbCredencialesInvalidas)));
       return;
     }
 
@@ -65,9 +65,9 @@ class _IgdbConfigScreenState extends State<IgdbConfigScreen> {
       _tieneCredenciales = true;
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('IGDB configurado correctamente')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.igdbConfiguradoOk)));
   }
 
   Future<void> _limpiar() async {
@@ -80,8 +80,10 @@ class _IgdbConfigScreenState extends State<IgdbConfigScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('IGDB')),
+      appBar: AppBar(title: Text(l10n.igdbTitulo)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: _tieneCredenciales
@@ -94,20 +96,22 @@ class _IgdbConfigScreenState extends State<IgdbConfigScreen> {
                     size: 48,
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'IGDB configurado',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  Text(
+                    l10n.igdbConfiguradoTitulo,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Las credenciales están guardadas localmente. '
-                    'El botón IGDB está disponible al añadir juegos.',
-                    style: TextStyle(color: Colors.grey),
+                  Text(
+                    l10n.igdbConfiguradoDescripcion,
+                    style: const TextStyle(color: Colors.grey),
                   ),
                   const SizedBox(height: 24),
                   OutlinedButton.icon(
                     icon: const Icon(Icons.delete_outline),
-                    label: const Text('Eliminar credenciales'),
+                    label: Text(l10n.igdbEliminarCredenciales),
                     onPressed: _limpiar,
                   ),
                 ],
@@ -115,35 +119,33 @@ class _IgdbConfigScreenState extends State<IgdbConfigScreen> {
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Configurar IGDB',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  Text(
+                    l10n.igdbConfigurarTitulo,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'IGDB es la base de datos de videojuegos de Twitch. '
-                    'Es gratuita y cubre prácticamente cualquier juego.',
-                    style: TextStyle(color: Colors.grey),
+                  Text(
+                    l10n.igdbDescripcion,
+                    style: const TextStyle(color: Colors.grey),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    '¿Cómo obtener credenciales?\n'
-                    '1. Ve a dev.twitch.tv\n'
-                    '2. Inicia sesión con tu cuenta de Twitch\n'
-                    '3. Crea una nueva aplicación (cualquier nombre)\n'
-                    '4. Copia el Client-ID y genera un Client-Secret',
-                    style: TextStyle(fontSize: 13, color: Colors.grey),
+                  Text(
+                    l10n.igdbInstrucciones,
+                    style: const TextStyle(fontSize: 13, color: Colors.grey),
                   ),
                   const SizedBox(height: 24),
                   TextField(
                     controller: _clientIdController,
-                    decoration: const InputDecoration(labelText: 'Client-ID'),
+                    decoration: InputDecoration(labelText: l10n.igdbClientId),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _clientSecretController,
                     decoration: InputDecoration(
-                      labelText: 'Client-Secret',
+                      labelText: l10n.igdbClientSecret,
                       suffixIcon: IconButton(
                         icon: Icon(
                           _mostrarSecret
@@ -167,7 +169,7 @@ class _IgdbConfigScreenState extends State<IgdbConfigScreen> {
                               height: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Guardar y verificar'),
+                          : Text(l10n.igdbGuardarVerificar),
                     ),
                   ),
                 ],

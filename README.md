@@ -8,8 +8,6 @@
 Sin cuentas. Sin servidores. Sin internet. Solo tus juegos, en tu dispositivo.
 No accounts. No servers. No internet. Just your games, on your device.
 
-[Descargar APK / Download APK](https://github.com/SrFaper/feed95/releases/tag/beta) · [Descargar Windows / Download Windows](https://github.com/SrFaper/feed95/releases/tag/beta-windows) · [Ver Releases](https://github.com/SrFaper/feed95/releases)
-
 </div>
 
 ---

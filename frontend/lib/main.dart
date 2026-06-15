@@ -3,6 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/perfiles_screen.dart';
 import 'screens/home_screen.dart';
 import 'services/api_service.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:frontend/l10n/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,14 +34,15 @@ class Feed95AppState extends State<Feed95App> {
   Future<void> _cargarPreferencias() async {
     final prefs = await SharedPreferences.getInstance();
     final tema = prefs.getString('theme_mode') ?? 'system';
-    final colorInt = prefs.getInt('accent_color') ??
+    final colorInt =
+        prefs.getInt('accent_color') ??
         const Color.fromARGB(255, 255, 54, 71).toARGB32();
     setState(() {
       _themeMode = tema == 'dark'
           ? ThemeMode.dark
           : tema == 'light'
-              ? ThemeMode.light
-              : ThemeMode.system;
+          ? ThemeMode.light
+          : ThemeMode.system;
       _accentColor = Color(colorInt);
     });
   }
@@ -51,8 +54,8 @@ class Feed95AppState extends State<Feed95App> {
       modo == ThemeMode.dark
           ? 'dark'
           : modo == ThemeMode.light
-              ? 'light'
-              : 'system',
+          ? 'light'
+          : 'system',
     );
     setState(() => _themeMode = modo);
   }
@@ -68,6 +71,15 @@ class Feed95AppState extends State<Feed95App> {
     return MaterialApp(
       title: 'Feed95',
       debugShowCheckedModeBanner: false,
+      // Configuración de localización
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('es'), Locale('en')],
+      // Configuración de temas
       themeMode: _themeMode,
       theme: ThemeData(
         useMaterial3: true,
@@ -90,9 +102,7 @@ class Feed95AppState extends State<Feed95App> {
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(color: _accentColor, width: 2),
@@ -121,9 +131,7 @@ class Feed95AppState extends State<Feed95App> {
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(color: _accentColor, width: 2),
@@ -159,10 +167,8 @@ class _SplashScreenState extends State<SplashScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => HomeScreen(
-              usuario: usuario,
-              appState: Feed95App.of(context),
-            ),
+            builder: (context) =>
+                HomeScreen(usuario: usuario, appState: Feed95App.of(context)),
           ),
         );
         return;
@@ -178,7 +184,6 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-        body: Center(child: CircularProgressIndicator()));
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }

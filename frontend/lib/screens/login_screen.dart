@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
+import '../main.dart';
 import 'home_screen.dart';
 import 'registro_screen.dart';
+import 'package:frontend/l10n/app_localizations.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -17,10 +19,12 @@ class _LoginScreenState extends State<LoginScreen> {
   bool cargando = false;
 
   Future<void> iniciarSesion() async {
+    final l10n = AppLocalizations.of(context)!;
+
     if (nombreController.text.isEmpty || passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Complete todos los campos')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.registroCamposObligatorios)));
       return;
     }
 
@@ -42,18 +46,22 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => HomeScreen(usuario: usuario)),
+        MaterialPageRoute(
+          builder: (context) =>
+              HomeScreen(usuario: usuario, appState: Feed95App.of(context)),
+        ),
       );
     } else {
-      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(respuesta['message'])));
+      ).showSnackBar(SnackBar(content: Text(l10n.perfilesPasswordIncorrecta)));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Feed95')),
       body: Padding(
@@ -61,19 +69,21 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              'Iniciar sesión',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            Text(
+              l10n.perfilesTitulo,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
             TextField(
               controller: nombreController,
-              decoration: const InputDecoration(labelText: 'Usuario'),
+              decoration: InputDecoration(labelText: l10n.registroUsuario),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: passwordController,
-              decoration: const InputDecoration(labelText: 'Contraseña'),
+              decoration: InputDecoration(
+                labelText: l10n.perfilesInputPassword,
+              ),
               obscureText: true,
             ),
             const SizedBox(height: 24),
@@ -81,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
               onPressed: cargando ? null : iniciarSesion,
               child: cargando
                   ? const CircularProgressIndicator()
-                  : const Text('Entrar'),
+                  : Text(l10n.btnEnter),
             ),
             TextButton(
               onPressed: () {
@@ -92,7 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 );
               },
-              child: const Text('¿No tienes cuenta? Créala aquí'),
+              child: Text(l10n.loginSinCuenta),
             ),
           ],
         ),

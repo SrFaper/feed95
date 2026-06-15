@@ -12,6 +12,7 @@ import 'perfiles_screen.dart';
 import 'perfil_screen.dart';
 import 'f95_config_screen.dart';
 import 'igdb_config_screen.dart';
+import 'package:frontend/l10n/app_localizations.dart';
 
 class HomeScreen extends StatefulWidget {
   final Usuario usuario;
@@ -66,19 +67,18 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _exportarBackup() async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       final json = await ApiService.exportarBackup();
       if (kIsWeb) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Exportar backup no está disponible en Web'),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.homeBackupNoDisponibleWeb)));
         return;
       }
       final carpeta = await FilePicker.platform.getDirectoryPath(
-        dialogTitle: 'Guardar backup en...',
+        dialogTitle: l10n.homeGuardarBackupEn,
       );
       if (carpeta == null) return;
       final fecha = DateTime.now()
@@ -89,50 +89,46 @@ class _HomeScreenState extends State<HomeScreen> {
       await archivo.writeAsString(json);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Backup guardado en ${archivo.path}')),
+        SnackBar(content: Text(l10n.homeBackupGuardado(archivo.path))),
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error al exportar: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.homeErrorExportar(e.toString()))),
+      );
     }
   }
 
   Future<void> _importarBackup() async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       if (kIsWeb) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Importar backup no está disponible en Web'),
-          ),
+          SnackBar(content: Text(l10n.homeImportarNoDisponibleWeb)),
         );
         return;
       }
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['json'],
-        dialogTitle: 'Seleccionar backup de Feed95',
+        dialogTitle: l10n.homeDialogoImportarTitulo,
       );
       if (result == null || result.files.single.path == null) return;
       if (!mounted) return;
       final confirmar = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Importar backup'),
-          content: const Text(
-            'Se agregarán los perfiles y juegos del backup. '
-            'Los perfiles con el mismo nombre serán omitidos.',
-          ),
+          title: Text(l10n.homeDialogoImportarTitulo),
+          content: Text(l10n.homeDialogoImportarContenido),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar'),
+              child: Text(l10n.btnCancelar),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Importar'),
+              child: Text(l10n.btnImportar),
             ),
           ],
         ),
@@ -142,18 +138,29 @@ class _HomeScreenState extends State<HomeScreen> {
       final contenido = await archivo.readAsString();
       final respuesta = await ApiService.importarBackup(contenido);
       if (!mounted) return;
+      final String mensaje;
+      if (respuesta['messageKey'] == 'apiBackupRestaurado') {
+        mensaje = l10n.apiBackupRestaurado(
+          respuesta['perfiles'] as int,
+          respuesta['categorias'] as int,
+          respuesta['juegos'] as int,
+        );
+      } else {
+        mensaje = l10n.apiBackupArchivoInvalido;
+      }
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(respuesta['message'])));
+      ).showSnackBar(SnackBar(content: Text(mensaje)));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error al importar: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.homeErrorImportar(e.toString()))),
+      );
     }
   }
 
   void _mostrarBottomSheet() {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -165,7 +172,6 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Handle
             Center(
               child: Container(
                 width: 40,
@@ -177,17 +183,15 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            // Dos secciones en fila
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Configuraciones
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'CONFIGURACIONES',
+                        l10n.homeSeccionConfiguraciones,
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.grey.shade500,
@@ -198,7 +202,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: 10),
                       _botonSheet(
                         icon: Icons.sports_esports,
-                        label: 'Configurar IGDB',
+                        label: l10n.homeConfigurarIGDB,
                         onTap: () {
                           Navigator.pop(ctx);
                           Navigator.push(
@@ -213,7 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(height: 8),
                         _botonSheet(
                           icon: Icons.settings,
-                          label: 'Configurar F95Zone',
+                          label: l10n.homeConfigurarF95,
                           onTap: () {
                             Navigator.pop(ctx);
                             Navigator.push(
@@ -229,13 +233,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                // Sistema
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'SISTEMA',
+                        l10n.homeSeccionSistema,
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.grey.shade500,
@@ -246,7 +249,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: 10),
                       _botonSheet(
                         icon: Icons.upload,
-                        label: 'Exportar copia',
+                        label: l10n.homeExportarCopia,
                         onTap: () {
                           Navigator.pop(ctx);
                           _exportarBackup();
@@ -255,7 +258,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: 8),
                       _botonSheet(
                         icon: Icons.download,
-                        label: 'Importar copia',
+                        label: l10n.homeImportarCopia,
                         onTap: () {
                           Navigator.pop(ctx);
                           _importarBackup();
@@ -340,6 +343,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _contenidoPrincipal(bool esAncho) {
+    final l10n = AppLocalizations.of(context)!;
+
     final avatarWidget = GestureDetector(
       onTap: () async {
         _tapContador++;
@@ -355,8 +360,8 @@ class _HomeScreenState extends State<HomeScreen> {
             SnackBar(
               content: Text(
                 !activado
-                    ? 'Modo extendido activado'
-                    : 'Modo extendido desactivado',
+                    ? l10n.homeModoExtendidoActivado
+                    : l10n.homeModoExtendidoDesactivado,
               ),
               duration: const Duration(seconds: 2),
             ),
@@ -372,7 +377,10 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 10),
         TextButton.icon(
           icon: const Icon(Icons.edit, size: 14),
-          label: const Text('Editar perfil', style: TextStyle(fontSize: 13)),
+          label: Text(
+            l10n.homeEditarPerfil,
+            style: const TextStyle(fontSize: 13),
+          ),
           style: TextButton.styleFrom(
             foregroundColor: Theme.of(context).colorScheme.primary,
             padding: EdgeInsets.zero,
@@ -410,7 +418,7 @@ class _HomeScreenState extends State<HomeScreen> {
           : CrossAxisAlignment.center,
       children: [
         Text(
-          'Bienvenido, ${usuario.nombre}',
+          l10n.homeBienvenido(usuario.nombre),
           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           textAlign: esAncho ? TextAlign.left : TextAlign.center,
         ),
@@ -431,22 +439,21 @@ class _HomeScreenState extends State<HomeScreen> {
               borderRadius: BorderRadius.circular(8),
             ),
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.videogame_asset, size: 18),
-              SizedBox(width: 8),
+              const Icon(Icons.videogame_asset, size: 18),
+              const SizedBox(width: 8),
               Text(
-                'Mi catálogo',
-                style: TextStyle(fontWeight: FontWeight.w600),
+                l10n.homeMiCatalogo,
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
-              SizedBox(width: 8),
-              Icon(Icons.arrow_forward, size: 16),
+              const SizedBox(width: 8),
+              const Icon(Icons.arrow_forward, size: 16),
             ],
           ),
         ),
         const SizedBox(height: 16),
-        // Stats
         Container(
           decoration: BoxDecoration(
             border: Border(
@@ -461,11 +468,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   ? MainAxisAlignment.start
                   : MainAxisAlignment.center,
               children: [
-                _statItem('$_totalJuegos', 'Juegos'),
+                _statItem('$_totalJuegos', l10n.homeStatJuegos),
                 _separadorVertical(),
-                _statItem('$_completados', 'Completados'),
+                _statItem('$_completados', l10n.homeStatCompletados),
                 _separadorVertical(),
-                _statItem('$_jugando', 'Jugando'),
+                _statItem('$_jugando', l10n.homeStatJugando),
               ],
             ),
           ),
@@ -490,14 +497,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final esAncho = MediaQuery.of(context).size.width > 500;
     final appState = widget.appState;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Feed95',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          l10n.homeTitle,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
           IconButton(
@@ -506,7 +514,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ? Icons.light_mode
                   : Icons.dark_mode,
             ),
-            tooltip: 'Cambiar tema',
+            tooltip: l10n.homeTooltipCambiarTema,
             onPressed: () {
               final isDark = Theme.of(context).brightness == Brightness.dark;
               appState?.cambiarTema(isDark ? ThemeMode.light : ThemeMode.dark);
@@ -514,12 +522,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.switch_account),
-            tooltip: 'Cambiar perfil',
+            tooltip: l10n.homeTooltipCambiarPerfil,
             onPressed: _cambiarPerfil,
           ),
           IconButton(
             icon: const Icon(Icons.logout),
-            tooltip: 'Cerrar sesión',
+            tooltip: l10n.homeTooltipCerrarSesion,
             onPressed: _cambiarPerfil,
           ),
         ],
@@ -550,7 +558,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const Icon(Icons.keyboard_arrow_up, size: 18),
                   const SizedBox(width: 8),
                   Text(
-                    'Configuraciones y Backup',
+                    l10n.homeConfiguraciones,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,

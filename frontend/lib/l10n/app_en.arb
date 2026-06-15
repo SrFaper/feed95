@@ -1,0 +1,246 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "Feed95",
+
+  "btnCancelar": "Cancel",
+  "btnGuardar": "Save",
+  "btnEliminar": "Delete",
+  "btnEditar": "Edit",
+  "btnAceptar": "OK",
+  "btnEnter": "Enter",
+  "btnImportar": "Import",
+  "btnConfigurar": "Configure",
+  "btnCrearPerfil": "Create profile",
+  "btnNuevoPerfil": "New profile",
+  "loginSinCuenta": "Don't have an account? Create one here",
+
+  "estadoPendiente": "Pending",
+  "estadoJugando": "Playing",
+  "estadoCompletado": "Completed",
+  "estadoAbandonado": "Abandoned",
+
+  "splashCargando": "Loading...",
+
+  "homeTitle": "Feed95",
+  "homeBienvenido": "Welcome, {nombre}",
+  "@homeBienvenido": {
+    "placeholders": {
+      "nombre": { "type": "String" }
+    }
+  },
+  "homeMiCatalogo": "My catalog",
+  "homeStatJuegos": "Games",
+  "homeStatCompletados": "Completed",
+  "homeStatJugando": "Playing",
+  "homeTooltipCambiarTema": "Toggle theme",
+  "homeTooltipCambiarPerfil": "Switch profile",
+  "homeTooltipCerrarSesion": "Log out",
+  "homeEditarPerfil": "Edit profile",
+  "homeModoExtendidoActivado": "Extended mode enabled",
+  "homeModoExtendidoDesactivado": "Extended mode disabled",
+  "homeConfiguraciones": "Settings & Backup",
+  "homeSeccionConfiguraciones": "SETTINGS",
+  "homeSeccionSistema": "SYSTEM",
+  "homeConfigurarIGDB": "Configure IGDB",
+  "homeConfigurarF95": "Configure F95Zone",
+  "homeExportarCopia": "Export backup",
+  "homeImportarCopia": "Import backup",
+  "homeErrorExportar": "Export error: {error}",
+  "@homeErrorExportar": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "homeErrorImportar": "Import error: {error}",
+  "@homeErrorImportar": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "homeBackupGuardado": "Backup saved to {ruta}",
+  "@homeBackupGuardado": {
+    "placeholders": {
+      "ruta": { "type": "String" }
+    }
+  },
+  "homeBackupNoDisponibleWeb": "Export backup is not available on Web",
+  "homeImportarNoDisponibleWeb": "Import backup is not available on Web",
+  "homeDialogoImportarTitulo": "Import backup",
+  "homeDialogoImportarContenido": "Profiles and games from the backup will be added. Profiles with the same name will be skipped.",
+  "homeGuardarBackupEn": "Save backup to...",
+
+  "perfilesTitulo": "Feed95 — Profiles",
+  "perfilesVacio": "No profiles yet",
+  "perfilesEliminarTitulo": "Delete profile",
+  "perfilesEliminarContenido": "Delete {nombre}? All their games will be removed.",
+  "@perfilesEliminarContenido": {
+    "placeholders": {
+      "nombre": { "type": "String" }
+    }
+  },
+  "perfilesPasswordIncorrecta": "Wrong password",
+  "perfilesInputPassword": "Password",
+
+  "registroTitulo": "New profile",
+  "registroUsuario": "Username",
+  "registroPassword": "Password",
+  "registroRepetirPassword": "Repeat password",
+  "registroColorPerfil": "Profile color",
+  "registroTocaColor": "Tap to choose a color",
+  "registroElegirColor": "Choose a color",
+  "registroCamposObligatorios": "Please fill in all fields",
+  "registroPasswordsNoCoinciden": "Passwords do not match",
+  "registroColorAplicar": "Apply",
+
+  "perfilTitulo": "Edit profile",
+  "perfilCambiarImagen": "Change image",
+  "perfilQuitarImagen": "Remove",
+  "perfilNuevaPassword": "New password",
+  "perfilNuevaPasswordHint": "Leave blank to keep current",
+  "perfilRepetirNuevaPassword": "Repeat new password",
+  "perfilColorTitulo": "Profile color",
+  "perfilColorTocar": "Tap to change color",
+  "perfilGuardarCambios": "Save changes",
+  "perfilNombreVacio": "Name cannot be empty",
+  "perfilActualizado": "Profile updated successfully",
+
+  "catalogoTitulo": "My catalog",
+  "catalogoSecundarioNombre": "NSFW",
+  "catalogoVacio": "No games in this catalog",
+  "catalogoVacioFiltros": "No games match those filters",
+  "catalogoReordenarVacio": "No games to reorder",
+  "catalogoBuscar": "Search...",
+  "catalogoTooltipFiltros": "Filters & categories",
+  "catalogoTooltipReordenar": "Reorder",
+  "catalogoTooltipVerCatalogo": "View catalog",
+  "catalogoTooltipVistaLista": "List view",
+  "catalogoTooltipVistaGrid": "Grid view",
+  "catalogoTooltipCatalogoSecundario": "Go to {nombre}",
+  "@catalogoTooltipCatalogoSecundario": {
+    "placeholders": {
+      "nombre": { "type": "String" }
+    }
+  },
+  "catalogoTooltipCatalogoPrincipal": "Go to main catalog",
+  "catalogoSeccionEstado": "Status",
+  "catalogoSeccionCategorias": "Categories",
+  "catalogoFiltroTodos": "All",
+  "catalogoFiltroTodas": "All",
+  "catalogoAsignarCategoria": "Assign category",
+  "catalogoSinCategoria": "No category",
+
+  "categoriaNuevaTitulo": "New category",
+  "categoriaEditarTitulo": "Edit category",
+  "categoriaNombreLabel": "Name",
+  "categoriaEliminarTitulo": "Delete category",
+  "categoriaEliminarContenido": "Delete \"{nombre}\"? Games will lose this category.",
+  "@categoriaEliminarContenido": {
+    "placeholders": {
+      "nombre": { "type": "String" }
+    }
+  },
+
+  "juegoDetalleTitulo": "Detail",
+  "juegoDetalleDescripcion": "Description",
+  "juegoDetalleImagenes": "Screenshots",
+  "juegoDetalleJugar": "Play",
+  "juegoDetalleEliminarTitulo": "Delete game",
+  "juegoDetalleEliminarContenido": "Delete \"{nombre}\"? This action cannot be undone.",
+  "@juegoDetalleEliminarContenido": {
+    "placeholders": {
+      "nombre": { "type": "String" }
+    }
+  },
+  "juegoDetalleErrorEjecutable": "Could not launch: {error}",
+  "@juegoDetalleErrorEjecutable": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "juegoDetalleTooltipEditar": "Edit",
+  "juegoDetalleTooltipEliminar": "Delete",
+
+  "juegoFormNuevoTitulo": "New game",
+  "juegoFormEditarTitulo": "Edit game",
+  "juegoFormNombre": "Name *",
+  "juegoFormBuscarEn": "Search on:",
+  "juegoFormDescripcion": "Description",
+  "juegoFormImagenDetalle": "Detail image",
+  "juegoFormUrlImagenDetalle": "Detail image URL",
+  "juegoFormImagenGrid": "Grid image",
+  "juegoFormUrlImagenGrid": "Grid image URL",
+  "juegoFormVersion": "Version",
+  "juegoFormCalificacion": "Rating (1-10)",
+  "juegoFormGeneros": "Genres",
+  "juegoFormEstado": "Status",
+  "juegoFormLanzador": "Launcher",
+  "juegoFormRutaEjecutable": "Executable path",
+  "juegoFormRutaEjecutableHint": "C:\\games\\mygame.exe",
+  "juegoFormBuscarArchivo": "Browse file",
+  "juegoFormQuitarRuta": "Remove path",
+  "juegoFormBtnGuardar": "Save",
+  "juegoFormBtnActualizar": "Update",
+  "juegoFormNombreObligatorio": "Name is required",
+  "juegoFormNoBusqueda": "Enter a name to search",
+  "juegoFormSinResultadosSteam": "No results found on Steam",
+  "juegoFormSinResultadosEpic": "No results found on Epic",
+  "juegoFormSinResultadosIgdb": "No results found on IGDB",
+  "juegoFormSinResultadosF95": "No results found on F95Zone",
+  "juegoFormErrorDetalles": "Could not fetch details",
+  "juegoFormResultadosSteam": "Steam results",
+  "juegoFormResultadosEpic": "Epic Games results",
+  "juegoFormResultadosIgdb": "IGDB results",
+  "juegoFormResultadosF95": "F95Zone results",
+  "juegoFormAgregado": "Game added successfully",
+  "juegoFormActualizado": "Game updated successfully",
+  "juegoFormEliminado": "Game deleted successfully",
+
+  "igdbTitulo": "IGDB",
+  "igdbConfiguradoTitulo": "IGDB configured",
+  "igdbConfiguradoDescripcion": "Credentials are saved locally. The IGDB button is available when adding games.",
+  "igdbEliminarCredenciales": "Remove credentials",
+  "igdbConfigurarTitulo": "Set up IGDB",
+  "igdbDescripcion": "IGDB is Twitch's video game database. It's free and covers virtually any game.",
+  "igdbInstrucciones": "How to get credentials?\n1. Go to dev.twitch.tv\n2. Sign in with your Twitch account\n3. Create a new application (any name)\n4. Copy the Client-ID and generate a Client-Secret",
+  "igdbClientId": "Client-ID",
+  "igdbClientSecret": "Client-Secret",
+  "igdbGuardarVerificar": "Save and verify",
+  "igdbCamposObligatorios": "Please fill in both fields",
+  "igdbCredencialesInvalidas": "Invalid credentials. Please check your data.",
+  "igdbConfiguradoOk": "IGDB configured successfully",
+  "igdbNecesitaConfiguracion": "You need to configure IGDB first.",
+
+  "f95Titulo": "F95Zone",
+  "f95SesionActivaTitulo": "Active session",
+  "f95SesionActivaDescripcion": "Session cookies are saved on your device. F95Zone search is available.",
+  "f95CerrarSesion": "Log out",
+  "f95SesionCerrada": "Session closed",
+  "f95ConectarTitulo": "Connect to F95Zone",
+  "f95ConectarDescripcion": "Your credentials are only used to log in. Cookies are stored locally on your device.",
+  "f95Usuario": "F95Zone username",
+  "f95Password": "Password",
+  "f95IniciarSesion": "Log in",
+  "f95CamposObligatorios": "Please enter your username and password",
+  "f95SesionOk": "Logged in successfully",
+  "f95ErrorSesion": "Could not log in. Please check your credentials.",
+  "f95NecesitaSesion": "You need to log in to F95Zone first.",
+
+  "apiPerfilCreadoOk": "Profile created successfully",
+  "apiNombreDuplicado": "That username already exists",
+  "apiPasswordIncorrecta": "Wrong password",
+  "apiPerfilActualizadoOk": "Profile updated successfully",
+  "apiNombreEnUso": "That name is already taken",
+  "apiPerfilEliminado": "Profile deleted",
+  "apiCategoriaCreada": "Category created",
+  "apiCategoriaActualizada": "Category updated",
+  "apiBackupArchivoInvalido": "Invalid backup file",
+  "apiBackupRestaurado": "Backup restored: {perfiles} profile(s), {categorias} categor(y/ies), {juegos} game(s)",
+  "@apiBackupRestaurado": {
+    "placeholders": {
+      "perfiles": { "type": "int" },
+      "categorias": { "type": "int" },
+      "juegos": { "type": "int" }
+    }
+  }
+}

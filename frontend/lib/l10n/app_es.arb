@@ -1,0 +1,246 @@
+{
+  "@@locale": "es",
+
+  "appTitle": "Feed95",
+
+  "btnCancelar": "Cancelar",
+  "btnGuardar": "Guardar",
+  "btnEliminar": "Eliminar",
+  "btnEditar": "Editar",
+  "btnAceptar": "Aceptar",
+  "btnEnter": "Entrar",
+  "btnImportar": "Importar",
+  "btnConfigurar": "Configurar",
+  "btnCrearPerfil": "Crear perfil",
+  "btnNuevoPerfil": "Nuevo perfil",
+  "loginSinCuenta": "¿No tienes cuenta? Créala aquí",
+
+  "estadoPendiente": "Pendiente",
+  "estadoJugando": "Jugando",
+  "estadoCompletado": "Completado",
+  "estadoAbandonado": "Abandonado",
+
+  "splashCargando": "Cargando...",
+
+  "homeTitle": "Feed95",
+  "homeBienvenido": "Bienvenido, {nombre}",
+  "@homeBienvenido": {
+    "placeholders": {
+      "nombre": { "type": "String" }
+    }
+  },
+  "homeMiCatalogo": "Mi catálogo",
+  "homeStatJuegos": "Juegos",
+  "homeStatCompletados": "Completados",
+  "homeStatJugando": "Jugando",
+  "homeTooltipCambiarTema": "Cambiar tema",
+  "homeTooltipCambiarPerfil": "Cambiar perfil",
+  "homeTooltipCerrarSesion": "Cerrar sesión",
+  "homeEditarPerfil": "Editar perfil",
+  "homeModoExtendidoActivado": "Modo extendido activado",
+  "homeModoExtendidoDesactivado": "Modo extendido desactivado",
+  "homeConfiguraciones": "Configuraciones y Backup",
+  "homeSeccionConfiguraciones": "CONFIGURACIONES",
+  "homeSeccionSistema": "SISTEMA",
+  "homeConfigurarIGDB": "Configurar IGDB",
+  "homeConfigurarF95": "Configurar F95Zone",
+  "homeExportarCopia": "Exportar copia",
+  "homeImportarCopia": "Importar copia",
+  "homeErrorExportar": "Error al exportar: {error}",
+  "@homeErrorExportar": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "homeErrorImportar": "Error al importar: {error}",
+  "@homeErrorImportar": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "homeBackupGuardado": "Backup guardado en {ruta}",
+  "@homeBackupGuardado": {
+    "placeholders": {
+      "ruta": { "type": "String" }
+    }
+  },
+  "homeBackupNoDisponibleWeb": "Exportar backup no está disponible en Web",
+  "homeImportarNoDisponibleWeb": "Importar backup no está disponible en Web",
+  "homeDialogoImportarTitulo": "Importar backup",
+  "homeDialogoImportarContenido": "Se agregarán los perfiles y juegos del backup. Los perfiles con el mismo nombre serán omitidos.",
+  "homeGuardarBackupEn": "Guardar backup en...",
+
+  "perfilesTitulo": "Feed95 — Perfiles",
+  "perfilesVacio": "No hay perfiles todavía",
+  "perfilesEliminarTitulo": "Eliminar perfil",
+  "perfilesEliminarContenido": "¿Eliminar a {nombre}? Se borrarán todos sus juegos.",
+  "@perfilesEliminarContenido": {
+    "placeholders": {
+      "nombre": { "type": "String" }
+    }
+  },
+  "perfilesPasswordIncorrecta": "Contraseña incorrecta",
+  "perfilesInputPassword": "Contraseña",
+
+  "registroTitulo": "Nuevo perfil",
+  "registroUsuario": "Usuario",
+  "registroPassword": "Contraseña",
+  "registroRepetirPassword": "Repetir contraseña",
+  "registroColorPerfil": "Color del perfil",
+  "registroTocaColor": "Toca para elegir un color",
+  "registroElegirColor": "Elige un color",
+  "registroCamposObligatorios": "Complete todos los campos",
+  "registroPasswordsNoCoinciden": "Las contraseñas no coinciden",
+  "registroColorAplicar": "Aplicar",
+
+  "perfilTitulo": "Editar perfil",
+  "perfilCambiarImagen": "Cambiar imagen",
+  "perfilQuitarImagen": "Quitar",
+  "perfilNuevaPassword": "Nueva contraseña",
+  "perfilNuevaPasswordHint": "Dejar vacío para no cambiar",
+  "perfilRepetirNuevaPassword": "Repetir nueva contraseña",
+  "perfilColorTitulo": "Color del perfil",
+  "perfilColorTocar": "Toca para cambiar el color",
+  "perfilGuardarCambios": "Guardar cambios",
+  "perfilNombreVacio": "El nombre no puede estar vacío",
+  "perfilActualizado": "Perfil actualizado correctamente",
+
+  "catalogoTitulo": "Mi catálogo",
+  "catalogoSecundarioNombre": "NSFW",
+  "catalogoVacio": "No hay juegos en este catálogo",
+  "catalogoVacioFiltros": "No hay juegos con esos filtros",
+  "catalogoReordenarVacio": "No hay juegos para reordenar",
+  "catalogoBuscar": "Buscar...",
+  "catalogoTooltipFiltros": "Filtros y categorías",
+  "catalogoTooltipReordenar": "Reordenar",
+  "catalogoTooltipVerCatalogo": "Ver catálogo",
+  "catalogoTooltipVistaLista": "Vista lista",
+  "catalogoTooltipVistaGrid": "Vista cuadrícula",
+  "catalogoTooltipCatalogoSecundario": "Ir a {nombre}",
+  "@catalogoTooltipCatalogoSecundario": {
+    "placeholders": {
+      "nombre": { "type": "String" }
+    }
+  },
+  "catalogoTooltipCatalogoPrincipal": "Ir al catálogo principal",
+  "catalogoSeccionEstado": "Estado",
+  "catalogoSeccionCategorias": "Categorías",
+  "catalogoFiltroTodos": "Todos",
+  "catalogoFiltroTodas": "Todas",
+  "catalogoAsignarCategoria": "Asignar categoría",
+  "catalogoSinCategoria": "Sin categoría",
+
+  "categoriaNuevaTitulo": "Nueva categoría",
+  "categoriaEditarTitulo": "Editar categoría",
+  "categoriaNombreLabel": "Nombre",
+  "categoriaEliminarTitulo": "Eliminar categoría",
+  "categoriaEliminarContenido": "¿Eliminar \"{nombre}\"? Los juegos perderán esta categoría.",
+  "@categoriaEliminarContenido": {
+    "placeholders": {
+      "nombre": { "type": "String" }
+    }
+  },
+
+  "juegoDetalleTitulo": "Detalle",
+  "juegoDetalleDescripcion": "Descripción",
+  "juegoDetalleImagenes": "Imágenes",
+  "juegoDetalleJugar": "Jugar",
+  "juegoDetalleEliminarTitulo": "Eliminar juego",
+  "juegoDetalleEliminarContenido": "¿Eliminar \"{nombre}\"? Esta acción no se puede deshacer.",
+  "@juegoDetalleEliminarContenido": {
+    "placeholders": {
+      "nombre": { "type": "String" }
+    }
+  },
+  "juegoDetalleErrorEjecutable": "No se pudo ejecutar: {error}",
+  "@juegoDetalleErrorEjecutable": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "juegoDetalleTooltipEditar": "Editar",
+  "juegoDetalleTooltipEliminar": "Eliminar",
+
+  "juegoFormNuevoTitulo": "Nuevo juego",
+  "juegoFormEditarTitulo": "Editar juego",
+  "juegoFormNombre": "Nombre *",
+  "juegoFormBuscarEn": "Buscar en:",
+  "juegoFormDescripcion": "Descripción",
+  "juegoFormImagenDetalle": "Imagen del detalle",
+  "juegoFormUrlImagenDetalle": "URL imagen detalle",
+  "juegoFormImagenGrid": "Imagen del grid",
+  "juegoFormUrlImagenGrid": "URL imagen grid",
+  "juegoFormVersion": "Versión",
+  "juegoFormCalificacion": "Calificación (1-10)",
+  "juegoFormGeneros": "Géneros",
+  "juegoFormEstado": "Estado",
+  "juegoFormLanzador": "Lanzador",
+  "juegoFormRutaEjecutable": "Ruta del ejecutable",
+  "juegoFormRutaEjecutableHint": "C:\\juegos\\myjuego.exe",
+  "juegoFormBuscarArchivo": "Buscar archivo",
+  "juegoFormQuitarRuta": "Quitar ruta",
+  "juegoFormBtnGuardar": "Guardar",
+  "juegoFormBtnActualizar": "Actualizar",
+  "juegoFormNombreObligatorio": "El nombre es obligatorio",
+  "juegoFormNoBusqueda": "Escribe un nombre para buscar",
+  "juegoFormSinResultadosSteam": "No se encontraron resultados en Steam",
+  "juegoFormSinResultadosEpic": "No se encontraron resultados en Epic",
+  "juegoFormSinResultadosIgdb": "No se encontraron resultados en IGDB",
+  "juegoFormSinResultadosF95": "No se encontraron resultados en F95Zone",
+  "juegoFormErrorDetalles": "No se pudieron obtener los detalles",
+  "juegoFormResultadosSteam": "Resultados en Steam",
+  "juegoFormResultadosEpic": "Resultados en Epic Games",
+  "juegoFormResultadosIgdb": "Resultados en IGDB",
+  "juegoFormResultadosF95": "Resultados en F95Zone",
+  "juegoFormAgregado": "Juego agregado correctamente",
+  "juegoFormActualizado": "Juego actualizado correctamente",
+  "juegoFormEliminado": "Juego eliminado correctamente",
+
+  "igdbTitulo": "IGDB",
+  "igdbConfiguradoTitulo": "IGDB configurado",
+  "igdbConfiguradoDescripcion": "Las credenciales están guardadas localmente. El botón IGDB está disponible al añadir juegos.",
+  "igdbEliminarCredenciales": "Eliminar credenciales",
+  "igdbConfigurarTitulo": "Configurar IGDB",
+  "igdbDescripcion": "IGDB es la base de datos de videojuegos de Twitch. Es gratuita y cubre prácticamente cualquier juego.",
+  "igdbInstrucciones": "¿Cómo obtener credenciales?\n1. Ve a dev.twitch.tv\n2. Inicia sesión con tu cuenta de Twitch\n3. Crea una nueva aplicación (cualquier nombre)\n4. Copia el Client-ID y genera un Client-Secret",
+  "igdbClientId": "Client-ID",
+  "igdbClientSecret": "Client-Secret",
+  "igdbGuardarVerificar": "Guardar y verificar",
+  "igdbCamposObligatorios": "Completa ambos campos",
+  "igdbCredencialesInvalidas": "Credenciales inválidas. Verifica tus datos.",
+  "igdbConfiguradoOk": "IGDB configurado correctamente",
+  "igdbNecesitaConfiguracion": "Necesitas configurar IGDB primero.",
+
+  "f95Titulo": "F95Zone",
+  "f95SesionActivaTitulo": "Sesión activa",
+  "f95SesionActivaDescripcion": "Las cookies de sesión están guardadas en tu dispositivo. La búsqueda en F95Zone está disponible.",
+  "f95CerrarSesion": "Cerrar sesión",
+  "f95SesionCerrada": "Sesión cerrada",
+  "f95ConectarTitulo": "Conectar con F95Zone",
+  "f95ConectarDescripcion": "Tus credenciales se usan solo para iniciar sesión. Las cookies se guardan localmente en tu dispositivo.",
+  "f95Usuario": "Usuario de F95Zone",
+  "f95Password": "Contraseña",
+  "f95IniciarSesion": "Iniciar sesión",
+  "f95CamposObligatorios": "Completa usuario y contraseña",
+  "f95SesionOk": "Sesión iniciada correctamente",
+  "f95ErrorSesion": "No se pudo iniciar sesión. Verifica tus datos.",
+  "f95NecesitaSesion": "Necesitas iniciar sesión en F95Zone primero.",
+
+  "apiPerfilCreadoOk": "Perfil creado correctamente",
+  "apiNombreDuplicado": "Ese nombre de usuario ya existe",
+  "apiPasswordIncorrecta": "Contraseña incorrecta",
+  "apiPerfilActualizadoOk": "Perfil actualizado correctamente",
+  "apiNombreEnUso": "Ese nombre ya está en uso",
+  "apiPerfilEliminado": "Perfil eliminado",
+  "apiCategoriaCreada": "Categoría creada",
+  "apiCategoriaActualizada": "Categoría actualizada",
+  "apiBackupArchivoInvalido": "Archivo de backup inválido",
+  "apiBackupRestaurado": "Backup restaurado: {perfiles} perfil(es), {categorias} categoría(s), {juegos} juego(s)",
+  "@apiBackupRestaurado": {
+    "placeholders": {
+      "perfiles": { "type": "int" },
+      "categorias": { "type": "int" },
+      "juegos": { "type": "int" }
+    }
+  }
+}

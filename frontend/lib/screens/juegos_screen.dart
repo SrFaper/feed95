@@ -8,6 +8,7 @@ import '../models/categoria.dart';
 import '../services/api_service.dart';
 import 'juego_form_screen.dart';
 import 'juego_detalle_screen.dart';
+import 'package:frontend/l10n/app_localizations.dart';
 
 class JuegosScreen extends StatefulWidget {
   final Usuario usuario;
@@ -76,20 +77,25 @@ class _JuegosScreenState extends State<JuegosScreen> {
   }
 
   Future<void> _mostrarDialogoCategoria({Categoria? editar}) async {
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: editar?.nombre ?? '');
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(editar == null ? 'Nueva categoría' : 'Editar categoría'),
+        title: Text(
+          editar == null
+              ? l10n.categoriaNuevaTitulo
+              : l10n.categoriaEditarTitulo,
+        ),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(labelText: 'Nombre'),
+          decoration: InputDecoration(labelText: l10n.categoriaNombreLabel),
           autofocus: true,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+            child: Text(l10n.btnCancelar),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -111,7 +117,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
               navigator.pop();
               cargarTodo();
             },
-            child: const Text('Guardar'),
+            child: Text(l10n.btnGuardar),
           ),
         ],
       ),
@@ -119,22 +125,24 @@ class _JuegosScreenState extends State<JuegosScreen> {
   }
 
   Future<void> _eliminarCategoria(Categoria cat) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Eliminar categoría'),
-        content: Text(
-          '¿Eliminar "${cat.nombre}"? Los juegos perderán esta categoría.',
-        ),
+        title: Text(l10n.categoriaEliminarTitulo),
+        content: Text(l10n.categoriaEliminarContenido(cat.nombre)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
+            child: Text(l10n.btnCancelar),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Eliminar', style: TextStyle(color: Colors.white)),
+            child: Text(
+              l10n.btnEliminar,
+              style: const TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -162,7 +170,6 @@ class _JuegosScreenState extends State<JuegosScreen> {
     await ApiService.guardarOrden(juegos.map((j) => j.id).toList());
   }
 
-  // Drag & drop en grid: intercambia el juego arrastrado con el destino
   Future<void> _intercambiarEnGrid(int fromIndex, int toIndex) async {
     if (fromIndex == toIndex) return;
     setState(() {
@@ -173,6 +180,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
   }
 
   Widget _panelLateral() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       width: 220,
       decoration: BoxDecoration(
@@ -188,7 +196,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
             child: TextField(
               controller: _busquedaController,
               decoration: InputDecoration(
-                hintText: 'Buscar...',
+                hintText: l10n.catalogoBuscar,
                 prefixIcon: const Icon(Icons.search, size: 18),
                 isDense: true,
                 border: OutlineInputBorder(
@@ -210,7 +218,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             child: Text(
-              'Estado',
+              l10n.catalogoSeccionEstado,
               style: TextStyle(
                 fontSize: 11,
                 color: Colors.grey.shade500,
@@ -219,21 +227,22 @@ class _JuegosScreenState extends State<JuegosScreen> {
             ),
           ),
           _itemFiltro(
-            label: 'Todos',
+            label: l10n.catalogoFiltroTodos,
             seleccionado: filtroEstado == null,
             onTap: () => setState(() => filtroEstado = null),
           ),
-          for (final estado in [
-            'Pendiente',
-            'Jugando',
-            'Completado',
-            'Abandonado',
-          ])
+          for (final entry in {
+            'Pending': l10n.estadoPendiente,
+            'Playing': l10n.estadoJugando,
+            'Completed': l10n.estadoCompletado,
+            'Abandoned': l10n.estadoAbandonado,
+          }.entries)
             _itemFiltro(
-              label: estado,
-              seleccionado: filtroEstado == estado,
+              label: entry.value,
+              seleccionado: filtroEstado == entry.key,
               onTap: () => setState(
-                () => filtroEstado = filtroEstado == estado ? null : estado,
+                () =>
+                    filtroEstado = filtroEstado == entry.key ? null : entry.key,
               ),
             ),
           const Divider(indent: 12, endIndent: 12),
@@ -243,7 +252,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    'Categorías',
+                    l10n.catalogoSeccionCategorias,
                     style: TextStyle(
                       fontSize: 11,
                       color: Colors.grey.shade500,
@@ -261,14 +270,13 @@ class _JuegosScreenState extends State<JuegosScreen> {
             ),
           ),
           _itemFiltro(
-            label: 'Todas',
+            label: l10n.catalogoFiltroTodas,
             seleccionado: filtroCategoria == null,
             onTap: () => setState(() => filtroCategoria = null),
           ),
           Expanded(
             child: ListView(
-              children:
-                  categorias.map((cat) => _itemCategoria(cat)).toList(),
+              children: categorias.map((cat) => _itemCategoria(cat)).toList(),
             ),
           ),
         ],
@@ -293,8 +301,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: seleccionado ? FontWeight.bold : FontWeight.normal,
-            color:
-                seleccionado ? Theme.of(context).colorScheme.primary : null,
+            color: seleccionado ? Theme.of(context).colorScheme.primary : null,
           ),
         ),
       ),
@@ -340,8 +347,9 @@ class _JuegosScreenState extends State<JuegosScreen> {
                 cat.nombre,
                 style: TextStyle(
                   fontSize: 13,
-                  fontWeight:
-                      seleccionada ? FontWeight.bold : FontWeight.normal,
+                  fontWeight: seleccionada
+                      ? FontWeight.bold
+                      : FontWeight.normal,
                   color: seleccionada
                       ? Theme.of(context).colorScheme.primary
                       : null,
@@ -354,8 +362,6 @@ class _JuegosScreenState extends State<JuegosScreen> {
       ),
     );
   }
-
-  // ── Vista catálogo normal ────────────────────────────────────────────────────
 
   Widget _vistaGrid(List<Juego> lista) {
     return GridView.builder(
@@ -390,8 +396,6 @@ class _JuegosScreenState extends State<JuegosScreen> {
       },
     );
   }
-
-  // ── Vista reordenar: lista vertical ─────────────────────────────────────────
 
   Widget _vistaReordenLista(List<Juego> lista) {
     return ReorderableListView.builder(
@@ -494,11 +498,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
     );
   }
 
-  // ── Vista reordenar: cuadrícula con drag & drop ──────────────────────────────
-
   Widget _vistaReordenGrid(List<Juego> lista) {
-    // Índice que se está arrastrando actualmente (-1 = ninguno)
-    // Lo mantenemos en el State padre para poder ocultarlo en el grid
     return _ReordenGrid(
       juegos: lista,
       onReorder: _intercambiarEnGrid,
@@ -518,6 +518,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
   }
 
   void _mostrarMenuCategoria(Categoria cat) {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       builder: (context) => Column(
@@ -525,7 +526,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
         children: [
           ListTile(
             leading: const Icon(Icons.edit),
-            title: const Text('Editar'),
+            title: Text(l10n.btnEditar),
             onTap: () {
               Navigator.pop(context);
               _mostrarDialogoCategoria(editar: cat);
@@ -533,7 +534,10 @@ class _JuegosScreenState extends State<JuegosScreen> {
           ),
           ListTile(
             leading: const Icon(Icons.delete, color: Colors.red),
-            title: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+            title: Text(
+              l10n.btnEliminar,
+              style: const TextStyle(color: Colors.red),
+            ),
             onTap: () {
               Navigator.pop(context);
               _eliminarCategoria(cat);
@@ -546,43 +550,39 @@ class _JuegosScreenState extends State<JuegosScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final juegosMostrados = _modoReorden ? juegos : juegosFiltrados;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          catalogoActual == 0 ? 'Mi catálogo' : nombreCatalogoSecundario,
+          catalogoActual == 0 ? l10n.catalogoTitulo : nombreCatalogoSecundario,
         ),
         actions: [
           if (_modoReorden) ...[
-            // Toggle lista / cuadrícula (solo en modo reordenar)
             IconButton(
-              icon: Icon(
-                _reordenEnGrid ? Icons.view_list : Icons.grid_view,
-              ),
-              tooltip: _reordenEnGrid ? 'Vista lista' : 'Vista cuadrícula',
-              onPressed: () =>
-                  setState(() => _reordenEnGrid = !_reordenEnGrid),
+              icon: Icon(_reordenEnGrid ? Icons.view_list : Icons.grid_view),
+              tooltip: _reordenEnGrid
+                  ? l10n.catalogoTooltipVistaLista
+                  : l10n.catalogoTooltipVistaGrid,
+              onPressed: () => setState(() => _reordenEnGrid = !_reordenEnGrid),
             ),
           ] else ...[
-            // Filtros (solo en modo catálogo)
             IconButton(
               icon: Icon(panelAbierto ? Icons.menu_open : Icons.menu),
-              tooltip: 'Filtros y categorías',
+              tooltip: l10n.catalogoTooltipFiltros,
               onPressed: () => setState(() => panelAbierto = !panelAbierto),
             ),
           ],
-          // Botón salir/entrar modo reordenar — icono distinto según estado
           IconButton(
             icon: Icon(
-              _modoReorden
-                  ? Icons.check_circle_outline  // "listo, volver al catálogo"
-                  : Icons.swap_vert,            // "entrar a reordenar"
+              _modoReorden ? Icons.dashboard_customize_sharp : Icons.swap_vert,
             ),
-            tooltip: _modoReorden ? 'Ver catálogo' : 'Reordenar',
+            tooltip: _modoReorden
+                ? l10n.catalogoTooltipVerCatalogo
+                : l10n.catalogoTooltipReordenar,
             onPressed: () => setState(() => _modoReorden = !_modoReorden),
           ),
-          // Switcher catálogo secundario
           if (_modosExtrasActivos)
             IconButton(
               icon: Icon(
@@ -592,8 +592,10 @@ class _JuegosScreenState extends State<JuegosScreen> {
                     : null,
               ),
               tooltip: catalogoActual == 0
-                  ? 'Ir a $nombreCatalogoSecundario'
-                  : 'Ir al catálogo principal',
+                  ? l10n.catalogoTooltipCatalogoSecundario(
+                      nombreCatalogoSecundario,
+                    )
+                  : l10n.catalogoTooltipCatalogoPrincipal,
               onPressed: () {
                 setState(() {
                   catalogoActual = catalogoActual == 0 ? 1 : 0;
@@ -641,19 +643,19 @@ class _JuegosScreenState extends State<JuegosScreen> {
                       ? Center(
                           child: Text(
                             _modoReorden
-                                ? 'No hay juegos para reordenar'
+                                ? l10n.catalogoReordenarVacio
                                 : (busqueda.isNotEmpty ||
-                                        filtroEstado != null ||
-                                        filtroCategoria != null
-                                    ? 'No hay juegos con esos filtros'
-                                    : 'No hay juegos en este catálogo'),
+                                          filtroEstado != null ||
+                                          filtroCategoria != null
+                                      ? l10n.catalogoVacioFiltros
+                                      : l10n.catalogoVacio),
                           ),
                         )
                       : _modoReorden
-                          ? (_reordenEnGrid
-                              ? _vistaReordenGrid(juegosMostrados)
-                              : _vistaReordenLista(juegosMostrados))
-                          : _vistaGrid(juegosMostrados),
+                      ? (_reordenEnGrid
+                            ? _vistaReordenGrid(juegosMostrados)
+                            : _vistaReordenLista(juegosMostrados))
+                      : _vistaGrid(juegosMostrados),
                 ),
               ],
             ),
@@ -717,11 +719,9 @@ class _ReordenGridState extends State<_ReordenGrid> {
               data: index,
               delay: const Duration(milliseconds: 300),
               onDragStarted: () => setState(() => _draggingIndex = index),
-              onDragEnd: (_) =>
-                  setState(() => _draggingIndex = null),
+              onDragEnd: (_) => setState(() => _draggingIndex = null),
               onDraggableCanceled: (_, _) =>
                   setState(() => _draggingIndex = null),
-              // Feedback: miniatura semitransparente que sigue al dedo
               feedback: SizedBox(
                 width: 120,
                 height: 120 / 0.68,
@@ -733,7 +733,6 @@ class _ReordenGridState extends State<_ReordenGrid> {
                   ),
                 ),
               ),
-              // El hueco que queda en el grid mientras se arrastra
               childWhenDragging: AnimatedOpacity(
                 opacity: 0.25,
                 duration: const Duration(milliseconds: 150),
@@ -759,10 +758,9 @@ class _ReordenGridState extends State<_ReordenGrid> {
                   boxShadow: isHover
                       ? [
                           BoxShadow(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .primary
-                                .withValues(alpha: 0.4),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.primary.withValues(alpha: 0.4),
                             blurRadius: 8,
                             spreadRadius: 1,
                           ),
@@ -770,9 +768,7 @@ class _ReordenGridState extends State<_ReordenGrid> {
                       : null,
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(
-                    isHover ? 8 : 10,
-                  ),
+                  borderRadius: BorderRadius.circular(isHover ? 8 : 10),
                   child: isDragging
                       ? _TarjetaReordenGrid(
                           juego: juego,
@@ -800,7 +796,7 @@ class _ReordenGridState extends State<_ReordenGrid> {
   }
 }
 
-// ── Input de posición (lista y grid) ────────────────────────────────────────
+// ── Input de posición ────────────────────────────────────────────────────────
 
 class _InputPosicion extends StatefulWidget {
   final int posicionActual;
@@ -872,7 +868,6 @@ class _InputPosicionState extends State<_InputPosicion> {
     final alto = widget.esGrid ? 26.0 : 32.0;
     final fontSize = widget.esGrid ? 11.0 : 13.0;
 
-    // En modo oscuro: fondo negro semitransparente, texto blanco para contraste
     final fillColor = widget.fondoOscuro
         ? Colors.black.withValues(alpha: 0.72)
         : primary.withValues(alpha: 0.08);
@@ -898,8 +893,10 @@ class _InputPosicionState extends State<_InputPosicion> {
         ),
         decoration: InputDecoration(
           isDense: true,
-          contentPadding:
-              const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 4,
+            horizontal: 2,
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(6),
             borderSide: BorderSide(color: borderColor),
@@ -950,9 +947,7 @@ class _TarjetaReordenGrid extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Imagen de fondo
           _ImagenJuego(juego: juego),
-          // Gradiente inferior
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
@@ -968,7 +963,6 @@ class _TarjetaReordenGrid extends StatelessWidget {
               ),
             ),
           ),
-          // Nombre
           Positioned(
             left: 6,
             right: 6,
@@ -985,7 +979,6 @@ class _TarjetaReordenGrid extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          // Input de posición — esquina superior izquierda
           if (mostrarInput)
             Positioned(
               top: 6,
@@ -1070,6 +1063,7 @@ class _TarjetaJuego extends StatelessWidget {
   });
 
   void _mostrarMenuContextual(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       builder: (ctx) => Column(
@@ -1085,7 +1079,7 @@ class _TarjetaJuego extends StatelessWidget {
           const Divider(),
           ListTile(
             leading: const Icon(Icons.folder),
-            title: const Text('Asignar categoría'),
+            title: Text(l10n.catalogoAsignarCategoria),
             onTap: () {
               Navigator.pop(ctx);
               _mostrarSelectorCategoria(context);
@@ -1097,10 +1091,11 @@ class _TarjetaJuego extends StatelessWidget {
   }
 
   void _mostrarSelectorCategoria(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Asignar categoría'),
+        title: Text(l10n.catalogoAsignarCategoria),
         content: SizedBox(
           width: double.maxFinite,
           child: ListView(
@@ -1108,7 +1103,7 @@ class _TarjetaJuego extends StatelessWidget {
             children: [
               ListTile(
                 leading: const Icon(Icons.clear),
-                title: const Text('Sin categoría'),
+                title: Text(l10n.catalogoSinCategoria),
                 onTap: () {
                   Navigator.pop(ctx);
                   onAsignarCategoria(null);
@@ -1211,8 +1206,7 @@ class _TarjetaJuego extends StatelessWidget {
               top: 8,
               left: 8,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
                   color: colorEstado.withValues(alpha: 0.85),
                   borderRadius: BorderRadius.circular(6),
@@ -1236,11 +1230,11 @@ class _TarjetaJuego extends StatelessWidget {
   Color _colorEstado(String estado, BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
     switch (estado) {
-      case 'Jugando':
+      case 'Playing':
         return primary;
-      case 'Completado':
+      case 'Completed':
         return primary.withValues(alpha: 0.75);
-      case 'Abandonado':
+      case 'Abandoned':
         return Colors.grey.shade700;
       default:
         return Colors.grey.shade500;

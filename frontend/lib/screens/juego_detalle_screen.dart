@@ -6,6 +6,7 @@ import '../models/usuario.dart';
 import '../services/api_service.dart';
 import 'juego_form_screen.dart';
 import 'package:flutter/gestures.dart';
+import 'package:frontend/l10n/app_localizations.dart';
 
 class JuegoDetalleScreen extends StatefulWidget {
   final Juego juego;
@@ -33,11 +34,11 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
   Color _colorEstado(String estado) {
     final primary = Theme.of(context).colorScheme.primary;
     switch (estado) {
-      case 'Jugando':
+      case 'Playing':
         return primary;
-      case 'Completado':
+      case 'Completed':
         return primary.withValues(alpha: 0.75);
-      case 'Abandonado':
+      case 'Abandoned':
         return Colors.grey.shade700;
       default:
         return Colors.grey.shade500;
@@ -45,24 +46,23 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
   }
 
   Future<void> _eliminar() async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Eliminar juego'),
-        content: Text(
-          '¿Eliminar "${juego.nombre}"? Esta acción no se puede deshacer.',
-        ),
+        title: Text(l10n.juegoDetalleEliminarTitulo),
+        content: Text(l10n.juegoDetalleEliminarContenido(juego.nombre)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
+            child: Text(l10n.btnCancelar),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              'Eliminar',
-              style: TextStyle(color: Colors.white),
+            child: Text(
+              l10n.btnEliminar,
+              style: const TextStyle(color: Colors.white),
             ),
           ),
         ],
@@ -77,14 +77,15 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
   }
 
   Future<void> _ejecutar() async {
+    final l10n = AppLocalizations.of(context)!;
     if (juego.rutaEjecutable == null || juego.rutaEjecutable!.isEmpty) return;
     try {
       await Process.run(juego.rutaEjecutable!, [], runInShell: true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('No se pudo ejecutar: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.juegoDetalleErrorEjecutable(e.toString()))),
+      );
     }
   }
 
@@ -123,6 +124,7 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final generos = juego.generos
         .split(',')
         .map((g) => g.trim())
@@ -144,7 +146,7 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
             actions: [
               IconButton(
                 icon: const Icon(Icons.edit),
-                tooltip: 'Editar',
+                tooltip: l10n.juegoDetalleTooltipEditar,
                 onPressed: () async {
                   await Navigator.push(
                     context,
@@ -168,7 +170,7 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
               ),
               IconButton(
                 icon: const Icon(Icons.delete),
-                tooltip: 'Eliminar',
+                tooltip: l10n.juegoDetalleTooltipEliminar,
                 onPressed: _eliminar,
               ),
             ],
@@ -200,7 +202,6 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Título + botón ejecutar
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -217,7 +218,7 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                         const SizedBox(width: 12),
                         ElevatedButton.icon(
                           icon: const Icon(Icons.play_arrow, size: 18),
-                          label: const Text('Jugar'),
+                          label: Text(l10n.juegoDetalleJugar),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color.fromARGB(
                               255,
@@ -238,7 +239,6 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                   ),
                   const SizedBox(height: 10),
 
-                  // Versión · Calificación · Estado en una sola fila
                   Wrap(
                     spacing: 12,
                     runSpacing: 6,
@@ -300,7 +300,6 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Tags de géneros
                   if (generos.isNotEmpty) ...[
                     Wrap(
                       spacing: 8,
@@ -319,12 +318,10 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                     const SizedBox(height: 16),
                   ],
 
-                  // Descripción
-                  // Descripción
                   if (juego.descripcion.isNotEmpty) ...[
-                    const Text(
-                      'Descripción',
-                      style: TextStyle(
+                    Text(
+                      l10n.juegoDetalleDescripcion,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -336,12 +333,11 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                     ),
                   ],
 
-                  // Carrusel de imágenes
                   if (juego.listaImagenesExtra.isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    const Text(
-                      'Imágenes',
-                      style: TextStyle(
+                    Text(
+                      l10n.juegoDetalleImagenes,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -366,7 +362,6 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                                 const SizedBox(width: 8),
                             itemBuilder: (context, index) {
                               final url = juego.listaImagenesExtra[index];
-
                               return GestureDetector(
                                 onTap: () => showDialog(
                                   context: context,

@@ -8,6 +8,26 @@ import '../models/juego.dart';
 import '../models/usuario.dart';
 import '../models/categoria.dart';
 
+// Claves de respuesta — se traducen en la UI con l10n
+// (evita pasar BuildContext al service)
+class ApiKeys {
+  static const perfilCreadoOk = 'apiPerfilCreadoOk';
+  static const nombreDuplicado = 'apiNombreDuplicado';
+  static const passwordIncorrecta = 'apiPasswordIncorrecta';
+  static const perfilActualizadoOk = 'apiPerfilActualizadoOk';
+  static const nombreEnUso = 'apiNombreEnUso';
+  static const perfilEliminado = 'apiPerfilEliminado';
+  static const categoriaCreada = 'apiCategoriaCreada';
+  static const categoriaActualizada = 'apiCategoriaActualizada';
+  static const juegoAgregadoOk = 'juegoFormAgregado';
+  static const juegoActualizadoOk = 'juegoFormActualizado';
+  static const juegoEliminadoOk = 'juegoFormEliminado';
+  static const backupArchivoInvalido = 'apiBackupArchivoInvalido';
+  // Para el backup restaurado se usa una clave especial con parámetros:
+  // el caller debe detectar 'apiBackupRestaurado' y usar l10n.apiBackupRestaurado(...)
+  static const backupRestaurado = 'apiBackupRestaurado';
+}
+
 class ApiService {
   static Database? _db;
 
@@ -26,7 +46,6 @@ class ApiService {
     String path;
 
     if (!kIsWeb && Platform.isWindows) {
-      // Guardar en AppData\Roaming\feed95\ en Windows
       final appData = Platform.environment['APPDATA']!;
       final dir = Directory(join(appData, 'feed95'));
       if (!await dir.exists()) await dir.create(recursive: true);
@@ -45,8 +64,8 @@ class ApiService {
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           nombre TEXT NOT NULL UNIQUE,
           password TEXT NOT NULL,
-          color INTEGER NOT NULL DEFAULT 4280391411
-          imagen_perfil TEXT,
+          color INTEGER NOT NULL DEFAULT 4280391411,
+          imagen_perfil TEXT
         )
       ''');
         await db.execute('''
@@ -160,11 +179,11 @@ class ApiService {
       );
       return {
         'success': true,
-        'message': 'Perfil creado correctamente',
+        'messageKey': ApiKeys.perfilCreadoOk,
         'usuario': result.first,
       };
     } catch (e) {
-      return {'success': false, 'message': 'Ese nombre de usuario ya existe'};
+      return {'success': false, 'messageKey': ApiKeys.nombreDuplicado};
     }
   }
 
@@ -182,7 +201,7 @@ class ApiService {
     if (result.isNotEmpty) {
       return {'success': true, 'usuario': result.first};
     }
-    return {'success': false, 'message': 'Contraseña incorrecta'};
+    return {'success': false, 'messageKey': ApiKeys.passwordIncorrecta};
   }
 
   // Listar todos los perfiles
@@ -214,9 +233,9 @@ class ApiService {
         data['imagen_perfil'] = imagenPerfil;
       }
       await database.update('usuarios', data, where: 'id = ?', whereArgs: [id]);
-      return {'success': true, 'message': 'Perfil actualizado correctamente'};
+      return {'success': true, 'messageKey': ApiKeys.perfilActualizadoOk};
     } catch (e) {
-      return {'success': false, 'message': 'Ese nombre ya está en uso'};
+      return {'success': false, 'messageKey': ApiKeys.nombreEnUso};
     }
   }
 
@@ -225,7 +244,7 @@ class ApiService {
     final database = await db;
     await database.delete('juegos', where: 'usuario_id = ?', whereArgs: [id]);
     await database.delete('usuarios', where: 'id = ?', whereArgs: [id]);
-    return {'success': true, 'message': 'Perfil eliminado'};
+    return {'success': true, 'messageKey': ApiKeys.perfilEliminado};
   }
 
   // Listar juegos del usuario
@@ -262,16 +281,10 @@ class ApiService {
     int? categoriaId,
   }) async {
     final database = await db;
-    // Obtener la última posición usada
     final maxResult = await database.rawQuery(
-      '''
-      SELECT MAX(posicion) as max
-      FROM juegos
-      WHERE usuario_id = ? AND catalogo = ?
-      ''',
+      'SELECT MAX(posicion) as max FROM juegos WHERE usuario_id = ? AND catalogo = ?',
       [usuarioId, catalogo],
     );
-
     final maxPos = (maxResult.first['max'] as int?) ?? -1;
 
     await database.insert('juegos', {
@@ -292,7 +305,7 @@ class ApiService {
       'categoria_id': categoriaId,
       'posicion': maxPos + 1,
     });
-    return {'success': true, 'message': 'Juego agregado correctamente'};
+    return {'success': true, 'messageKey': ApiKeys.juegoAgregadoOk};
   }
 
   // Actualizar juego
@@ -335,14 +348,14 @@ class ApiService {
       where: 'id = ?',
       whereArgs: [id],
     );
-    return {'success': true, 'message': 'Juego actualizado correctamente'};
+    return {'success': true, 'messageKey': ApiKeys.juegoActualizadoOk};
   }
 
   // Eliminar juego
   static Future<Map<String, dynamic>> eliminarJuego(int id) async {
     final database = await db;
     await database.delete('juegos', where: 'id = ?', whereArgs: [id]);
-    return {'success': true, 'message': 'Juego eliminado correctamente'};
+    return {'success': true, 'messageKey': ApiKeys.juegoEliminadoOk};
   }
 
   // Listar categorías del usuario
@@ -374,10 +387,10 @@ class ApiService {
       'usuario_id': usuarioId,
       'catalogo': catalogo,
     });
-    return {'success': true, 'message': 'Categoría creada'};
+    return {'success': true, 'messageKey': ApiKeys.categoriaCreada};
   }
 
-  //  Editar categoría
+  // Editar categoría
   static Future<Map<String, dynamic>> editarCategoria({
     required int id,
     required String nombre,
@@ -390,13 +403,12 @@ class ApiService {
       where: 'id = ?',
       whereArgs: [id],
     );
-    return {'success': true, 'message': 'Categoría actualizada'};
+    return {'success': true, 'messageKey': ApiKeys.categoriaActualizada};
   }
 
   // Eliminar categoría (desasigna juegos)
   static Future<void> eliminarCategoria(int id) async {
     final database = await db;
-    // Desasignar juegos de esta categoría
     await database.update(
       'juegos',
       {'categoria_id': null},
@@ -445,14 +457,14 @@ class ApiService {
     final completados =
         (await database.rawQuery(
               'SELECT COUNT(*) as c FROM juegos WHERE usuario_id = ? AND estado = ?',
-              [usuarioId, 'Completado'],
+              [usuarioId, 'Completed'],
             )).first['c']
             as int? ??
         0;
     final jugando =
         (await database.rawQuery(
               'SELECT COUNT(*) as c FROM juegos WHERE usuario_id = ? AND estado = ?',
-              [usuarioId, 'Jugando'],
+              [usuarioId, 'Playing'],
             )).first['c']
             as int? ??
         0;
@@ -495,6 +507,8 @@ class ApiService {
   }
 
   // Importar backup
+  // Devuelve messageKey = ApiKeys.backupRestaurado con campos extra
+  // { perfiles, categorias, juegos } para que la UI construya el string con l10n
   static Future<Map<String, dynamic>> importarBackup(String jsonStr) async {
     final database = await db;
 
@@ -506,7 +520,6 @@ class ApiService {
       final categorias = (backup['categorias'] as List? ?? [])
           .cast<Map<String, dynamic>>();
 
-      // Insertar usuarios — si el nombre ya existe se omite
       for (final u in usuarios) {
         try {
           await database.insert('usuarios', {
@@ -514,33 +527,26 @@ class ApiService {
             'password': u['password'],
             'color': u['color'] ?? 4280391411,
           });
-        } catch (_) {
-          // Usuario ya existe, se omite
-        }
+        } catch (_) {}
       }
 
-      // Obtener mapa de nombres a IDs nuevos para reasignar usuarios
       final usuariosNuevos = await database.query('usuarios');
-
       final mapaIds = <int, int>{};
 
       for (final u in usuarios) {
         final encontrado = usuariosNuevos.where(
           (n) => n['nombre'] == u['nombre'],
         );
-
         if (encontrado.isNotEmpty) {
           mapaIds[u['id'] as int] = encontrado.first['id'] as int;
         }
       }
 
-      // Mapa de categorías viejas -> nuevas
       final mapaCategorias = <int, int>{};
 
       for (final c in categorias) {
         final idUsuarioOriginal = c['usuario_id'] as int;
         final idUsuarioNuevo = mapaIds[idUsuarioOriginal];
-
         if (idUsuarioNuevo == null) continue;
 
         try {
@@ -550,12 +556,10 @@ class ApiService {
             'catalogo': c['catalogo'] ?? 0,
             'usuario_id': idUsuarioNuevo,
           });
-
           mapaCategorias[c['id'] as int] = nuevaId;
         } catch (_) {}
       }
 
-      // Insertar juegos reasignando usuario_id
       for (final j in juegos) {
         final idOriginal = j['usuario_id'] as int;
         final idNuevo = mapaIds[idOriginal];
@@ -563,7 +567,6 @@ class ApiService {
 
         try {
           int? categoriaNueva;
-
           if (j['categoria_id'] != null) {
             categoriaNueva = mapaCategorias[j['categoria_id']];
           }
@@ -585,18 +588,19 @@ class ApiService {
             'posicion': j['posicion'] ?? 0,
             'usuario_id': idNuevo,
           });
-        } catch (_) {
-          // Si falla un juego individual se omite y continúa
-        }
+        } catch (_) {}
       }
 
       return {
         'success': true,
-        'message':
-            'Backup restaurado: ${usuarios.length} perfil(es), ${categorias.length} categoría(s), ${juegos.length} juego(s)',
+        'messageKey': ApiKeys.backupRestaurado,
+        // La UI usa estos valores para llamar l10n.apiBackupRestaurado(...)
+        'perfiles': usuarios.length,
+        'categorias': categorias.length,
+        'juegos': juegos.length,
       };
     } catch (e) {
-      return {'success': false, 'message': 'Archivo de backup inválido'};
+      return {'success': false, 'messageKey': ApiKeys.backupArchivoInvalido};
     }
   }
 }

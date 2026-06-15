@@ -1,4 +1,3 @@
-// por si lo llego a necesitar "import 'dart:io';"
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:image_picker/image_picker.dart';
@@ -6,6 +5,7 @@ import '../models/usuario.dart';
 import '../services/api_service.dart';
 import '../widgets/avatar_usuario.dart';
 import '../main.dart';
+import 'package:frontend/l10n/app_localizations.dart';
 
 class PerfilScreen extends StatefulWidget {
   final Usuario usuario;
@@ -35,8 +35,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
   @override
   void initState() {
     super.initState();
-    nombreController =
-        TextEditingController(text: widget.usuario.nombre);
+    nombreController = TextEditingController(text: widget.usuario.nombre);
     passwordController = TextEditingController();
     confirmarPasswordController = TextEditingController();
     colorSeleccionado = widget.usuario.color;
@@ -45,8 +44,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   Future<void> _elegirImagen() async {
     final picker = ImagePicker();
-    final picked =
-        await picker.pickImage(source: ImageSource.gallery);
+    final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
       setState(() {
         _imagenLocal = picked.path;
@@ -63,11 +61,12 @@ class _PerfilScreenState extends State<PerfilScreen> {
   }
 
   void _abrirColorPicker() {
+    final l10n = AppLocalizations.of(context)!;
     Color colorTemporal = colorSeleccionado;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Elige un color'),
+        title: Text(l10n.registroElegirColor),
         content: SingleChildScrollView(
           child: ColorPicker(
             pickerColor: colorTemporal,
@@ -81,14 +80,14 @@ class _PerfilScreenState extends State<PerfilScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+            child: Text(l10n.btnCancelar),
           ),
           ElevatedButton(
             onPressed: () {
               setState(() => colorSeleccionado = colorTemporal);
               Navigator.pop(context);
             },
-            child: const Text('Aplicar'),
+            child: Text(l10n.registroColorAplicar),
           ),
         ],
       ),
@@ -96,19 +95,18 @@ class _PerfilScreenState extends State<PerfilScreen> {
   }
 
   Future<void> guardar() async {
+    final l10n = AppLocalizations.of(context)!;
+
     if (nombreController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('El nombre no puede estar vacío')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.perfilNombreVacio)));
       return;
     }
     if (passwordController.text.isNotEmpty &&
-        passwordController.text !=
-            confirmarPasswordController.text) {
+        passwordController.text != confirmarPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Las contraseñas no coinciden')),
+        SnackBar(content: Text(l10n.registroPasswordsNoCoinciden)),
       );
       return;
     }
@@ -124,17 +122,21 @@ class _PerfilScreenState extends State<PerfilScreen> {
       color: colorSeleccionado.toARGB32(),
       imagenPerfil:
           (_imagenLocal != widget.usuario.imagenPerfil && !_limpiarImagen)
-              ? _imagenLocal
-              : null,
+          ? _imagenLocal
+          : null,
       limpiarImagen: _limpiarImagen,
     );
 
     setState(() => cargando = false);
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(respuesta['message'])),
-    );
+    final key = respuesta['messageKey'] as String? ?? '';
+    final mensaje = key == 'apiPerfilActualizadoOk'
+        ? l10n.apiPerfilActualizadoOk
+        : l10n.apiNombreEnUso;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(mensaje)));
 
     if (respuesta['success'] == true) {
       widget.onActualizado();
@@ -142,47 +144,45 @@ class _PerfilScreenState extends State<PerfilScreen> {
     }
   }
 
-  // Build a preview usuario for the avatar widget
   Usuario get _usuarioPreview => Usuario(
-        id: widget.usuario.id,
-        nombre: nombreController.text.isNotEmpty
-            ? nombreController.text
-            : widget.usuario.nombre,
-        color: colorSeleccionado,
-        imagenPerfil: _limpiarImagen ? null : _imagenLocal,
-      );
+    id: widget.usuario.id,
+    nombre: nombreController.text.isNotEmpty
+        ? nombreController.text
+        : widget.usuario.nombre,
+    color: colorSeleccionado,
+    imagenPerfil: _limpiarImagen ? null : _imagenLocal,
+  );
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Editar perfil')),
+      appBar: AppBar(title: Text(l10n.perfilTitulo)),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Avatar preview + controles
               Center(
                 child: Column(
                   children: [
-                    AvatarUsuario(
-                        usuario: _usuarioPreview, size: 96),
+                    AvatarUsuario(usuario: _usuarioPreview, size: 96),
                     const SizedBox(height: 12),
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         OutlinedButton.icon(
-                          icon: const Icon(Icons.photo_library,
-                              size: 16),
-                          label: const Text('Cambiar imagen'),
+                          icon: const Icon(Icons.photo_library, size: 16),
+                          label: Text(l10n.perfilCambiarImagen),
                           onPressed: _elegirImagen,
                         ),
                         if (_imagenLocal != null) ...[
                           const SizedBox(width: 8),
                           OutlinedButton.icon(
                             icon: const Icon(Icons.close, size: 16),
-                            label: const Text('Quitar'),
+                            label: Text(l10n.perfilQuitarImagen),
                             onPressed: _quitarImagen,
                           ),
                         ],
@@ -194,29 +194,31 @@ class _PerfilScreenState extends State<PerfilScreen> {
               const SizedBox(height: 24),
               TextField(
                 controller: nombreController,
-                decoration:
-                    const InputDecoration(labelText: 'Usuario'),
+                decoration: InputDecoration(labelText: l10n.registroUsuario),
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: passwordController,
-                decoration: const InputDecoration(
-                  labelText: 'Nueva contraseña',
-                  hintText: 'Dejar vacío para no cambiar',
+                decoration: InputDecoration(
+                  labelText: l10n.perfilNuevaPassword,
+                  hintText: l10n.perfilNuevaPasswordHint,
                 ),
                 obscureText: true,
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: confirmarPasswordController,
-                decoration: const InputDecoration(
-                    labelText: 'Repetir nueva contraseña'),
+                decoration: InputDecoration(
+                  labelText: l10n.perfilRepetirNuevaPassword,
+                ),
                 obscureText: true,
               ),
               const SizedBox(height: 24),
-              const Text('Color del perfil',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(
+                l10n.perfilColorTitulo,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 12),
               GestureDetector(
                 onTap: _abrirColorPicker,
@@ -226,17 +228,16 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   decoration: BoxDecoration(
                     color: colorSeleccionado,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                        color: Colors.grey.shade400, width: 2),
+                    border: Border.all(color: Colors.grey.shade400, width: 2),
                   ),
-                  child: const Icon(Icons.colorize,
-                      color: Colors.white),
+                  child: const Icon(Icons.colorize, color: Colors.white),
                 ),
               ),
               const SizedBox(height: 8),
-              Text('Toca para cambiar el color',
-                  style: TextStyle(
-                      fontSize: 12, color: Colors.grey.shade500)),
+              Text(
+                l10n.perfilColorTocar,
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+              ),
               const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
@@ -244,7 +245,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   onPressed: cargando ? null : guardar,
                   child: cargando
                       ? const CircularProgressIndicator()
-                      : const Text('Guardar cambios'),
+                      : Text(l10n.perfilGuardarCambios),
                 ),
               ),
             ],
