@@ -45,6 +45,19 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
     }
   }
 
+  String _traducirEstado(String estado, AppLocalizations l10n) {
+    switch (estado) {
+      case 'Playing':
+        return l10n.estadoJugando;
+      case 'Completed':
+        return l10n.estadoCompletado;
+      case 'Abandoned':
+        return l10n.estadoAbandonado;
+      default:
+        return l10n.estadoPendiente;
+    }
+  }
+
   Future<void> _eliminar() async {
     final l10n = AppLocalizations.of(context)!;
     final confirmar = await showDialog<bool>(
@@ -288,7 +301,7 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          juego.estado,
+                          _traducirEstado(juego.estado, l10n),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,

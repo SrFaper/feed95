@@ -71,6 +71,7 @@ class Feed95AppState extends State<Feed95App> {
     return MaterialApp(
       title: 'Feed95',
       debugShowCheckedModeBanner: false,
+   // locale: const Locale('en'), usar esta linea para probar el cambio de idioma sin cambiar la configuración del dispositivo
       // Configuración de localización
       localizationsDelegates: const [
         AppLocalizations.delegate,

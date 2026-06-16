@@ -442,7 +442,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
             ),
             title: Text(juego.nombre),
             subtitle: Text(
-              '${juego.estado}${juego.version.isNotEmpty ? ' · v${juego.version}' : ''}',
+              '${traducirEstadoJuego(juego.estado, context)}${juego.version.isNotEmpty ? ' · v${juego.version}' : ''}',
               style: const TextStyle(fontSize: 12),
             ),
             trailing: Row(
@@ -1047,8 +1047,7 @@ class _ImagenJuego extends StatelessWidget {
   }
 }
 
-// ── Tarjeta normal del catálogo ──────────────────────────────────────────────
-
+// ── Tarjeta de juego en vista grid ─────────────────────────────────────────
 class _TarjetaJuego extends StatelessWidget {
   final Juego juego;
   final List<Categoria> categorias;
@@ -1212,7 +1211,7 @@ class _TarjetaJuego extends StatelessWidget {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  juego.estado,
+                  traducirEstadoJuego(juego.estado, context),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 10,
@@ -1239,5 +1238,19 @@ class _TarjetaJuego extends StatelessWidget {
       default:
         return Colors.grey.shade500;
     }
+  }
+}
+
+String traducirEstadoJuego(String estado, BuildContext context) {
+  final l10n = AppLocalizations.of(context)!;
+  switch (estado) {
+    case 'Playing':
+      return l10n.estadoJugando;
+    case 'Completed':
+      return l10n.estadoCompletado;
+    case 'Abandoned':
+      return l10n.estadoAbandonado;
+    default:
+      return l10n.estadoPendiente;
   }
 }
