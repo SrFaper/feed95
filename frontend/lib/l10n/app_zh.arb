@@ -1,0 +1,246 @@
+{
+  "@@locale": "zh",
+
+  "appTitle": "Feed95",
+
+  "btnCancelar": "取消",
+  "btnGuardar": "保存",
+  "btnEliminar": "删除",
+  "btnEditar": "编辑",
+  "btnAceptar": "确定",
+  "btnEnter": "进入",
+  "btnImportar": "导入",
+  "btnConfigurar": "配置",
+  "btnCrearPerfil": "创建档案",
+  "btnNuevoPerfil": "新建档案",
+  "loginSinCuenta": "还没有账号？点击此处创建",
+
+  "estadoPendiente": "待玩",
+  "estadoJugando": "正在游玩",
+  "estadoCompletado": "已通关",
+  "estadoAbandonado": "已弃坑",
+
+  "splashCargando": "正在加载...",
+
+  "homeTitle": "Feed95",
+  "homeBienvenido": "欢迎，{nombre}",
+  "@homeBienvenido": {
+    "placeholders": {
+      "nombre": { "type": "String" }
+    }
+  },
+  "homeMiCatalogo": "我的库",
+  "homeStatJuegos": "游戏总数",
+  "homeStatCompletados": "已通关",
+  "homeStatJugando": "正在游玩",
+  "homeTooltipCambiarTema": "切换主题",
+  "homeTooltipCambiarPerfil": "切换档案",
+  "homeTooltipCerrarSesion": "退出登录",
+  "homeEditarPerfil": "编辑档案",
+  "homeModoExtendidoActivado": "扩展模式已开启",
+  "homeModoExtendidoDesactivado": "扩展模式已关闭",
+  "homeConfiguraciones": "配置与备份",
+  "homeSeccionConfiguraciones": "设置",
+  "homeSeccionSistema": "系统",
+  "homeConfigurarIGDB": "配置 IGDB",
+  "homeConfigurarF95": "配置 F95Zone",
+  "homeExportarCopia": "导出备份",
+  "homeImportarCopia": "导入备份",
+  "homeErrorExportar": "导出失败：{error}",
+  "@homeErrorExportar": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "homeErrorImportar": "导入失败：{error}",
+  "@homeErrorImportar": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "homeBackupGuardado": "备份已保存至 {ruta}",
+  "@homeBackupGuardado": {
+    "placeholders": {
+      "ruta": { "type": "String" }
+    }
+  },
+  "homeBackupNoDisponibleWeb": "网页端不支持导出备份",
+  "homeImportarNoDisponibleWeb": "网页端不支持导入备份",
+  "homeDialogoImportarTitulo": "导入备份",
+  "homeDialogoImportarContenido": "备份中的档案和游戏将被添加。同名的现有档案将被忽略。",
+  "homeGuardarBackupEn": "保存备份至...",
+
+  "perfilesTitulo": "Feed95 — 档案管理",
+  "perfilesVacio": "暂无档案",
+  "perfilesEliminarTitulo": "删除档案",
+  "perfilesEliminarContenido": "确定要删除 {nombre} 吗？该档案下的所有游戏数据都将被清除。",
+  "@perfilesEliminarContenido": {
+    "placeholders": {
+      "nombre": { "type": "String" }
+    }
+  },
+  "perfilesPasswordIncorrecta": "密码错误",
+  "perfilesInputPassword": "密码",
+
+  "registroTitulo": "新建档案",
+  "registroUsuario": "用户名",
+  "registroPassword": "密码",
+  "registroRepetirPassword": "确认密码",
+  "registroColorPerfil": "档案个性颜色",
+  "registroTocaColor": "点击选择颜色",
+  "registroElegirColor": "选择一个颜色",
+  "registroCamposObligatorios": "请填写所有必填项",
+  "registroPasswordsNoCoinciden": "两次输入的密码不一致",
+  "registroColorAplicar": "应用",
+
+  "perfilTitulo": "编辑档案",
+  "perfilCambiarImagen": "更换头像",
+  "perfilQuitarImagen": "移除",
+  "perfilNuevaPassword": "新密码",
+  "perfilNuevaPasswordHint": "留空则不修改",
+  "perfilRepetirNuevaPassword": "确认新密码",
+  "perfilColorTitulo": "档案个性颜色",
+  "perfilColorTocar": "点击更改颜色",
+  "perfilGuardarCambios": "保存修改",
+  "perfilNombreVacio": "用户名不能为空",
+  "perfilActualizado": "档案更新成功",
+
+  "catalogoTitulo": "我的库",
+  "catalogoSecundarioNombre": "NSFW",
+  "catalogoVacio": "当前库中没有游戏",
+  "catalogoVacioFiltros": "没有找到符合筛选条件的游戏",
+  "catalogoReordenarVacio": "没有可重新排序的游戏",
+  "catalogoBuscar": "搜索...",
+  "catalogoTooltipFiltros": "筛选与分类",
+  "catalogoTooltipReordenar": "重新排序",
+  "catalogoTooltipVerCatalogo": "查看游戏库",
+  "catalogoTooltipVistaLista": "列表视图",
+  "catalogoTooltipVistaGrid": "网格视图",
+  "catalogoTooltipCatalogoSecundario": "前往 {nombre}",
+  "@catalogoTooltipCatalogoSecundario": {
+    "placeholders": {
+      "nombre": { "type": "String" }
+    }
+  },
+  "catalogoTooltipCatalogoPrincipal": "返回主游戏库",
+  "catalogoSeccionEstado": "游玩状态",
+  "catalogoSeccionCategorias": "游戏分类",
+  "catalogoFiltroTodos": "全部状态",
+  "catalogoFiltroTodas": "全部分类",
+  "catalogoAsignarCategoria": "分配分类",
+  "catalogoSinCategoria": "未分类",
+
+  "categoriaNuevaTitulo": "新建分类",
+  "categoriaEditarTitulo": "编辑分类",
+  "categoriaNombreLabel": "分类名称",
+  "categoriaEliminarTitulo": "删除分类",
+  "categoriaEliminarContenido": "确定要删除分类 \"{nombre}\" 吗？属于该分类的游戏将变为未分类状态。",
+  "@categoriaEliminarContenido": {
+    "placeholders": {
+      "nombre": { "type": "String" }
+    }
+  },
+
+  "juegoDetalleTitulo": "游戏详情",
+  "juegoDetalleDescripcion": "简介",
+  "juegoDetalleImagenes": "屏幕截图",
+  "juegoDetalleJugar": "开始游戏",
+  "juegoDetalleEliminarTitulo": "删除游戏",
+  "juegoDetalleEliminarContenido": "确定要删除 \"{nombre}\" 吗？此操作无法撤销。",
+  "@juegoDetalleEliminarContenido": {
+    "placeholders": {
+      "nombre": { "type": "String" }
+    }
+  },
+  "juegoDetalleErrorEjecutable": "无法启动游戏：{error}",
+  "@juegoDetalleErrorEjecutable": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "juegoDetalleTooltipEditar": "编辑",
+  "juegoDetalleTooltipEliminar": "删除",
+
+  "juegoFormNuevoTitulo": "添加游戏",
+  "juegoFormEditarTitulo": "编辑游戏",
+  "juegoFormNombre": "游戏名称 *",
+  "juegoFormBuscarEn": "搜索平台：",
+  "juegoFormDescripcion": "简介",
+  "juegoFormImagenDetalle": "详情页背景图",
+  "juegoFormUrlImagenDetalle": "详情图 URL",
+  "juegoFormImagenGrid": "封面图 (Grid)",
+  "juegoFormUrlImagenGrid": "封面图 URL",
+  "juegoFormVersion": "版本",
+  "juegoFormCalificacion": "评分 (1-10)",
+  "juegoFormGeneros": "游戏标签 / 类型",
+  "juegoFormEstado": "游玩状态",
+  "juegoFormLanzador": "启动器",
+  "juegoFormRutaEjecutable": "可执行文件路径 (.exe)",
+  "juegoFormRutaEjecutableHint": "C:\\juegos\\myjuego.exe",
+  "juegoFormBuscarArchivo": "浏览文件",
+  "juegoFormQuitarRuta": "清除路径",
+  "juegoFormBtnGuardar": "添加游戏",
+  "juegoFormBtnActualizar": "更新信息",
+  "juegoFormNombreObligatorio": "游戏名称为必填项",
+  "juegoFormNoBusqueda": "请输入名称以进行搜索",
+  "juegoFormSinResultadosSteam": "未在 Steam 上找到相关结果",
+  "juegoFormSinResultadosEpic": "未在 Epic Games 上找到相关结果",
+  "juegoFormSinResultadosIgdb": "未在 IGDB 上找到相关结果",
+  "juegoFormSinResultadosF95": "未在 F95Zone 上找到相关结果",
+  "juegoFormErrorDetalles": "无法获取详细信息",
+  "juegoFormResultadosSteam": "Steam 搜索结果",
+  "juegoFormResultadosEpic": "Epic Games 搜索结果",
+  "juegoFormResultadosIgdb": "IGDB 搜索结果",
+  "juegoFormResultadosF95": "F95Zone 搜索结果",
+  "juegoFormAgregado": "游戏成功添加到库中",
+  "juegoFormActualizado": "游戏信息更新成功",
+  "juegoFormEliminado": "游戏删除成功",
+
+  "igdbTitulo": "IGDB",
+  "igdbConfiguradoTitulo": "IGDB 已配置",
+  "igdbConfiguradoDescripcion": "凭据已保存在本地。现在可以在添加游戏时使用 IGDB 搜索。",
+  "igdbEliminarCredenciales": "清除凭据",
+  "igdbConfigurarTitulo": "配置 IGDB",
+  "igdbDescripcion": "IGDB 是由 Twitch 运营的官方游戏数据库。它是完全免费的，涵盖了几乎所有的主流游戏。",
+  "igdbInstrucciones": "如何获取凭据？\n1. 访问 dev.twitch.tv\n2. 使用你的 Twitch 账号登录\n3. 创建一个新应用（名称任意）\n4. 复制生成的 Client-ID 并创建 Client-Secret",
+  "igdbClientId": "Client-ID",
+  "igdbClientSecret": "Client-Secret",
+  "igdbGuardarVerificar": "保存并验证",
+  "igdbCamposObligatorios": "请填写两个输入框",
+  "igdbCredencialesInvalidas": "凭据无效，请检查你输入的数据。",
+  "igdbConfiguradoOk": "IGDB 成功配置完成",
+  "igdbNecesitaConfiguracion": "需要先配置 IGDB 接口。",
+
+  "f95Titulo": "F95Zone",
+  "f95SesionActivaTitulo": "会话处于活动状态",
+  "f95SesionActivaDescripcion": "登录 Cookie 已安全保存在此设备中。现在可以使用 F95Zone 搜索功能。",
+  "f95CerrarSesion": "退出登录",
+  "f95SesionCerrada": "会话已关闭",
+  "f95ConectarTitulo": "连接到 F95Zone",
+  "f95ConectarDescripcion": "你的凭据仅用于直接登录官方平台。Cookie 将保存在你本地设备中。",
+  "f95Usuario": "F95Zone 用户名",
+  "f95Password": "密码",
+  "f95IniciarSesion": "登录",
+  "f95CamposObligatorios": "请输入用户名和密码",
+  "f95SesionOk": "成功登录 F95Zone",
+  "f95ErrorSesion": "登录失败，请检查你的账号和密码。",
+  "f95NecesitaSesion": "请先登录你的 F95Zone 账号。",
+
+  "apiPerfilCreadoOk": "档案创建成功",
+  "apiNombreDuplicado": "该用户名已存在",
+  "apiPasswordIncorrecta": "密码错误",
+  "apiPerfilActualizadoOk": "档案更新成功",
+  "apiNombreEnUso": "该名称已被使用",
+  "apiPerfilEliminado": "档案已删除",
+  "apiCategoriaCreada": "分类创建成功",
+  "apiCategoriaActualizada": "分类更新成功",
+  "apiBackupArchivoInvalido": "无效的备份文件",
+  "apiBackupRestaurado": "备份还原成功：已导入 {perfiles} 个档案，{categorias} 个分类，{juegos} 个游戏",
+  "@apiBackupRestaurado": {
+    "placeholders": {
+      "perfiles": { "type": "int" },
+      "categorias": { "type": "int" },
+      "juegos": { "type": "int" }
+    }
+  }
+}

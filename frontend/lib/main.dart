@@ -79,7 +79,7 @@ class Feed95AppState extends State<Feed95App> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [Locale('es'), Locale('en')],
+      supportedLocales: AppLocalizations.supportedLocales,
       // Configuración de temas
       themeMode: _themeMode,
       theme: ThemeData(
