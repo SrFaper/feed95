@@ -181,6 +181,7 @@ class ApiService {
         'nombre': nombre,
         'password': stored,
         'color': color,
+        // ignore: use_null_aware_elements
         if (imagenPerfil != null) 'imagen_perfil': imagenPerfil,
       });
       final result = await database.query(

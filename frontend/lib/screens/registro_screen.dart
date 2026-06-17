@@ -186,7 +186,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
                         confirmarPasswordController.clear();
                       }
                     }),
-                    activeColor: primary,
+                    activeThumbColor: primary,
                   ),
                   const SizedBox(width: 8),
                   Text(
