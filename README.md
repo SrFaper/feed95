@@ -2,160 +2,209 @@
 
 # feed95
 
-**Catálogo personal de videojuegos para Windows y Android.**
-**Personal video game catalog for Windows and Android.**
+**Catálogo personal de videojuegos · Personal video game catalog · 个人游戏库**
 
-Sin cuentas. Sin servidores. Sin internet. Solo tus juegos, en tu dispositivo.
-No accounts. No servers. No internet. Just your games, on your device.
+*Sin cuentas. Sin servidores. Sin internet. Solo tus juegos, en tu dispositivo.*
+
+[![Releases](https://img.shields.io/github/v/release/SrFaper/feed95?style=flat-square)](https://github.com/SrFaper/feed95/releases)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=flat-square)](LICENSE)
+[![Flutter](https://img.shields.io/badge/Flutter-3.x-blue?style=flat-square&logo=flutter)](https://flutter.dev)
 
 </div>
 
 ---
 
+## 🌐 Idioma / Language / 语言
+
+- [Español](#español)
+- [English](#english)
+- [中文](#中文)
+
+---
+
 ## Español
+
+### ¿Qué es feed95?
+
+Una app para llevar el registro de tus videojuegos, disponible en Windows y Android. Sin cuentas, sin nube, sin rastreo — todo queda guardado localmente en tu dispositivo.
 
 ### Características
 
-- **Múltiples perfiles locales** - Cada perfil tiene su propia contraseña, color de acento e imagen. Comparte el dispositivo sin mezclar catálogos.
-- **100% offline** - Todo se guarda en una base de datos SQLite local. Sin cuentas, sin nube, sin conexión obligatoria. Tus datos no salen de tu dispositivo.
-- **Búsqueda automática de metadatos** - Importa portada, descripción, géneros y capturas desde Steam, Epic Games o IGDB con un clic.
-- **Categorías y filtros** - Organiza tu catálogo con categorías personalizadas. Filtra por estado, categoría o búsqueda de texto.
-- **Estados y calificaciones** - Marca cada juego como Pendiente, Jugando, Completado o Abandonado. Puntúa del 1 al 10. Reordena tu catálogo a mano.
-- **Catálogo secundario opcional** - Un segundo catálogo separado del principal, ideal para mantener colecciones distintas bajo el mismo perfil.
-- **Lanzador integrado** - Vincula el ejecutable de cada juego y árrancalo directo desde la app. Solo en Windows.
-- **Backup y restauración** - Exporta toda tu colección a un archivo JSON e impórtala en cualquier dispositivo cuando quieras.
-- **Tema claro / oscuro con acento personalizable** - La interfaz se adapta al color que elijas para cada perfil.
+| | |
+|---|---|
+| **Perfiles locales** | Múltiples perfiles con imagen, color de acento y contraseña opcional. |
+| **100% offline** | Base de datos SQLite local. Tus datos no salen de tu dispositivo. |
+| **Metadatos automáticos** | Importa portada, descripción, géneros y capturas desde Steam, Epic Games o IGDB. |
+| **Categorías y filtros** | Organiza con categorías personalizadas. Filtra por estado, categoría o texto. |
+| **Estados y calificaciones** | Pendiente, Jugando, Completado o Abandonado. Puntúa del 1 al 10. Reordena a mano. |
+| **Catálogo secundario** | Un segundo catálogo separado bajo el mismo perfil. |
+| **Lanzador integrado** | Vincula el `.exe` de cada juego y árrancalo desde la app. Solo Windows. |
+| **Backup y restauración** | Exporta e importa tu colección en JSON entre dispositivos. |
+| **Tema claro / oscuro** | La interfaz se adapta al color de acento de cada perfil. |
 
-### Descarga e instalación
+### Descarga
 
-**Android**
+| Plataforma | Archivo |
+|---|---|
+| Android | [`feed95.apk`](https://github.com/SrFaper/feed95/releases) |
+| Windows | [`feed95-windows.zip`](https://github.com/SrFaper/feed95/releases) |
 
-1. Descarga `feed95.apk` desde la sección de [Releases](https://github.com/SrFaper/feed95/releases).
-2. Ábrelo en tu dispositivo. Si el sistema lo pide, permite la instalación desde fuentes desconocidas.
+**Android:** descarga el APK y ábrelo. Permite instalación desde fuentes desconocidas si el sistema lo pide.
 
-**Windows**
+**Windows:** extrae el ZIP en cualquier carpeta y ejecuta `feed95.exe`. No requiere instalación.
 
-1. Descarga `feed95-windows.zip` desde la sección de [Releases](https://github.com/SrFaper/feed95/releases).
-2. Extrae el contenido en la carpeta que prefieras.
-3. Ejecuta `feed95.exe`. No requiere instalación.
+### Metadatos de juegos
 
-### Búsqueda de metadatos
+| Fuente | Configuración |
+|---|---|
+| Steam | No requiere |
+| Epic Games Store | No requiere |
+| IGDB | Credenciales gratuitas de Twitch Developer |
 
-feed95 puede importar información de juegos desde tres fuentes:
+Para IGDB: visita [dev.twitch.tv](https://dev.twitch.tv), crea una aplicación y pega tu Client-ID y Client-Secret en **Configuraciones → IGDB** dentro de la app.
 
-| Fuente | Requiere configuración |
-|--------|----------------------|
-| Steam | No |
-| Epic Games Store | No |
-| IGDB | Sí, credenciales gratuitas de Twitch Developer |
+### Tecnologías
 
-Para configurar IGDB: visita [dev.twitch.tv](https://dev.twitch.tv), crea una aplicación y copia tu Client-ID y Client-Secret en Configuraciones dentro de la app.
-
-### Construido con
-
-- [Flutter](https://flutter.dev/) - Framework multiplataforma
-- [SQLite / sqflite](https://pub.dev/packages/sqflite) - Base de datos local
-- [dio](https://pub.dev/packages/dio) + [cookie_jar](https://pub.dev/packages/cookie_jar) - Peticiones HTTP
-- [flutter_colorpicker](https://pub.dev/packages/flutter_colorpicker) - Selector de color de perfil
-- [file_picker](https://pub.dev/packages/file_picker) / [image_picker](https://pub.dev/packages/image_picker) - Selección de archivos e imágenes
+[Flutter](https://flutter.dev) · [SQLite/sqflite](https://pub.dev/packages/sqflite) · [dio](https://pub.dev/packages/dio) · [flutter_colorpicker](https://pub.dev/packages/flutter_colorpicker) · [file_picker](https://pub.dev/packages/file_picker) · [image_picker](https://pub.dev/packages/image_picker)
 
 ### Licencia
 
-feed95 se distribuye bajo la licencia **GNU General Public License v3.0**. Consulta el archivo [`LICENSE`](LICENSE) para más detalles.
+Distribuido bajo **GNU GPL v3.0** — puedes usar, copiar, modificar y distribuir este software, pero cualquier versión derivada debe mantener la misma licencia con el código fuente disponible. Ver [`LICENSE`](LICENSE).
 
-En cristiano: puedes usar, copiar, modificar y distribuir este software (incluso comercialmente), pero cualquier versión derivada debe distribuirse también bajo GPL v3 con el código fuente disponible.
+### Avisos de terceros
 
-### Avisos de terceros y atribución
+feed95 consume APIs externas para obtener metadatos. Ninguno de estos servicios está afiliado al proyecto.
 
-feed95 utiliza datos de servicios externos para enriquecer el catálogo. Estos servicios no están afiliados al proyecto ni lo respaldan.
-
-**Steam / Valve**
-Los metadatos de juegos de Steam se obtienen a través de los endpoints públicos de la tienda de Steam (`store.steampowered.com/api`). Steam y el logotipo de Steam son marcas registradas de Valve Corporation. feed95 no está afiliado con Valve ni con Steam.
-
-**Epic Games Store**
-Los metadatos de Epic se obtienen a través del endpoint GraphQL público de la Epic Games Store. Este endpoint no está documentado oficialmente ni respaldado por Epic Games. feed95 no está afiliado con Epic Games.
-
-**IGDB**
-Los datos de videojuegos son provistos por [IGDB.com](https://www.igdb.com), propiedad de Twitch Interactive, Inc.
+- **Steam/Valve** — datos vía `store.steampowered.com/api`. Steam es marca registrada de Valve Corporation.
+- **Epic Games Store** — datos vía endpoint GraphQL público. No oficial ni respaldado por Epic Games.
+- **IGDB** — datos provistos por [IGDB.com](https://www.igdb.com), propiedad de Twitch Interactive, Inc. Gratuito para proyectos no comerciales bajo el [Twitch Developer Service Agreement](https://www.twitch.tv/p/legal/developer-agreement/). Forks comerciales deben revisar los términos de forma independiente.
 
 > Game data provided by IGDB.com
-
-La API de IGDB es gratuita para proyectos no comerciales bajo los términos del [Twitch Developer Service Agreement](https://www.twitch.tv/p/legal/developer-agreement/). feed95 es un proyecto de código abierto sin monetización. Si realizas un fork comercial de este proyecto, deberás revisar los términos de uso de IGDB de forma independiente y considerar contactar a partner@igdb.com.
 
 ---
 
 ## English
 
+### What is feed95?
+
+An app to track your video games, available on Windows and Android. No accounts, no cloud, no tracking — everything is stored locally on your device.
+
 ### Features
 
-- **Multiple local profiles** - Each profile has its own password, accent color, and image. Share a device without mixing catalogs.
-- **100% offline** - Everything is stored in a local SQLite database. No accounts, no cloud, no required internet connection. Your data never leaves your device.
-- **Automatic metadata search** - Import cover art, description, genres, and screenshots from Steam, Epic Games, or IGDB in one click.
-- **Categories and filters** - Organize your catalog with custom categories. Filter by status, category, or text search.
-- **Statuses and ratings** - Mark each game as Pending, Playing, Completed, or Abandoned. Rate from 1 to 10. Reorder your catalog manually.
-- **Optional secondary catalog** - A second catalog separate from the main one, ideal for keeping distinct collections under the same profile.
-- **Built-in launcher** - Link each game's executable and launch it directly from the app. Windows only.
-- **Backup and restore** - Export your entire collection to a JSON file and import it on any device whenever you want.
-- **Light / dark theme with custom accent** - The interface adapts to the color you choose for each profile.
+| | |
+|---|---|
+| **Local profiles** | Multiple profiles with image, accent color, and optional password. |
+| **100% offline** | Local SQLite database. Your data never leaves your device. |
+| **Automatic metadata** | Import cover art, description, genres, and screenshots from Steam, Epic Games, or IGDB. |
+| **Categories & filters** | Organize with custom categories. Filter by status, category, or text. |
+| **Statuses & ratings** | Pending, Playing, Completed, or Abandoned. Rate from 1 to 10. Reorder manually. |
+| **Secondary catalog** | A second separate catalog under the same profile. |
+| **Built-in launcher** | Link each game's `.exe` and launch it from the app. Windows only. |
+| **Backup & restore** | Export and import your collection as JSON across devices. |
+| **Light / dark theme** | The interface adapts to each profile's accent color. |
 
-### Download and Installation
+### Download
 
-**Android**
+| Platform | File |
+|---|---|
+| Android | [`feed95.apk`](https://github.com/SrFaper/feed95/releases) |
+| Windows | [`feed95-windows.zip`](https://github.com/SrFaper/feed95/releases) |
 
-1. Download `feed95.apk` from the [Releases](https://github.com/SrFaper/feed95/releases) tab.
-2. Open it on your device and allow installation from unknown sources if prompted.
+**Android:** download the APK and open it. Allow installation from unknown sources if prompted.
 
-**Windows**
+**Windows:** extract the ZIP to any folder and run `feed95.exe`. No installation required.
 
-1. Download `feed95-windows.zip` from the [Releases](https://github.com/SrFaper/feed95/releases) tab.
-2. Extract the contents to any folder.
-3. Run `feed95.exe`. No installation required.
+### Game metadata
 
-### Metadata Search
+| Source | Setup |
+|---|---|
+| Steam | Not required |
+| Epic Games Store | Not required |
+| IGDB | Free Twitch Developer credentials |
 
-feed95 can import game information from three sources:
-
-| Source | Setup required |
-|--------|---------------|
-| Steam | No |
-| Epic Games Store | No |
-| IGDB | Yes, free Twitch Developer credentials |
-
-To set up IGDB: visit [dev.twitch.tv](https://dev.twitch.tv), create an application, and enter your Client-ID and Client-Secret in the Settings section of the app.
+For IGDB: visit [dev.twitch.tv](https://dev.twitch.tv), create an application, and paste your Client-ID and Client-Secret in **Settings → IGDB** inside the app.
 
 ### Built with
 
-- [Flutter](https://flutter.dev/) - Cross-platform framework
-- [SQLite / sqflite](https://pub.dev/packages/sqflite) - Local database
-- [dio](https://pub.dev/packages/dio) + [cookie_jar](https://pub.dev/packages/cookie_jar) - HTTP requests
-- [flutter_colorpicker](https://pub.dev/packages/flutter_colorpicker) - Profile color picker
-- [file_picker](https://pub.dev/packages/file_picker) / [image_picker](https://pub.dev/packages/image_picker) - File and image selection
+[Flutter](https://flutter.dev) · [SQLite/sqflite](https://pub.dev/packages/sqflite) · [dio](https://pub.dev/packages/dio) · [flutter_colorpicker](https://pub.dev/packages/flutter_colorpicker) · [file_picker](https://pub.dev/packages/file_picker) · [image_picker](https://pub.dev/packages/image_picker)
 
 ### License
 
-feed95 is distributed under the **GNU General Public License v3.0**. See the [`LICENSE`](LICENSE) file for details.
+Distributed under **GNU GPL v3.0** — you can use, copy, modify, and distribute this software, but any derivative version must keep the same license with source code available. See [`LICENSE`](LICENSE).
 
-In practical terms: you can use, copy, modify, and distribute this software (including commercially), but any derivative version must also be distributed under GPL v3 with the source code available.
+### Third-party notices
 
-### Third-Party Notices and Attribution
+feed95 uses external APIs to fetch metadata. None of these services are affiliated with this project.
 
-feed95 uses data from external services to enrich the catalog. These services are not affiliated with this project and do not endorse it.
-
-**Steam / Valve**
-Steam game metadata is fetched through the public endpoints of the Steam store (`store.steampowered.com/api`). Steam and the Steam logo are registered trademarks of Valve Corporation. feed95 is not affiliated with Valve or Steam.
-
-**Epic Games Store**
-Epic metadata is fetched through the public GraphQL endpoint of the Epic Games Store. This endpoint is not officially documented or endorsed by Epic Games. feed95 is not affiliated with Epic Games.
-
-**IGDB**
-Video game data is provided by [IGDB.com](https://www.igdb.com), owned by Twitch Interactive, Inc.
+- **Steam/Valve** — data via `store.steampowered.com/api`. Steam is a registered trademark of Valve Corporation.
+- **Epic Games Store** — data via public GraphQL endpoint. Not officially documented or endorsed by Epic Games.
+- **IGDB** — data provided by [IGDB.com](https://www.igdb.com), owned by Twitch Interactive, Inc. Free for non-commercial projects under the [Twitch Developer Service Agreement](https://www.twitch.tv/p/legal/developer-agreement/). Commercial forks must review terms independently.
 
 > Game data provided by IGDB.com
 
-The IGDB API is free for non-commercial projects under the terms of the [Twitch Developer Service Agreement](https://www.twitch.tv/p/legal/developer-agreement/). feed95 is a non-monetized open source project. If you create a commercial fork of this project, you must review IGDB's terms of use independently and consider reaching out to partner@igdb.com.
+---
+
+## 中文
+
+### feed95 是什么？
+
+一款用于记录你的游戏收藏的应用，支持 Windows 和 Android。无需账号，无需云端，无追踪 — 所有数据均保存在你的本地设备上。
+
+### 功能特性
+
+| | |
+|---|---|
+| **本地档案** | 支持多个档案，每个档案可设置头像、主题色和可选密码。 |
+| **完全离线** | 基于本地 SQLite 数据库，数据不会离开你的设备。 |
+| **自动获取元数据** | 从 Steam、Epic Games 或 IGDB 一键导入封面、简介、标签和截图。 |
+| **分类与筛选** | 使用自定义分类整理游戏，按状态、分类或关键词筛选。 |
+| **状态与评分** | 支持待玩、正在游玩、已通关、已弃坑四种状态，评分 1-10 分，支持手动排序。 |
+| **副游戏库** | 在同一档案下创建一个独立的第二游戏库。 |
+| **内置启动器** | 关联每款游戏的 `.exe` 文件，直接从应用内启动。仅限 Windows。 |
+| **备份与恢复** | 将收藏导出为 JSON 文件，可在任意设备上导入恢复。 |
+| **亮色 / 暗色主题** | 界面自动适配每个档案的主题色。 |
+
+### 下载
+
+| 平台 | 文件 |
+|---|---|
+| Android | [`feed95.apk`](https://github.com/SrFaper/feed95/releases) |
+| Windows | [`feed95-windows.zip`](https://github.com/SrFaper/feed95/releases) |
+
+**Android：** 下载 APK 后直接打开安装。如系统提示，请允许安装来自未知来源的应用。
+
+**Windows：** 将 ZIP 解压到任意文件夹，运行 `feed95.exe` 即可，无需安装。
+
+### 游戏元数据来源
+
+| 来源 | 是否需要配置 |
+|---|---|
+| Steam | 无需配置 |
+| Epic Games Store | 无需配置 |
+| IGDB | 需要免费的 Twitch 开发者凭据 |
+
+配置 IGDB：访问 [dev.twitch.tv](https://dev.twitch.tv)，创建一个应用，然后将 Client-ID 和 Client-Secret 填入应用内的 **设置 → IGDB**。
+
+### 技术栈
+
+[Flutter](https://flutter.dev) · [SQLite/sqflite](https://pub.dev/packages/sqflite) · [dio](https://pub.dev/packages/dio) · [flutter_colorpicker](https://pub.dev/packages/flutter_colorpicker) · [file_picker](https://pub.dev/packages/file_picker) · [image_picker](https://pub.dev/packages/image_picker)
+
+### 开源许可
+
+本项目基于 **GNU GPL v3.0** 协议发布 — 你可以自由使用、复制、修改和分发本软件，但任何衍生版本必须保持相同的许可协议并公开源代码。详见 [`LICENSE`](LICENSE)。
+
+### 第三方声明
+
+feed95 使用外部 API 获取游戏元数据，以下服务均与本项目无关联。
+
+- **Steam/Valve** — 数据来源：`store.steampowered.com/api`。Steam 是 Valve Corporation 的注册商标。
+- **Epic Games Store** — 数据来源：Epic Games Store 公开 GraphQL 接口，非官方，Epic Games 不对此背书。
+- **IGDB** — 游戏数据由 [IGDB.com](https://www.igdb.com)（Twitch Interactive, Inc. 旗下）提供，非商业项目可免费使用，详见 [Twitch 开发者服务协议](https://www.twitch.tv/p/legal/developer-agreement/)。商业 Fork 需独立审查相关条款。
+
+> Game data provided by IGDB.com
 
 ---
 
 <div align="center">
-feed95 &copy; 2026
+feed95 &copy; 2026 · <a href="LICENSE">GPL v3.0</a>
 </div>
