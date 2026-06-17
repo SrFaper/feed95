@@ -450,6 +450,35 @@ class AppLocalizationsZh extends AppLocalizations {
   String get juegoFormEliminado => '游戏删除成功';
 
   @override
+  String get juegoFormGuardarImagenesLocal => '将图片保存到本设备';
+
+  @override
+  String get juegoFormCacheGuardadoOk => '图片已本地保存（WebP 格式）';
+
+  @override
+  String get juegoFormCacheError => '无法在本地保存任何图片';
+
+  @override
+  String get juegoFormModoNinguno => '不在本地保存';
+
+  @override
+  String get juegoFormModoOriginal => '原样保存（不压缩）';
+
+  @override
+  String get juegoFormModoComprimido => '压缩保存（JPEG）';
+
+  @override
+  String get homeCarpetaImagenes => '图片文件夹';
+
+  @override
+  String get homeCarpetaImagenesTitulo => '本地保存的图片';
+
+  @override
+  String homeCarpetaImagenesEspacio(String mb) {
+    return '已用空间：$mb MB';
+  }
+
+  @override
   String get igdbTitulo => 'IGDB';
 
   @override

@@ -13,6 +13,7 @@ import 'perfil_screen.dart';
 import 'f95_config_screen.dart';
 import 'igdb_config_screen.dart';
 import 'package:frontend/l10n/app_localizations.dart';
+import '../services/image_cache_service.dart';
 
 class HomeScreen extends StatefulWidget {
   final Usuario usuario;
@@ -42,6 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _cargarTodo();
   }
 
+  // Función para cargar estadísticas y configuraciones
   Future<void> _cargarTodo() async {
     final prefs = await SharedPreferences.getInstance();
     final stats = await ApiService.obtenerEstadisticas(usuario.id);
@@ -55,6 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Función para cambiar de perfil (cerrar sesión)
   Future<void> _cambiarPerfil() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('usuario_id');
@@ -66,6 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Función para exportar el backup
   Future<void> _exportarBackup() async {
     final l10n = AppLocalizations.of(context)!;
     try {
@@ -99,6 +103,37 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Función para ver la ruta de las imágenes
+  Future<void> _verRutaImagenes() async {
+    final l10n = AppLocalizations.of(context)!;
+    final ruta = await ImageCacheService.rutaVisible();
+    final bytes = await ImageCacheService.tamanoTotal();
+    final mb = (bytes / (1024 * 1024)).toStringAsFixed(2);
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.homeCarpetaImagenesTitulo),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SelectableText(ruta, style: const TextStyle(fontSize: 12)),
+            const SizedBox(height: 12),
+            Text(l10n.homeCarpetaImagenesEspacio(mb)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.btnAceptar),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Función para importar un backup
   Future<void> _importarBackup() async {
     final l10n = AppLocalizations.of(context)!;
     try {
@@ -262,6 +297,15 @@ class _HomeScreenState extends State<HomeScreen> {
                         onTap: () {
                           Navigator.pop(ctx);
                           _importarBackup();
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      _botonSheet(
+                        icon: Icons.folder_outlined,
+                        label: l10n.homeCarpetaImagenes,
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          _verRutaImagenes();
                         },
                       ),
                     ],

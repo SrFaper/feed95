@@ -197,6 +197,18 @@
   "juegoFormAgregado": "Game added successfully",
   "juegoFormActualizado": "Game updated successfully",
   "juegoFormEliminado": "Game deleted successfully",
+  "juegoFormGuardarImagenesLocal": "Save images on this device",
+  "juegoFormCacheGuardadoOk": "Images saved locally (WebP)",
+  "juegoFormCacheError": "Could not save any image locally",
+  "juegoFormModoNinguno": "Don't save locally",
+  "juegoFormModoOriginal": "Save as-is (uncompressed)",
+  "juegoFormModoComprimido": "Save compressed (JPEG)",
+  "homeCarpetaImagenes": "Images folder",
+  "homeCarpetaImagenesTitulo": "Locally saved images",
+  "homeCarpetaImagenesEspacio": "Space used: {mb} MB",
+  "@homeCarpetaImagenesEspacio": {
+    "placeholders": { "mb": { "type": "String" } }
+  },
 
   "igdbTitulo": "IGDB",
   "igdbConfiguradoTitulo": "IGDB configured",

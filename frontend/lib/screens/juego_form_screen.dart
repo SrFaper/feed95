@@ -9,9 +9,12 @@ import '../services/api_service.dart';
 import '../services/epic_service.dart';
 import '../services/steam_service.dart';
 import '../services/f95_service.dart';
+import '../services/igdb_service.dart';
+import '../services/image_cache_service.dart';
+import '../widgets/campo_con_original.dart';
+import '../widgets/imagen_con_original.dart';
 import 'f95_config_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../services/igdb_service.dart';
 import 'igdb_config_screen.dart';
 import 'package:frontend/l10n/app_localizations.dart';
 
@@ -32,19 +35,36 @@ class JuegoFormScreen extends StatefulWidget {
 }
 
 class _JuegoFormScreenState extends State<JuegoFormScreen> {
-  final nombreController = TextEditingController();
-  final descripcionController = TextEditingController();
+  // ── Controllers de override (lo que el usuario escribe) ──
+  final nombreCtrl = TextEditingController();
+  final descripcionCtrl = TextEditingController();
+  final generosCtrl = TextEditingController();
+  final imagenOverrideCtrl = TextEditingController();
+  final imagenGridOverrideCtrl = TextEditingController();
+
+  // Campos sin override (siempre directos)
   final versionController = TextEditingController();
   final calificacionController = TextEditingController();
-  final generosController = TextEditingController();
   final rutaEjecutableController = TextEditingController();
-  final imagenDetalleController = TextEditingController();
-  final imagenGridController = TextEditingController();
-  String? _imagenDetalleLocal;
-  String? _imagenGridLocal;
+
+  // ── Datos "originales" (de fuente externa). Vacíos si es creación manual. ──
+  String _nombreOrig = '';
+  String _descripcionOrig = '';
+  String _generosOrig = '';
+  String _imagenOrig = '';
+  String? _imagenOrigLocal;
+  String _imagenGridOrig = '';
+  String? _imagenGridOrigLocal;
+
+  // Imagen override local (si el usuario elige de galería)
+  String? _imagenOverrideLocal;
+  String? _imagenGridOverrideLocal;
+
   String _imagenesExtra = '';
   String estadoSeleccionado = 'Pending';
   bool cargando = false;
+  bool _guardandoCache = false;
+  ModoGuardadoImagen _modoGuardadoImagen = ModoGuardadoImagen.ninguno;
   bool _buscandoSteam = false;
   bool _buscandoEpic = false;
   bool _buscandoF95 = false;
@@ -61,18 +81,28 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     _cargarF95();
     _cargarIgdb();
     if (widget.juego != null) {
-      nombreController.text = widget.juego!.nombre;
-      descripcionController.text = widget.juego!.descripcion;
-      versionController.text = widget.juego!.version;
-      calificacionController.text = widget.juego!.calificacion.toString();
-      generosController.text = widget.juego!.generos;
-      estadoSeleccionado = widget.juego!.estado;
-      imagenDetalleController.text = widget.juego!.imagen;
-      imagenGridController.text = widget.juego!.imagenGrid;
-      _imagenDetalleLocal = widget.juego!.imagenLocal;
-      _imagenGridLocal = widget.juego!.imagenGridLocal;
-      _imagenesExtra = widget.juego!.imagenesExtra;
-      rutaEjecutableController.text = widget.juego!.rutaEjecutable ?? '';
+      final j = widget.juego!;
+      _nombreOrig = j.nombreOrig;
+      _descripcionOrig = j.descripcionOrig;
+      _generosOrig = j.generosOrig;
+      _imagenOrig = j.imagenOrig;
+      _imagenOrigLocal = j.imagenOrigLocal;
+      _imagenGridOrig = j.imagenGridOrig;
+      _imagenGridOrigLocal = j.imagenGridOrigLocal;
+
+      nombreCtrl.text = j.nombreOverride ?? '';
+      descripcionCtrl.text = j.descripcionOverride ?? '';
+      generosCtrl.text = j.generosOverride ?? '';
+      imagenOverrideCtrl.text = j.imagenOverride ?? '';
+      imagenGridOverrideCtrl.text = j.imagenGridOverride ?? '';
+      _imagenOverrideLocal = j.imagenOverrideLocal;
+      _imagenGridOverrideLocal = j.imagenGridOverrideLocal;
+
+      versionController.text = j.version;
+      calificacionController.text = j.calificacion.toString();
+      estadoSeleccionado = j.estado;
+      _imagenesExtra = j.imagenesExtra;
+      rutaEjecutableController.text = j.rutaEjecutable ?? '';
     }
   }
 
@@ -95,33 +125,6 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
             visualDensity: VisualDensity.compact,
             onPressed: onTap,
           );
-  }
-
-  Widget _vistaPrevia(String url, String? local) {
-    if (local != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.file(
-          File(local),
-          height: 120,
-          width: double.infinity,
-          fit: BoxFit.cover,
-        ),
-      );
-    }
-    if (url.isNotEmpty) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.network(
-          url,
-          height: 120,
-          width: double.infinity,
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => const SizedBox(),
-        ),
-      );
-    }
-    return const SizedBox();
   }
 
   Future<void> _mostrarResultados<T>({
@@ -178,7 +181,10 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     );
   }
 
-  void _rellenarCampos({
+  /// Al traer datos de una fuente externa, se llenan los campos "original".
+  /// Los overrides existentes NO se tocan (si el usuario ya personalizó algo,
+  /// se mantiene su personalización por encima del nuevo original).
+  void _rellenarOriginal({
     required String nombre,
     required String descripcion,
     required String portada,
@@ -187,13 +193,13 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     String imagenesExtra = '',
   }) {
     setState(() {
-      nombreController.text = nombre;
-      descripcionController.text = descripcion;
-      imagenDetalleController.text = portada;
-      imagenGridController.text = portadaGrid;
-      generosController.text = generos;
-      _imagenDetalleLocal = null;
-      _imagenGridLocal = null;
+      _nombreOrig = nombre;
+      _descripcionOrig = descripcion;
+      _imagenOrig = portada;
+      _imagenOrigLocal = null;
+      _imagenGridOrig = portadaGrid;
+      _imagenGridOrigLocal = null;
+      _generosOrig = generos;
       _imagenesExtra = imagenesExtra;
     });
   }
@@ -202,7 +208,9 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
 
   Future<void> _buscarEnSteam() async {
     final l10n = AppLocalizations.of(context)!;
-    final query = nombreController.text.trim();
+    final query = nombreCtrl.text.trim().isNotEmpty
+        ? nombreCtrl.text.trim()
+        : _nombreOrig;
     if (query.isEmpty) {
       ScaffoldMessenger.of(
         context,
@@ -235,7 +243,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
           ).showSnackBar(SnackBar(content: Text(l10n.juegoFormErrorDetalles)));
           return;
         }
-        _rellenarCampos(
+        _rellenarOriginal(
           nombre: detalle.nombre,
           descripcion: detalle.descripcion,
           portada: detalle.portada,
@@ -251,7 +259,9 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
 
   Future<void> _buscarEnEpic() async {
     final l10n = AppLocalizations.of(context)!;
-    final query = nombreController.text.trim();
+    final query = nombreCtrl.text.trim().isNotEmpty
+        ? nombreCtrl.text.trim()
+        : _nombreOrig;
     if (query.isEmpty) {
       ScaffoldMessenger.of(
         context,
@@ -284,7 +294,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
           ).showSnackBar(SnackBar(content: Text(l10n.juegoFormErrorDetalles)));
           return;
         }
-        _rellenarCampos(
+        _rellenarOriginal(
           nombre: detalle.nombre,
           descripcion: detalle.descripcion,
           portada: detalle.portada,
@@ -307,7 +317,9 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
 
   Future<void> _buscarEnF95() async {
     final l10n = AppLocalizations.of(context)!;
-    final query = nombreController.text.trim();
+    final query = nombreCtrl.text.trim().isNotEmpty
+        ? nombreCtrl.text.trim()
+        : _nombreOrig;
     if (query.isEmpty) {
       ScaffoldMessenger.of(
         context,
@@ -373,7 +385,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
           ).showSnackBar(SnackBar(content: Text(l10n.juegoFormErrorDetalles)));
           return;
         }
-        _rellenarCampos(
+        _rellenarOriginal(
           nombre: detalle.nombre,
           descripcion: detalle.descripcion,
           portada: detalle.portada,
@@ -381,6 +393,9 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
           generos: detalle.generos,
           imagenesExtra: detalle.imagenesExtra,
         );
+        if (detalle.version.isNotEmpty) {
+          versionController.text = detalle.version;
+        }
       },
     );
   }
@@ -396,7 +411,9 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
 
   Future<void> _buscarEnIgdb() async {
     final l10n = AppLocalizations.of(context)!;
-    final query = nombreController.text.trim();
+    final query = nombreCtrl.text.trim().isNotEmpty
+        ? nombreCtrl.text.trim()
+        : _nombreOrig;
     if (query.isEmpty) {
       ScaffoldMessenger.of(
         context,
@@ -460,7 +477,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
           ).showSnackBar(SnackBar(content: Text(l10n.juegoFormErrorDetalles)));
           return;
         }
-        _rellenarCampos(
+        _rellenarOriginal(
           nombre: detalle.nombre,
           descripcion: detalle.descripcion,
           portada: detalle.portada,
@@ -472,7 +489,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     );
   }
 
-  // ── Imagen ────────────────────────────────────────────────
+  // ── Imagen (override manual) ────────────────────────────────
 
   Future<void> _elegirImagen({required bool esGrid}) async {
     final picker = ImagePicker();
@@ -480,14 +497,26 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     if (picked != null) {
       setState(() {
         if (esGrid) {
-          _imagenGridLocal = picked.path;
-          imagenGridController.clear();
+          _imagenGridOverrideLocal = picked.path;
+          imagenGridOverrideCtrl.clear();
         } else {
-          _imagenDetalleLocal = picked.path;
-          imagenDetalleController.clear();
+          _imagenOverrideLocal = picked.path;
+          imagenOverrideCtrl.clear();
         }
       });
     }
+  }
+
+  void _quitarOverrideImagen({required bool esGrid}) {
+    setState(() {
+      if (esGrid) {
+        _imagenGridOverrideLocal = null;
+        imagenGridOverrideCtrl.clear();
+      } else {
+        _imagenOverrideLocal = null;
+        imagenOverrideCtrl.clear();
+      }
+    });
   }
 
   Future<void> _elegirEjecutable() async {
@@ -504,11 +533,85 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     }
   }
 
+  // ── Guardado de imagen en disco (cache comprimido WebP) ───────────────
+  // Toma la imagen ACTUALMENTE resuelta (override si existe, si no original)
+  // y la comprime/guarda. Solo tiene sentido llamarlo si el juego ya existe
+  // (necesita un id estable para el nombre de archivo); si es nuevo, se hace
+  // automáticamente justo después de crearlo.
+
+  String? get _imagenDetalleResueltaUrl =>
+      (_imagenOverrideLocal == null || _imagenOverrideLocal!.isEmpty)
+      ? (imagenOverrideCtrl.text.isNotEmpty
+            ? imagenOverrideCtrl.text
+            : _imagenOrig)
+      : null;
+
+  String? get _imagenDetalleResueltaLocal =>
+      (_imagenOverrideLocal != null && _imagenOverrideLocal!.isNotEmpty)
+      ? _imagenOverrideLocal
+      : ((imagenOverrideCtrl.text.isEmpty) ? _imagenOrigLocal : null);
+
+  String? get _imagenGridResueltaUrl =>
+      (_imagenGridOverrideLocal == null || _imagenGridOverrideLocal!.isEmpty)
+      ? (imagenGridOverrideCtrl.text.isNotEmpty
+            ? imagenGridOverrideCtrl.text
+            : _imagenGridOrig)
+      : null;
+
+  String? get _imagenGridResueltaLocal =>
+      (_imagenGridOverrideLocal != null && _imagenGridOverrideLocal!.isNotEmpty)
+      ? _imagenGridOverrideLocal
+      : ((imagenGridOverrideCtrl.text.isEmpty) ? _imagenGridOrigLocal : null);
+
+  Future<void> _guardarImagenesEnCache(
+    int juegoId, {
+    bool mostrarSnackbar = true,
+  }) async {
+    if (_modoGuardadoImagen == ModoGuardadoImagen.ninguno) return;
+    setState(() => _guardandoCache = true);
+
+    final rutaGrid = await ImageCacheService.guardarImagen(
+      nombreBase: '${juegoId}_grid',
+      modo: _modoGuardadoImagen,
+      urlRemota: _imagenGridResueltaLocal == null
+          ? _imagenGridResueltaUrl
+          : null,
+      rutaLocalExistente: _imagenGridResueltaLocal,
+    );
+    final rutaDetalle = await ImageCacheService.guardarImagen(
+      nombreBase: '${juegoId}_detalle',
+      modo: _modoGuardadoImagen,
+      urlRemota: _imagenDetalleResueltaLocal == null
+          ? _imagenDetalleResueltaUrl
+          : null,
+      rutaLocalExistente: _imagenDetalleResueltaLocal,
+    );
+
+    if (!mounted) return;
+    setState(() => _guardandoCache = false);
+
+    if (!mostrarSnackbar) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    if (rutaGrid != null || rutaDetalle != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.juegoFormCacheGuardadoOk)));
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.juegoFormCacheError)));
+    }
+  }
+
   // ── Guardar ───────────────────────────────────────────────
 
   Future<void> guardarJuego() async {
     final l10n = AppLocalizations.of(context)!;
-    if (nombreController.text.isEmpty) {
+    final nombreEfectivo = nombreCtrl.text.trim().isNotEmpty
+        ? nombreCtrl.text.trim()
+        : _nombreOrig;
+    if (nombreEfectivo.isEmpty) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(l10n.juegoFormNombreObligatorio)));
@@ -522,39 +625,71 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
         : null;
 
     Map<String, dynamic> respuesta;
+    int? idJuegoNuevo;
 
     if (widget.juego == null) {
       respuesta = await ApiService.crearJuego(
-        nombre: nombreController.text,
-        descripcion: descripcionController.text,
-        imagen: imagenDetalleController.text,
-        imagenLocal: _imagenDetalleLocal,
-        imagenGrid: imagenGridController.text,
-        imagenGridLocal: _imagenGridLocal,
-        imagenesExtra: _imagenesExtra,
+        nombreOrig: _nombreOrig,
+        nombreOverride: nombreCtrl.text.trim().isEmpty
+            ? null
+            : nombreCtrl.text.trim(),
+        descripcionOrig: _descripcionOrig,
+        descripcionOverride: descripcionCtrl.text.isEmpty
+            ? null
+            : descripcionCtrl.text,
+        generosOrig: _generosOrig,
+        generosOverride: generosCtrl.text.isEmpty ? null : generosCtrl.text,
+        imagenOrig: _imagenOrig,
+        imagenOrigLocal: _imagenOrigLocal,
+        imagenOverride: imagenOverrideCtrl.text.isEmpty
+            ? null
+            : imagenOverrideCtrl.text,
+        imagenOverrideLocal: _imagenOverrideLocal,
+        imagenGridOrig: _imagenGridOrig,
+        imagenGridOrigLocal: _imagenGridOrigLocal,
+        imagenGridOverride: imagenGridOverrideCtrl.text.isEmpty
+            ? null
+            : imagenGridOverrideCtrl.text,
+        imagenGridOverrideLocal: _imagenGridOverrideLocal,
         version: versionController.text,
         calificacion: calificacionController.text,
-        generos: generosController.text,
         estado: estadoSeleccionado,
         usuarioId: widget.usuario.id,
         rutaEjecutable: rutaEjecutable,
+        imagenesExtra: _imagenesExtra,
         catalogo: widget.catalogoInicial,
       );
+      idJuegoNuevo = respuesta['id'] as int?;
     } else {
       respuesta = await ApiService.actualizarJuego(
         id: widget.juego!.id,
-        nombre: nombreController.text,
-        descripcion: descripcionController.text,
-        imagen: imagenDetalleController.text,
-        imagenLocal: _imagenDetalleLocal,
-        imagenGrid: imagenGridController.text,
-        imagenGridLocal: _imagenGridLocal,
-        imagenesExtra: _imagenesExtra,
+        nombreOrig: _nombreOrig,
+        nombreOverride: nombreCtrl.text.trim().isEmpty
+            ? null
+            : nombreCtrl.text.trim(),
+        descripcionOrig: _descripcionOrig,
+        descripcionOverride: descripcionCtrl.text.isEmpty
+            ? null
+            : descripcionCtrl.text,
+        generosOrig: _generosOrig,
+        generosOverride: generosCtrl.text.isEmpty ? null : generosCtrl.text,
+        imagenOrig: _imagenOrig,
+        imagenOrigLocal: _imagenOrigLocal,
+        imagenOverride: imagenOverrideCtrl.text.isEmpty
+            ? null
+            : imagenOverrideCtrl.text,
+        imagenOverrideLocal: _imagenOverrideLocal,
+        imagenGridOrig: _imagenGridOrig,
+        imagenGridOrigLocal: _imagenGridOrigLocal,
+        imagenGridOverride: imagenGridOverrideCtrl.text.isEmpty
+            ? null
+            : imagenGridOverrideCtrl.text,
+        imagenGridOverrideLocal: _imagenGridOverrideLocal,
         version: versionController.text,
         calificacion: calificacionController.text,
-        generos: generosController.text,
         estado: estadoSeleccionado,
         rutaEjecutable: rutaEjecutable,
+        imagenesExtra: _imagenesExtra,
         catalogo: widget.juego?.catalogo ?? widget.catalogoInicial,
       );
     }
@@ -569,6 +704,12 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     ).showSnackBar(SnackBar(content: Text(mensaje)));
 
     if (respuesta['success'] == true) {
+      final idParaCache = idJuegoNuevo ?? widget.juego?.id;
+      if (idParaCache != null &&
+          _modoGuardadoImagen != ModoGuardadoImagen.ninguno) {
+        await _guardarImagenesEnCache(idParaCache, mostrarSnackbar: false);
+      }
+      if (!mounted) return;
       Navigator.pop(context);
     }
   }
@@ -591,7 +732,6 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     final l10n = AppLocalizations.of(context)!;
     final esEdicion = widget.juego != null;
 
-    // Los estados se leen del l10n para que el dropdown también esté traducido
     final estados = {
       'Pending': l10n.estadoPendiente,
       'Playing': l10n.estadoJugando,
@@ -599,7 +739,6 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
       'Abandoned': l10n.estadoAbandonado,
     };
 
-    // Asegurar que el estado guardado tenga equivalente en el idioma actual
     if (!estados.containsKey(estadoSeleccionado)) {
       estadoSeleccionado = estados.keys.first;
     }
@@ -615,9 +754,10 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(
-              controller: nombreController,
-              decoration: InputDecoration(labelText: l10n.juegoFormNombre),
+            CampoConOriginal(
+              controller: nombreCtrl,
+              label: l10n.juegoFormNombre,
+              valorOriginal: _nombreOrig,
             ),
             const SizedBox(height: 8),
 
@@ -657,32 +797,43 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
             ),
             const SizedBox(height: 12),
 
-            TextField(
-              controller: descripcionController,
-              decoration: InputDecoration(labelText: l10n.juegoFormDescripcion),
+            CampoConOriginal(
+              controller: descripcionCtrl,
+              label: l10n.juegoFormDescripcion,
+              valorOriginal: _descripcionOrig,
               maxLines: 3,
             ),
             const SizedBox(height: 12),
 
+            // ── Imagen detalle ──
             Text(
               l10n.juegoFormImagenDetalle,
               style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
             const SizedBox(height: 4),
-            _vistaPrevia(imagenDetalleController.text, _imagenDetalleLocal),
-            if (_imagenDetalleLocal != null ||
-                imagenDetalleController.text.isNotEmpty)
-              const SizedBox(height: 8),
+            ImagenConOriginal(
+              overrideUrl: imagenOverrideCtrl.text,
+              overrideLocal: _imagenOverrideLocal,
+              origUrl: _imagenOrig,
+              origLocal: _imagenOrigLocal,
+              onQuitarOverride: () => _quitarOverrideImagen(esGrid: false),
+            ),
+            const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
                   child: TextField(
-                    controller: imagenDetalleController,
+                    controller: imagenOverrideCtrl,
                     decoration: InputDecoration(
                       labelText: l10n.juegoFormUrlImagenDetalle,
+                      hintText: _imagenOrig.isNotEmpty ? _imagenOrig : null,
+                      hintStyle: TextStyle(
+                        color: Colors.grey.withValues(alpha: 0.5),
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
                     onChanged: (_) =>
-                        setState(() => _imagenDetalleLocal = null),
+                        setState(() => _imagenOverrideLocal = null),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -690,33 +841,41 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
                   icon: const Icon(Icons.photo_library),
                   onPressed: () => _elegirImagen(esGrid: false),
                 ),
-                if (_imagenDetalleLocal != null)
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => setState(() => _imagenDetalleLocal = null),
-                  ),
               ],
             ),
 
             const SizedBox(height: 12),
+            // ── Imagen grid ──
             Text(
               l10n.juegoFormImagenGrid,
               style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
             const SizedBox(height: 4),
-            _vistaPrevia(imagenGridController.text, _imagenGridLocal),
-            if (_imagenGridLocal != null ||
-                imagenGridController.text.isNotEmpty)
-              const SizedBox(height: 8),
+            ImagenConOriginal(
+              overrideUrl: imagenGridOverrideCtrl.text,
+              overrideLocal: _imagenGridOverrideLocal,
+              origUrl: _imagenGridOrig,
+              origLocal: _imagenGridOrigLocal,
+              onQuitarOverride: () => _quitarOverrideImagen(esGrid: true),
+            ),
+            const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
                   child: TextField(
-                    controller: imagenGridController,
+                    controller: imagenGridOverrideCtrl,
                     decoration: InputDecoration(
                       labelText: l10n.juegoFormUrlImagenGrid,
+                      hintText: _imagenGridOrig.isNotEmpty
+                          ? _imagenGridOrig
+                          : null,
+                      hintStyle: TextStyle(
+                        color: Colors.grey.withValues(alpha: 0.5),
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
-                    onChanged: (_) => setState(() => _imagenGridLocal = null),
+                    onChanged: (_) =>
+                        setState(() => _imagenGridOverrideLocal = null),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -724,11 +883,6 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
                   icon: const Icon(Icons.photo_library),
                   onPressed: () => _elegirImagen(esGrid: true),
                 ),
-                if (_imagenGridLocal != null)
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => setState(() => _imagenGridLocal = null),
-                  ),
               ],
             ),
 
@@ -746,9 +900,10 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: generosController,
-              decoration: InputDecoration(labelText: l10n.juegoFormGeneros),
+            CampoConOriginal(
+              controller: generosCtrl,
+              label: l10n.juegoFormGeneros,
+              valorOriginal: _generosOrig,
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
@@ -800,6 +955,52 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
                 ],
               ),
             ],
+
+            const SizedBox(height: 16),
+            Text(
+              l10n.juegoFormGuardarImagenesLocal,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+            if (_guardandoCache)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: LinearProgressIndicator(),
+              ),
+            RadioGroup<ModoGuardadoImagen>(
+              groupValue: _modoGuardadoImagen,
+              onChanged: (v) => setState(() => _modoGuardadoImagen = v!),
+              child: Column(
+                children: [
+                  RadioListTile<ModoGuardadoImagen>(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      l10n.juegoFormModoNinguno,
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                    value: ModoGuardadoImagen.ninguno,
+                  ),
+                  RadioListTile<ModoGuardadoImagen>(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      l10n.juegoFormModoOriginal,
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                    value: ModoGuardadoImagen.original,
+                  ),
+                  RadioListTile<ModoGuardadoImagen>(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      l10n.juegoFormModoComprimido,
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                    value: ModoGuardadoImagen.comprimido,
+                  ),
+                ],
+              ),
+            ),
 
             const SizedBox(height: 24),
             SizedBox(

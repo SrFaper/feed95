@@ -197,6 +197,18 @@
   "juegoFormAgregado": "游戏成功添加到库中",
   "juegoFormActualizado": "游戏信息更新成功",
   "juegoFormEliminado": "游戏删除成功",
+  "juegoFormGuardarImagenesLocal": "将图片保存到本设备",
+  "juegoFormCacheGuardadoOk": "图片已本地保存（WebP 格式）",
+  "juegoFormCacheError": "无法在本地保存任何图片",
+  "juegoFormModoNinguno": "不在本地保存",
+  "juegoFormModoOriginal": "原样保存（不压缩）",
+  "juegoFormModoComprimido": "压缩保存（JPEG）",
+  "homeCarpetaImagenes": "图片文件夹",
+  "homeCarpetaImagenesTitulo": "本地保存的图片",
+  "homeCarpetaImagenesEspacio": "已用空间：{mb} MB",
+  "@homeCarpetaImagenesEspacio": {
+    "placeholders": { "mb": { "type": "String" } }
+  },
 
   "igdbTitulo": "IGDB",
   "igdbConfiguradoTitulo": "IGDB 已配置",

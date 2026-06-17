@@ -946,6 +946,60 @@ abstract class AppLocalizations {
   /// **'Juego eliminado correctamente'**
   String get juegoFormEliminado;
 
+  /// No description provided for @juegoFormGuardarImagenesLocal.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardar imágenes en este dispositivo'**
+  String get juegoFormGuardarImagenesLocal;
+
+  /// No description provided for @juegoFormCacheGuardadoOk.
+  ///
+  /// In es, this message translates to:
+  /// **'Imágenes guardadas localmente (WebP)'**
+  String get juegoFormCacheGuardadoOk;
+
+  /// No description provided for @juegoFormCacheError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo guardar ninguna imagen localmente'**
+  String get juegoFormCacheError;
+
+  /// No description provided for @juegoFormModoNinguno.
+  ///
+  /// In es, this message translates to:
+  /// **'No guardar localmente'**
+  String get juegoFormModoNinguno;
+
+  /// No description provided for @juegoFormModoOriginal.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardar tal cual (sin comprimir)'**
+  String get juegoFormModoOriginal;
+
+  /// No description provided for @juegoFormModoComprimido.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardar comprimido (JPEG)'**
+  String get juegoFormModoComprimido;
+
+  /// No description provided for @homeCarpetaImagenes.
+  ///
+  /// In es, this message translates to:
+  /// **'Carpeta de imágenes'**
+  String get homeCarpetaImagenes;
+
+  /// No description provided for @homeCarpetaImagenesTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Imágenes guardadas localmente'**
+  String get homeCarpetaImagenesTitulo;
+
+  /// No description provided for @homeCarpetaImagenesEspacio.
+  ///
+  /// In es, this message translates to:
+  /// **'Espacio usado: {mb} MB'**
+  String homeCarpetaImagenesEspacio(String mb);
+
   /// No description provided for @igdbTitulo.
   ///
   /// In es, this message translates to:

@@ -197,6 +197,18 @@
   "juegoFormAgregado": "Juego agregado correctamente",
   "juegoFormActualizado": "Juego actualizado correctamente",
   "juegoFormEliminado": "Juego eliminado correctamente",
+  "juegoFormGuardarImagenesLocal": "Guardar imágenes en este dispositivo",
+  "juegoFormCacheGuardadoOk": "Imágenes guardadas localmente (WebP)",
+  "juegoFormCacheError": "No se pudo guardar ninguna imagen localmente",
+  "juegoFormModoNinguno": "No guardar localmente",
+  "juegoFormModoOriginal": "Guardar tal cual (sin comprimir)",
+  "juegoFormModoComprimido": "Guardar comprimido (JPEG)",
+  "homeCarpetaImagenes": "Carpeta de imágenes",
+  "homeCarpetaImagenesTitulo": "Imágenes guardadas localmente",
+  "homeCarpetaImagenesEspacio": "Espacio usado: {mb} MB",
+  "@homeCarpetaImagenesEspacio": {
+    "placeholders": { "mb": { "type": "String" } }
+  },
 
   "igdbTitulo": "IGDB",
   "igdbConfiguradoTitulo": "IGDB configurado",

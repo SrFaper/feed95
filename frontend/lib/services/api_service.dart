@@ -60,7 +60,7 @@ class ApiService {
 
     return await openDatabase(
       path,
-      version: 9,
+      version: 10,
       onCreate: (db, version) async {
         await db.execute('''
         CREATE TABLE usuarios (
@@ -74,17 +74,24 @@ class ApiService {
         await db.execute('''
         CREATE TABLE juegos (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          nombre TEXT NOT NULL,
-          descripcion TEXT,
-          imagen TEXT,
-          imagen_local TEXT,
+          nombre_orig TEXT,
+          nombre_override TEXT,
+          descripcion_orig TEXT,
+          descripcion_override TEXT,
+          generos_orig TEXT,
+          generos_override TEXT,
+          imagen_orig TEXT,
+          imagen_orig_local TEXT,
+          imagen_override TEXT,
+          imagen_override_local TEXT,
+          imagen_grid_orig TEXT,
+          imagen_grid_orig_local TEXT,
+          imagen_grid_override TEXT,
+          imagen_grid_override_local TEXT,
           version TEXT,
           calificacion INTEGER,
-          generos TEXT,
           estado TEXT,
           ruta_ejecutable TEXT,
-          imagen_grid TEXT,
-          imagen_grid_local TEXT,
           imagenes_extra TEXT,
           usuario_id INTEGER NOT NULL,
           catalogo INTEGER NOT NULL DEFAULT 0,
@@ -152,6 +159,41 @@ class ApiService {
           await db.execute(
             'ALTER TABLE usuarios ADD COLUMN imagen_perfil TEXT',
           );
+        }
+        if (oldVersion < 10) {
+          // Migración al esquema original/override.
+          // No hay forma fiable de separar "original" vs "personalizado" en datos
+          // viejos, así que se recrea la tabla juegos desde cero (se pidió reimportar).
+          await db.execute('DROP TABLE IF EXISTS juegos');
+          await db.execute('''
+            CREATE TABLE juegos (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              nombre_orig TEXT,
+              nombre_override TEXT,
+              descripcion_orig TEXT,
+              descripcion_override TEXT,
+              generos_orig TEXT,
+              generos_override TEXT,
+              imagen_orig TEXT,
+              imagen_orig_local TEXT,
+              imagen_override TEXT,
+              imagen_override_local TEXT,
+              imagen_grid_orig TEXT,
+              imagen_grid_orig_local TEXT,
+              imagen_grid_override TEXT,
+              imagen_grid_override_local TEXT,
+              version TEXT,
+              calificacion INTEGER,
+              estado TEXT,
+              ruta_ejecutable TEXT,
+              imagenes_extra TEXT,
+              usuario_id INTEGER NOT NULL,
+              catalogo INTEGER NOT NULL DEFAULT 0,
+              categoria_id INTEGER,
+              posicion INTEGER NOT NULL DEFAULT 0,
+              FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+            )
+          ''');
         }
       },
     );
@@ -300,20 +342,32 @@ class ApiService {
     return result.map((item) => Juego.fromJson(item)).toList();
   }
 
-  // Crear juego
+  // ── Crear juego ──────────────────────────────────────────────────────
+  // Todos los campos "orig" representan datos importados de una fuente externa
+  // (Steam/Epic/IGDB/F95). Los campos "override" son ediciones manuales del
+  // usuario y siempre tienen prioridad visual sobre el original.
+  // Si el juego se crea 100% manual (sin buscar en ninguna fuente), todo va
+  // a override y el original queda vacío.
   static Future<Map<String, dynamic>> crearJuego({
-    required String nombre,
-    required String descripcion,
-    required String imagen,
+    String nombreOrig = '',
+    String? nombreOverride,
+    String descripcionOrig = '',
+    String? descripcionOverride,
+    String generosOrig = '',
+    String? generosOverride,
+    String imagenOrig = '',
+    String? imagenOrigLocal,
+    String? imagenOverride,
+    String? imagenOverrideLocal,
+    String imagenGridOrig = '',
+    String? imagenGridOrigLocal,
+    String? imagenGridOverride,
+    String? imagenGridOverrideLocal,
     required String version,
     required String calificacion,
-    required String generos,
     required String estado,
     required int usuarioId,
-    String? imagenLocal,
     String? rutaEjecutable,
-    String? imagenGrid,
-    String? imagenGridLocal,
     String? imagenesExtra,
     int catalogo = 0,
     int? categoriaId,
@@ -325,67 +379,94 @@ class ApiService {
     );
     final maxPos = (maxResult.first['max'] as int?) ?? -1;
 
-    await database.insert('juegos', {
-      'nombre': nombre,
-      'descripcion': descripcion,
-      'imagen': imagen,
-      'imagen_local': imagenLocal,
+    final id = await database.insert('juegos', {
+      'nombre_orig': nombreOrig,
+      'nombre_override': nombreOverride,
+      'descripcion_orig': descripcionOrig,
+      'descripcion_override': descripcionOverride,
+      'generos_orig': generosOrig,
+      'generos_override': generosOverride,
+      'imagen_orig': imagenOrig,
+      'imagen_orig_local': imagenOrigLocal,
+      'imagen_override': imagenOverride,
+      'imagen_override_local': imagenOverrideLocal,
+      'imagen_grid_orig': imagenGridOrig,
+      'imagen_grid_orig_local': imagenGridOrigLocal,
+      'imagen_grid_override': imagenGridOverride,
+      'imagen_grid_override_local': imagenGridOverrideLocal,
       'version': version,
       'calificacion': int.tryParse(calificacion) ?? 0,
-      'generos': generos,
       'estado': estado,
       'ruta_ejecutable': rutaEjecutable,
-      'imagen_grid': imagenGrid,
-      'imagen_grid_local': imagenGridLocal,
       'imagenes_extra': imagenesExtra,
       'usuario_id': usuarioId,
       'catalogo': catalogo,
       'categoria_id': categoriaId,
       'posicion': maxPos + 1,
     });
-    return {'success': true, 'messageKey': ApiKeys.juegoAgregadoOk};
+    return {'success': true, 'messageKey': ApiKeys.juegoAgregadoOk, 'id': id};
   }
 
-  // Actualizar juego
+  // ── Actualizar juego ─────────────────────────────────────────────────
+  // Nota: los campos "orig" solo se actualizan si se vuelve a buscar en una
+  // fuente externa; esta función siempre recibe el set completo resultante
+  // desde la pantalla de formulario (que ya sabe qué cambió).
   static Future<Map<String, dynamic>> actualizarJuego({
     required int id,
-    required String nombre,
-    required String descripcion,
-    required String imagen,
+    String? nombreOrig,
+    String? nombreOverride,
+    String? descripcionOrig,
+    String? descripcionOverride,
+    String? generosOrig,
+    String? generosOverride,
+    String? imagenOrig,
+    String? imagenOrigLocal,
+    String? imagenOverride,
+    String? imagenOverrideLocal,
+    String? imagenGridOrig,
+    String? imagenGridOrigLocal,
+    String? imagenGridOverride,
+    String? imagenGridOverrideLocal,
     required String version,
     required String calificacion,
-    required String generos,
     required String estado,
     String? rutaEjecutable,
-    String? imagenLocal,
-    String? imagenGrid,
-    String? imagenGridLocal,
     String? imagenesExtra,
     int catalogo = 0,
     int? categoriaId,
   }) async {
     final database = await db;
-    await database.update(
-      'juegos',
-      {
-        'nombre': nombre,
-        'descripcion': descripcion,
-        'imagen': imagen,
-        'imagen_local': imagenLocal,
-        'version': version,
-        'calificacion': int.tryParse(calificacion) ?? 0,
-        'generos': generos,
-        'ruta_ejecutable': rutaEjecutable,
-        'estado': estado,
-        'imagen_grid': imagenGrid,
-        'imagen_grid_local': imagenGridLocal,
-        'imagenes_extra': imagenesExtra ?? '',
-        'catalogo': catalogo,
-        'categoria_id': categoriaId,
-      },
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+
+    final data = <String, dynamic>{
+      'version': version,
+      'calificacion': int.tryParse(calificacion) ?? 0,
+      'estado': estado,
+      'ruta_ejecutable': rutaEjecutable,
+      'imagenes_extra': imagenesExtra ?? '',
+      'catalogo': catalogo,
+      'categoria_id': categoriaId,
+      // Overrides: se guardan siempre (pueden ser null para "limpiar")
+      'nombre_override': nombreOverride,
+      'descripcion_override': descripcionOverride,
+      'generos_override': generosOverride,
+      'imagen_override': imagenOverride,
+      'imagen_override_local': imagenOverrideLocal,
+      'imagen_grid_override': imagenGridOverride,
+      'imagen_grid_override_local': imagenGridOverrideLocal,
+    };
+
+    // Originales: solo se tocan si se proveen explícitamente (re-búsqueda en fuente)
+    if (nombreOrig != null) data['nombre_orig'] = nombreOrig;
+    if (descripcionOrig != null) data['descripcion_orig'] = descripcionOrig;
+    if (generosOrig != null) data['generos_orig'] = generosOrig;
+    if (imagenOrig != null) data['imagen_orig'] = imagenOrig;
+    if (imagenOrigLocal != null) data['imagen_orig_local'] = imagenOrigLocal;
+    if (imagenGridOrig != null) data['imagen_grid_orig'] = imagenGridOrig;
+    if (imagenGridOrigLocal != null) {
+      data['imagen_grid_orig_local'] = imagenGridOrigLocal;
+    }
+
+    await database.update('juegos', data, where: 'id = ?', whereArgs: [id]);
     return {'success': true, 'messageKey': ApiKeys.juegoActualizadoOk};
   }
 
@@ -534,7 +615,7 @@ class ApiService {
     final categorias = await database.query('categorias');
 
     final backup = {
-      'version': 1,
+      'version': 2,
       'fecha': DateTime.now().toIso8601String(),
       'usuarios': usuarios,
       'juegos': juegos,
@@ -607,17 +688,24 @@ class ApiService {
             categoriaNueva = mapaCategorias[j['categoria_id']];
           }
           await database.insert('juegos', {
-            'nombre': j['nombre'],
-            'descripcion': j['descripcion'],
-            'imagen': j['imagen'],
-            'imagen_local': j['imagen_local'],
+            'nombre_orig': j['nombre_orig'] ?? '',
+            'nombre_override': j['nombre_override'],
+            'descripcion_orig': j['descripcion_orig'] ?? '',
+            'descripcion_override': j['descripcion_override'],
+            'generos_orig': j['generos_orig'] ?? '',
+            'generos_override': j['generos_override'],
+            'imagen_orig': j['imagen_orig'] ?? '',
+            'imagen_orig_local': j['imagen_orig_local'],
+            'imagen_override': j['imagen_override'],
+            'imagen_override_local': j['imagen_override_local'],
+            'imagen_grid_orig': j['imagen_grid_orig'] ?? '',
+            'imagen_grid_orig_local': j['imagen_grid_orig_local'],
+            'imagen_grid_override': j['imagen_grid_override'],
+            'imagen_grid_override_local': j['imagen_grid_override_local'],
             'version': j['version'],
             'calificacion': j['calificacion'] ?? 0,
-            'generos': j['generos'],
             'estado': j['estado'],
             'ruta_ejecutable': j['ruta_ejecutable'],
-            'imagen_grid': j['imagen_grid'],
-            'imagen_grid_local': j['imagen_grid_local'],
             'imagenes_extra': j['imagenes_extra'],
             'catalogo': j['catalogo'] ?? 0,
             'categoria_id': categoriaNueva,

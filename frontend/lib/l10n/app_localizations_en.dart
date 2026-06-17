@@ -453,6 +453,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get juegoFormEliminado => 'Game deleted successfully';
 
   @override
+  String get juegoFormGuardarImagenesLocal => 'Save images on this device';
+
+  @override
+  String get juegoFormCacheGuardadoOk => 'Images saved locally (WebP)';
+
+  @override
+  String get juegoFormCacheError => 'Could not save any image locally';
+
+  @override
+  String get juegoFormModoNinguno => 'Don\'t save locally';
+
+  @override
+  String get juegoFormModoOriginal => 'Save as-is (uncompressed)';
+
+  @override
+  String get juegoFormModoComprimido => 'Save compressed (JPEG)';
+
+  @override
+  String get homeCarpetaImagenes => 'Images folder';
+
+  @override
+  String get homeCarpetaImagenesTitulo => 'Locally saved images';
+
+  @override
+  String homeCarpetaImagenesEspacio(String mb) {
+    return 'Space used: $mb MB';
+  }
+
+  @override
   String get igdbTitulo => 'IGDB';
 
   @override
