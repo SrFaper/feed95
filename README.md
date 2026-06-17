@@ -1,6 +1,6 @@
 <div align="center">
 
-# feed95
+# FEED95
 
 **Catálogo personal de videojuegos · Personal video game catalog · 个人游戏库**
 
@@ -26,7 +26,7 @@
 
 ### ¿Qué es feed95?
 
-Una app para llevar el registro de tus videojuegos, disponible en Windows y Android. Sin cuentas, sin nube, sin rastreo — todo queda guardado localmente en tu dispositivo.
+Una app para llevar el registro de tus videojuegos, disponible en Windows y Android. Sin cuentas, sin nube, sin rastreo - todo queda guardado localmente en tu dispositivo.
 
 ### Características
 
@@ -69,15 +69,15 @@ Para IGDB: visita [dev.twitch.tv](https://dev.twitch.tv), crea una aplicación y
 
 ### Licencia
 
-Distribuido bajo **GNU GPL v3.0** — puedes usar, copiar, modificar y distribuir este software, pero cualquier versión derivada debe mantener la misma licencia con el código fuente disponible. Ver [`LICENSE`](LICENSE).
+Distribuido bajo **GNU GPL v3.0** - puedes usar, copiar, modificar y distribuir este software, pero cualquier versión derivada debe mantener la misma licencia con el código fuente disponible. Ver [`LICENSE`](LICENSE).
 
 ### Avisos de terceros
 
 feed95 consume APIs externas para obtener metadatos. Ninguno de estos servicios está afiliado al proyecto.
 
-- **Steam/Valve** — datos vía `store.steampowered.com/api`. Steam es marca registrada de Valve Corporation.
-- **Epic Games Store** — datos vía endpoint GraphQL público. No oficial ni respaldado por Epic Games.
-- **IGDB** — datos provistos por [IGDB.com](https://www.igdb.com), propiedad de Twitch Interactive, Inc. Gratuito para proyectos no comerciales bajo el [Twitch Developer Service Agreement](https://www.twitch.tv/p/legal/developer-agreement/). Forks comerciales deben revisar los términos de forma independiente.
+- **Steam/Valve** - datos vía `store.steampowered.com/api`. Steam es marca registrada de Valve Corporation.
+- **Epic Games Store** - datos vía endpoint GraphQL público. No oficial ni respaldado por Epic Games.
+- **IGDB** - datos provistos por [IGDB.com](https://www.igdb.com), propiedad de Twitch Interactive, Inc. Gratuito para proyectos no comerciales bajo el [Twitch Developer Service Agreement](https://www.twitch.tv/p/legal/developer-agreement/). Forks comerciales deben revisar los términos de forma independiente.
 
 > Game data provided by IGDB.com
 
@@ -87,7 +87,7 @@ feed95 consume APIs externas para obtener metadatos. Ninguno de estos servicios 
 
 ### What is feed95?
 
-An app to track your video games, available on Windows and Android. No accounts, no cloud, no tracking — everything is stored locally on your device.
+An app to track your video games, available on Windows and Android. No accounts, no cloud, no tracking - everything is stored locally on your device.
 
 ### Features
 
@@ -130,15 +130,15 @@ For IGDB: visit [dev.twitch.tv](https://dev.twitch.tv), create an application, a
 
 ### License
 
-Distributed under **GNU GPL v3.0** — you can use, copy, modify, and distribute this software, but any derivative version must keep the same license with source code available. See [`LICENSE`](LICENSE).
+Distributed under **GNU GPL v3.0** - you can use, copy, modify, and distribute this software, but any derivative version must keep the same license with source code available. See [`LICENSE`](LICENSE).
 
 ### Third-party notices
 
 feed95 uses external APIs to fetch metadata. None of these services are affiliated with this project.
 
-- **Steam/Valve** — data via `store.steampowered.com/api`. Steam is a registered trademark of Valve Corporation.
-- **Epic Games Store** — data via public GraphQL endpoint. Not officially documented or endorsed by Epic Games.
-- **IGDB** — data provided by [IGDB.com](https://www.igdb.com), owned by Twitch Interactive, Inc. Free for non-commercial projects under the [Twitch Developer Service Agreement](https://www.twitch.tv/p/legal/developer-agreement/). Commercial forks must review terms independently.
+- **Steam/Valve** - data via `store.steampowered.com/api`. Steam is a registered trademark of Valve Corporation.
+- **Epic Games Store** - data via public GraphQL endpoint. Not officially documented or endorsed by Epic Games.
+- **IGDB** - data provided by [IGDB.com](https://www.igdb.com), owned by Twitch Interactive, Inc. Free for non-commercial projects under the [Twitch Developer Service Agreement](https://www.twitch.tv/p/legal/developer-agreement/). Commercial forks must review terms independently.
 
 > Game data provided by IGDB.com
 
@@ -148,7 +148,7 @@ feed95 uses external APIs to fetch metadata. None of these services are affiliat
 
 ### feed95 是什么？
 
-一款用于记录你的游戏收藏的应用，支持 Windows 和 Android。无需账号，无需云端，无追踪 — 所有数据均保存在你的本地设备上。
+一款用于记录你的游戏收藏的应用，支持 Windows 和 Android。无需账号，无需云端，无追踪 - 所有数据均保存在你的本地设备上。
 
 ### 功能特性
 
@@ -191,15 +191,15 @@ feed95 uses external APIs to fetch metadata. None of these services are affiliat
 
 ### 开源许可
 
-本项目基于 **GNU GPL v3.0** 协议发布 — 你可以自由使用、复制、修改和分发本软件，但任何衍生版本必须保持相同的许可协议并公开源代码。详见 [`LICENSE`](LICENSE)。
+本项目基于 **GNU GPL v3.0** 协议发布 - 你可以自由使用、复制、修改和分发本软件，但任何衍生版本必须保持相同的许可协议并公开源代码。详见 [`LICENSE`](LICENSE)。
 
 ### 第三方声明
 
 feed95 使用外部 API 获取游戏元数据，以下服务均与本项目无关联。
 
-- **Steam/Valve** — 数据来源：`store.steampowered.com/api`。Steam 是 Valve Corporation 的注册商标。
-- **Epic Games Store** — 数据来源：Epic Games Store 公开 GraphQL 接口，非官方，Epic Games 不对此背书。
-- **IGDB** — 游戏数据由 [IGDB.com](https://www.igdb.com)（Twitch Interactive, Inc. 旗下）提供，非商业项目可免费使用，详见 [Twitch 开发者服务协议](https://www.twitch.tv/p/legal/developer-agreement/)。商业 Fork 需独立审查相关条款。
+- **Steam/Valve** - 数据来源：`store.steampowered.com/api`。Steam 是 Valve Corporation 的注册商标。
+- **Epic Games Store** - 数据来源：Epic Games Store 公开 GraphQL 接口，非官方，Epic Games 不对此背书。
+- **IGDB** - 游戏数据由 [IGDB.com](https://www.igdb.com)（Twitch Interactive, Inc. 旗下）提供，非商业项目可免费使用，详见 [Twitch 开发者服务协议](https://www.twitch.tv/p/legal/developer-agreement/)。商业 Fork 需独立审查相关条款。
 
 > Game data provided by IGDB.com
 
