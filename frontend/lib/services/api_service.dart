@@ -28,6 +28,9 @@ class ApiKeys {
   static const backupRestaurado = 'apiBackupRestaurado';
 }
 
+// Valor especial que indica "sin contraseña"
+const _kNoPassword = '';
+
 class ApiService {
   static Database? _db;
 
@@ -159,18 +162,26 @@ class ApiService {
     return sha256.convert(bytes).toString();
   }
 
+  // Devuelve true si el perfil no tiene contraseña
+  static bool _sinPassword(String storedPassword) =>
+      storedPassword == _kNoPassword;
+
   // Registro
   static Future<Map<String, dynamic>> registrarUsuario({
     required String nombre,
     required String password,
     required int color,
+    String? imagenPerfil,
   }) async {
     final database = await db;
+    // Si password está vacío, se guarda '' (sin contraseña)
+    final stored = password.isEmpty ? _kNoPassword : _hashPassword(password);
     try {
       final id = await database.insert('usuarios', {
         'nombre': nombre,
-        'password': _hashPassword(password),
+        'password': stored,
         'color': color,
+        if (imagenPerfil != null) 'imagen_perfil': imagenPerfil,
       });
       final result = await database.query(
         'usuarios',
@@ -187,21 +198,44 @@ class ApiService {
     }
   }
 
-  // Login
+  // Login — si el perfil no tiene contraseña, acepta cualquier entrada (incluido vacío)
   static Future<Map<String, dynamic>> login({
     required String nombre,
     required String password,
   }) async {
     final database = await db;
-    final result = await database.query(
+    // Buscar el perfil por nombre
+    final byName = await database.query(
       'usuarios',
-      where: 'nombre = ? AND password = ?',
-      whereArgs: [nombre, _hashPassword(password)],
+      where: 'nombre = ?',
+      whereArgs: [nombre],
     );
-    if (result.isNotEmpty) {
-      return {'success': true, 'usuario': result.first};
+    if (byName.isEmpty) {
+      return {'success': false, 'messageKey': ApiKeys.passwordIncorrecta};
+    }
+    final stored = byName.first['password'] as String;
+    // Perfil sin contraseña → acceso directo
+    if (_sinPassword(stored)) {
+      return {'success': true, 'usuario': byName.first};
+    }
+    // Perfil con contraseña → verificar hash
+    if (stored == _hashPassword(password)) {
+      return {'success': true, 'usuario': byName.first};
     }
     return {'success': false, 'messageKey': ApiKeys.passwordIncorrecta};
+  }
+
+  // Indica si un perfil concreto tiene contraseña establecida
+  static Future<bool> perfilTienePassword(int id) async {
+    final database = await db;
+    final result = await database.query(
+      'usuarios',
+      columns: ['password'],
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (result.isEmpty) return false;
+    return !_sinPassword(result.first['password'] as String);
   }
 
   // Listar todos los perfiles
@@ -219,11 +253,14 @@ class ApiService {
     int? color,
     String? imagenPerfil,
     bool limpiarImagen = false,
+    bool quitarPassword = false,
   }) async {
     final database = await db;
     try {
       final Map<String, dynamic> data = {'nombre': nombre};
-      if (password != null && password.isNotEmpty) {
+      if (quitarPassword) {
+        data['password'] = _kNoPassword;
+      } else if (password != null && password.isNotEmpty) {
         data['password'] = _hashPassword(password);
       }
       if (color != null) data['color'] = color;
@@ -507,8 +544,6 @@ class ApiService {
   }
 
   // Importar backup
-  // Devuelve messageKey = ApiKeys.backupRestaurado con campos extra
-  // { perfiles, categorias, juegos } para que la UI construya el string con l10n
   static Future<Map<String, dynamic>> importarBackup(String jsonStr) async {
     final database = await db;
 
@@ -594,7 +629,6 @@ class ApiService {
       return {
         'success': true,
         'messageKey': ApiKeys.backupRestaurado,
-        // La UI usa estos valores para llamar l10n.apiBackupRestaurado(...)
         'perfiles': usuarios.length,
         'categorias': categorias.length,
         'juegos': juegos.length,

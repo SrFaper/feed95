@@ -412,6 +412,18 @@ abstract class AppLocalizations {
   /// **'Usuario'**
   String get registroUsuario;
 
+  /// No description provided for @registroUsarPassword.
+  ///
+  /// In es, this message translates to:
+  /// **'Proteger con contraseña'**
+  String get registroUsarPassword;
+
+  /// No description provided for @registroAgregarImagen.
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar imagen'**
+  String get registroAgregarImagen;
+
   /// No description provided for @registroPassword.
   ///
   /// In es, this message translates to:
@@ -525,6 +537,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Perfil actualizado correctamente'**
   String get perfilActualizado;
+
+  /// No description provided for @perfilesEliminarConfirmarTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Confirmar eliminación'**
+  String get perfilesEliminarConfirmarTitulo;
 
   /// No description provided for @catalogoTitulo.
   ///

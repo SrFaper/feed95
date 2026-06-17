@@ -32,6 +32,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
   bool _limpiarImagen = false;
   bool cargando = false;
 
+  // Estado de contraseña
+  bool _tienePasswordActual = false;
+  bool _usarPassword = false; // estado deseado tras guardar
+
   @override
   void initState() {
     super.initState();
@@ -40,6 +44,17 @@ class _PerfilScreenState extends State<PerfilScreen> {
     confirmarPasswordController = TextEditingController();
     colorSeleccionado = widget.usuario.color;
     _imagenLocal = widget.usuario.imagenPerfil;
+    _cargarEstadoPassword();
+  }
+
+  Future<void> _cargarEstadoPassword() async {
+    final tiene = await ApiService.perfilTienePassword(widget.usuario.id);
+    if (mounted) {
+      setState(() {
+        _tienePasswordActual = tiene;
+        _usarPassword = tiene;
+      });
+    }
   }
 
   Future<void> _elegirImagen() async {
@@ -103,12 +118,15 @@ class _PerfilScreenState extends State<PerfilScreen> {
       ).showSnackBar(SnackBar(content: Text(l10n.perfilNombreVacio)));
       return;
     }
-    if (passwordController.text.isNotEmpty &&
-        passwordController.text != confirmarPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.registroPasswordsNoCoinciden)),
-      );
-      return;
+
+    // Si el usuario quiere tener contraseña y está cambiándola
+    if (_usarPassword && passwordController.text.isNotEmpty) {
+      if (passwordController.text != confirmarPasswordController.text) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.registroPasswordsNoCoinciden)),
+        );
+        return;
+      }
     }
 
     setState(() => cargando = true);
@@ -116,9 +134,12 @@ class _PerfilScreenState extends State<PerfilScreen> {
     final respuesta = await ApiService.editarUsuario(
       id: widget.usuario.id,
       nombre: nombreController.text,
-      password: passwordController.text.isNotEmpty
+      // Si quiere contraseña y escribió algo → cambiarla
+      password: (_usarPassword && passwordController.text.isNotEmpty)
           ? passwordController.text
           : null,
+      // Si desactivó el switch → quitar contraseña
+      quitarPassword: !_usarPassword,
       color: colorSeleccionado.toARGB32(),
       imagenPerfil:
           (_imagenLocal != widget.usuario.imagenPerfil && !_limpiarImagen)
@@ -156,6 +177,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final primary = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.perfilTitulo)),
@@ -197,23 +219,56 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 decoration: InputDecoration(labelText: l10n.registroUsuario),
                 onChanged: (_) => setState(() {}),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: passwordController,
-                decoration: InputDecoration(
-                  labelText: l10n.perfilNuevaPassword,
-                  hintText: l10n.perfilNuevaPasswordHint,
-                ),
-                obscureText: true,
+
+              // Switch contraseña
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Switch(
+                    value: _usarPassword,
+                    onChanged: (v) => setState(() {
+                      _usarPassword = v;
+                      if (!v) {
+                        passwordController.clear();
+                        confirmarPasswordController.clear();
+                      }
+                    }),
+                    activeThumbColor: primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    l10n.registroUsarPassword,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: confirmarPasswordController,
-                decoration: InputDecoration(
-                  labelText: l10n.perfilRepetirNuevaPassword,
+
+              if (_usarPassword) ...[
+                const SizedBox(height: 12),
+                TextField(
+                  controller: passwordController,
+                  decoration: InputDecoration(
+                    labelText: _tienePasswordActual
+                        ? l10n.perfilNuevaPassword
+                        : l10n.registroPassword,
+                    hintText: _tienePasswordActual
+                        ? l10n.perfilNuevaPasswordHint
+                        : null,
+                  ),
+                  obscureText: true,
                 ),
-                obscureText: true,
-              ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: confirmarPasswordController,
+                  decoration: InputDecoration(
+                    labelText: _tienePasswordActual
+                        ? l10n.perfilRepetirNuevaPassword
+                        : l10n.registroRepetirPassword,
+                  ),
+                  obscureText: true,
+                ),
+              ],
+
               const SizedBox(height: 24),
               Text(
                 l10n.perfilColorTitulo,

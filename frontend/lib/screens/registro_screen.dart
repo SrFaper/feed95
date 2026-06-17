@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:image_picker/image_picker.dart';
 import '../services/api_service.dart';
+import '../widgets/avatar_usuario.dart';
+import '../models/usuario.dart';
 import 'package:frontend/l10n/app_localizations.dart';
 
 class RegistroScreen extends StatefulWidget {
@@ -15,6 +18,8 @@ class _RegistroScreenState extends State<RegistroScreen> {
   final passwordController = TextEditingController();
   final confirmarPasswordController = TextEditingController();
   Color colorSeleccionado = const Color.fromARGB(255, 255, 54, 71);
+  String? _imagenLocal;
+  bool _usarPassword = false;
   bool cargando = false;
 
   void _abrirColorPicker() {
@@ -51,29 +56,45 @@ class _RegistroScreenState extends State<RegistroScreen> {
     );
   }
 
+  Future<void> _elegirImagen() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      setState(() => _imagenLocal = picked.path);
+    }
+  }
+
   Future<void> registrar() async {
     final l10n = AppLocalizations.of(context)!;
 
-    if (nombreController.text.isEmpty ||
-        passwordController.text.isEmpty ||
-        confirmarPasswordController.text.isEmpty) {
+    if (nombreController.text.isEmpty) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(l10n.registroCamposObligatorios)));
       return;
     }
-    if (passwordController.text != confirmarPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.registroPasswordsNoCoinciden)),
-      );
-      return;
+    if (_usarPassword) {
+      if (passwordController.text.isEmpty ||
+          confirmarPasswordController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.registroCamposObligatorios)),
+        );
+        return;
+      }
+      if (passwordController.text != confirmarPasswordController.text) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.registroPasswordsNoCoinciden)),
+        );
+        return;
+      }
     }
 
     setState(() => cargando = true);
     final respuesta = await ApiService.registrarUsuario(
       nombre: nombreController.text,
-      password: passwordController.text,
+      password: _usarPassword ? passwordController.text : '',
       color: colorSeleccionado.toARGB32(),
+      imagenPerfil: _imagenLocal,
     );
     setState(() => cargando = false);
     if (!mounted) return;
@@ -89,12 +110,18 @@ class _RegistroScreenState extends State<RegistroScreen> {
     }
   }
 
+  // Preview del avatar con los datos actuales del formulario
+  Usuario get _usuarioPreview => Usuario(
+    id: 0,
+    nombre: nombreController.text.isNotEmpty ? nombreController.text : '?',
+    color: colorSeleccionado,
+    imagenPerfil: _imagenLocal,
+  );
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final inicial = nombreController.text.isNotEmpty
-        ? nombreController.text[0].toUpperCase()
-        : '?';
+    final primary = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.registroTitulo)),
@@ -105,46 +132,87 @@ class _RegistroScreenState extends State<RegistroScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 16),
+
+              // Avatar preview con botón de imagen
               Center(
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: colorSeleccionado,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Text(
-                      inicial,
-                      style: const TextStyle(
-                        fontSize: 36,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                child: Column(
+                  children: [
+                    AvatarUsuario(usuario: _usuarioPreview, size: 96),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.photo_library, size: 16),
+                      label: Text(
+                        _imagenLocal != null
+                            ? l10n.perfilCambiarImagen
+                            : l10n.registroAgregarImagen,
                       ),
+                      onPressed: _elegirImagen,
                     ),
-                  ),
+                    if (_imagenLocal != null) ...[
+                      const SizedBox(height: 6),
+                      TextButton.icon(
+                        icon: const Icon(Icons.close, size: 14),
+                        label: Text(l10n.perfilQuitarImagen),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.grey,
+                          padding: EdgeInsets.zero,
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        onPressed: () => setState(() => _imagenLocal = null),
+                      ),
+                    ],
+                  ],
                 ),
               ),
+
               const SizedBox(height: 24),
               TextField(
                 controller: nombreController,
                 decoration: InputDecoration(labelText: l10n.registroUsuario),
                 onChanged: (_) => setState(() {}),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: passwordController,
-                decoration: InputDecoration(labelText: l10n.registroPassword),
-                obscureText: true,
+
+              // Switch contraseña
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Switch(
+                    value: _usarPassword,
+                    onChanged: (v) => setState(() {
+                      _usarPassword = v;
+                      if (!v) {
+                        passwordController.clear();
+                        confirmarPasswordController.clear();
+                      }
+                    }),
+                    activeColor: primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    l10n.registroUsarPassword,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: confirmarPasswordController,
-                decoration: InputDecoration(
-                  labelText: l10n.registroRepetirPassword,
+
+              if (_usarPassword) ...[
+                const SizedBox(height: 12),
+                TextField(
+                  controller: passwordController,
+                  decoration: InputDecoration(labelText: l10n.registroPassword),
+                  obscureText: true,
                 ),
-                obscureText: true,
-              ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: confirmarPasswordController,
+                  decoration: InputDecoration(
+                    labelText: l10n.registroRepetirPassword,
+                  ),
+                  obscureText: true,
+                ),
+              ],
+
               const SizedBox(height: 24),
               Text(
                 l10n.registroColorPerfil,
@@ -169,14 +237,43 @@ class _RegistroScreenState extends State<RegistroScreen> {
                 l10n.registroTocaColor,
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
               ),
+
               const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: cargando ? null : registrar,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                   child: cargando
-                      ? const CircularProgressIndicator()
-                      : Text(l10n.btnCrearPerfil),
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.person_add, size: 18),
+                            const SizedBox(width: 8),
+                            Text(
+                              l10n.btnCrearPerfil,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
                 ),
               ),
             ],

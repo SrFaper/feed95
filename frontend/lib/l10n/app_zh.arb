@@ -81,9 +81,10 @@
   },
   "perfilesPasswordIncorrecta": "密码错误",
   "perfilesInputPassword": "密码",
-
   "registroTitulo": "新建档案",
   "registroUsuario": "用户名",
+  "registroUsarPassword": "使用密码保护",
+  "registroAgregarImagen": "添加图片",
   "registroPassword": "密码",
   "registroRepetirPassword": "确认密码",
   "registroColorPerfil": "档案个性颜色",
@@ -104,6 +105,7 @@
   "perfilGuardarCambios": "保存修改",
   "perfilNombreVacio": "用户名不能为空",
   "perfilActualizado": "档案更新成功",
+  "perfilesEliminarConfirmarTitulo": "确认删除",
 
   "catalogoTitulo": "我的库",
   "catalogoSecundarioNombre": "NSFW",

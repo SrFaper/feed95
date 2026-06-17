@@ -178,6 +178,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get registroUsuario => 'Usuario';
 
   @override
+  String get registroUsarPassword => 'Proteger con contraseña';
+
+  @override
+  String get registroAgregarImagen => 'Agregar imagen';
+
+  @override
   String get registroPassword => 'Contraseña';
 
   @override
@@ -233,6 +239,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get perfilActualizado => 'Perfil actualizado correctamente';
+
+  @override
+  String get perfilesEliminarConfirmarTitulo => 'Confirmar eliminación';
 
   @override
   String get catalogoTitulo => 'Mi catálogo';

@@ -175,6 +175,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get registroUsuario => '用户名';
 
   @override
+  String get registroUsarPassword => '使用密码保护';
+
+  @override
+  String get registroAgregarImagen => '添加图片';
+
+  @override
   String get registroPassword => '密码';
 
   @override
@@ -230,6 +236,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get perfilActualizado => '档案更新成功';
+
+  @override
+  String get perfilesEliminarConfirmarTitulo => '确认删除';
 
   @override
   String get catalogoTitulo => '我的库';

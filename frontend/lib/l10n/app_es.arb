@@ -81,9 +81,10 @@
   },
   "perfilesPasswordIncorrecta": "Contraseña incorrecta",
   "perfilesInputPassword": "Contraseña",
-
   "registroTitulo": "Nuevo perfil",
   "registroUsuario": "Usuario",
+  "registroUsarPassword": "Proteger con contraseña",
+  "registroAgregarImagen": "Agregar imagen",
   "registroPassword": "Contraseña",
   "registroRepetirPassword": "Repetir contraseña",
   "registroColorPerfil": "Color del perfil",
@@ -104,6 +105,7 @@
   "perfilGuardarCambios": "Guardar cambios",
   "perfilNombreVacio": "El nombre no puede estar vacío",
   "perfilActualizado": "Perfil actualizado correctamente",
+  "perfilesEliminarConfirmarTitulo": "Confirmar eliminación",
 
   "catalogoTitulo": "Mi catálogo",
   "catalogoSecundarioNombre": "NSFW",
