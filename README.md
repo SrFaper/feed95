@@ -6,7 +6,7 @@
 
 *Sin cuentas. Sin servidores. Sin internet. Solo tus juegos, en tu dispositivo.*
 
-[![Releases](https://img.shields.io/github/v/release/SrFaper/feed95?style=flat-square)](https://github.com/SrFaper/feed95/releases)
+[![Releases](https://img.shields.io/badge/releases-github-blue?style=flat-square&logo=github)](https://github.com/SrFaper/feed95/releases)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=flat-square)](LICENSE)
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-blue?style=flat-square&logo=flutter)](https://flutter.dev)
 
