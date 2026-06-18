@@ -172,6 +172,7 @@
   "juegoFormUrlImagenDetalle": "Detail image URL",
   "juegoFormImagenGrid": "Grid image",
   "juegoFormUrlImagenGrid": "Grid image URL",
+  "juegoFormAjustar": "Adjust",
   "juegoFormVersion": "Version",
   "juegoFormCalificacion": "Rating (1-10)",
   "juegoFormGeneros": "Genres",

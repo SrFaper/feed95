@@ -375,6 +375,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get juegoFormUrlImagenGrid => '封面图 URL';
 
   @override
+  String get juegoFormAjustar => '调整';
+
+  @override
   String get juegoFormVersion => '版本';
 
   @override

@@ -796,6 +796,12 @@ abstract class AppLocalizations {
   /// **'URL imagen grid'**
   String get juegoFormUrlImagenGrid;
 
+  /// No description provided for @juegoFormAjustar.
+  ///
+  /// In es, this message translates to:
+  /// **'Ajustar'**
+  String get juegoFormAjustar;
+
   /// No description provided for @juegoFormVersion.
   ///
   /// In es, this message translates to:

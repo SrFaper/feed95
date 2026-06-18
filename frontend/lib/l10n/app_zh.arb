@@ -172,6 +172,7 @@
   "juegoFormUrlImagenDetalle": "详情图 URL",
   "juegoFormImagenGrid": "封面图 (Grid)",
   "juegoFormUrlImagenGrid": "封面图 URL",
+  "juegoFormAjustar": "调整",
   "juegoFormVersion": "版本",
   "juegoFormCalificacion": "评分 (1-10)",
   "juegoFormGeneros": "游戏标签 / 类型",

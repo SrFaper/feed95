@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,6 +8,7 @@ import '../services/api_service.dart';
 import 'juego_form_screen.dart';
 import 'juego_detalle_screen.dart';
 import 'package:frontend/l10n/app_localizations.dart';
+import '../widgets/imagen_ajustada.dart';
 
 class JuegosScreen extends StatefulWidget {
   final Usuario usuario;
@@ -1006,42 +1006,30 @@ class _ImagenJuego extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (juego.imagenGridLocal != null && juego.imagenGridLocal!.isNotEmpty) {
-      return Image.file(
-        File(juego.imagenGridLocal!),
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _placeholder(),
-      );
-    }
-    if (juego.imagenGrid.isNotEmpty) {
-      return Image.network(
-        juego.imagenGrid,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _placeholder(),
-      );
-    }
-    if (juego.imagenLocal != null && juego.imagenLocal!.isNotEmpty) {
-      return Image.file(
-        File(juego.imagenLocal!),
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _placeholder(),
-      );
-    }
-    if (juego.imagen.isNotEmpty) {
-      return Image.network(
-        juego.imagen,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _placeholder(),
-      );
-    }
-    return _placeholder();
-  }
+    String? url;
+    String? local;
 
-  Widget _placeholder() {
-    return Container(
-      color: Colors.grey.shade800,
-      child: const Center(
-        child: Icon(Icons.videogame_asset, size: 32, color: Colors.white38),
+    if (juego.imagenGridLocal != null && juego.imagenGridLocal!.isNotEmpty) {
+      local = juego.imagenGridLocal;
+    } else if (juego.imagenGrid.isNotEmpty) {
+      url = juego.imagenGrid;
+    } else if (juego.imagenLocal != null && juego.imagenLocal!.isNotEmpty) {
+      local = juego.imagenLocal;
+    } else if (juego.imagen.isNotEmpty) {
+      url = juego.imagen;
+    }
+
+    return ImagenAjustada(
+      url: url,
+      local: local,
+      offsetX: juego.imagenGridAjusteX,
+      offsetY: juego.imagenGridAjusteY,
+      zoom: juego.imagenGridAjusteZoom,
+      placeholder: Container(
+        color: Colors.grey.shade800,
+        child: const Center(
+          child: Icon(Icons.videogame_asset, size: 32, color: Colors.white38),
+        ),
       ),
     );
   }

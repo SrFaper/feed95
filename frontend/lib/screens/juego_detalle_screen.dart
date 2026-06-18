@@ -7,6 +7,7 @@ import '../services/api_service.dart';
 import 'juego_form_screen.dart';
 import 'package:flutter/gestures.dart';
 import 'package:frontend/l10n/app_localizations.dart';
+import '../widgets/imagen_ajustada.dart';
 
 class JuegoDetalleScreen extends StatefulWidget {
   final Juego juego;
@@ -102,35 +103,26 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
     }
   }
 
-  Widget _imagen() {
-    if (juego.imagenLocal != null && juego.imagenLocal!.isNotEmpty) {
-      return Image.file(
-        File(juego.imagenLocal!),
-        width: double.infinity,
-        height: 280,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _placeholder(),
-      );
-    }
-    if (juego.imagen.isNotEmpty) {
-      return Image.network(
-        juego.imagen,
-        width: double.infinity,
-        height: 280,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _placeholder(),
-      );
-    }
-    return _placeholder();
-  }
+  // Reemplaza el widget _imagen() original por esta versión que utiliza ImagenAjustada.
 
-  Widget _placeholder() {
-    return Container(
+  Widget _imagen() {
+    return SizedBox(
       width: double.infinity,
       height: 280,
-      color: Colors.grey.shade800,
-      child: const Center(
-        child: Icon(Icons.videogame_asset, size: 64, color: Colors.white38),
+      child: ImagenAjustada(
+        url: juego.imagenLocal == null || juego.imagenLocal!.isEmpty
+            ? (juego.imagen.isNotEmpty ? juego.imagen : null)
+            : null,
+        local: juego.imagenLocal,
+        offsetX: juego.imagenAjusteX,
+        offsetY: juego.imagenAjusteY,
+        zoom: juego.imagenAjusteZoom,
+        placeholder: Container(
+          color: Colors.grey.shade800,
+          child: const Center(
+            child: Icon(Icons.videogame_asset, size: 64, color: Colors.white38),
+          ),
+        ),
       ),
     );
   }

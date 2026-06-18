@@ -18,12 +18,18 @@ class Juego {
   final String? imagenOrigLocal;
   final String? imagenOverride;
   final String? imagenOverrideLocal;
+  final double imagenAjusteX;
+  final double imagenAjusteY;
+  final double imagenAjusteZoom;
 
   // ── Imagen grid (vertical/portada) ──
   final String imagenGridOrig;
   final String? imagenGridOrigLocal;
   final String? imagenGridOverride;
   final String? imagenGridOverrideLocal;
+  final double imagenGridAjusteX;
+  final double imagenGridAjusteY;
+  final double imagenGridAjusteZoom;
 
   // ── Resto de campos (sin override, no tiene sentido para estos) ──
   final String imagenesExtra;
@@ -48,10 +54,16 @@ class Juego {
     this.imagenOrigLocal,
     this.imagenOverride,
     this.imagenOverrideLocal,
+    this.imagenAjusteX = 0,
+    this.imagenAjusteY = 0,
+    this.imagenAjusteZoom = 1,
     required this.imagenGridOrig,
     this.imagenGridOrigLocal,
     this.imagenGridOverride,
     this.imagenGridOverrideLocal,
+    this.imagenGridAjusteX = 0,
+    this.imagenGridAjusteY = 0,
+    this.imagenGridAjusteZoom = 1,
     required this.imagenesExtra,
     required this.version,
     required this.calificacion,
@@ -76,10 +88,19 @@ class Juego {
       imagenOrigLocal: json['imagen_orig_local'] as String?,
       imagenOverride: json['imagen_override'] as String?,
       imagenOverrideLocal: json['imagen_override_local'] as String?,
+      imagenAjusteX: (json['imagen_ajuste_x'] as num?)?.toDouble() ?? 0,
+      imagenAjusteY: (json['imagen_ajuste_y'] as num?)?.toDouble() ?? 0,
+      imagenAjusteZoom: (json['imagen_ajuste_zoom'] as num?)?.toDouble() ?? 1,
       imagenGridOrig: json['imagen_grid_orig'] ?? '',
       imagenGridOrigLocal: json['imagen_grid_orig_local'] as String?,
       imagenGridOverride: json['imagen_grid_override'] as String?,
       imagenGridOverrideLocal: json['imagen_grid_override_local'] as String?,
+      imagenGridAjusteX:
+          (json['imagen_grid_ajuste_x'] as num?)?.toDouble() ?? 0,
+      imagenGridAjusteY:
+          (json['imagen_grid_ajuste_y'] as num?)?.toDouble() ?? 0,
+      imagenGridAjusteZoom:
+          (json['imagen_grid_ajuste_zoom'] as num?)?.toDouble() ?? 1,
       imagenesExtra: json['imagenes_extra'] ?? '',
       version: json['version'] ?? '',
       calificacion: int.parse(json['calificacion'].toString()),

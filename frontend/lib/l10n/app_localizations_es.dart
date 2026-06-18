@@ -378,6 +378,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get juegoFormUrlImagenGrid => 'URL imagen grid';
 
   @override
+  String get juegoFormAjustar => 'Ajustar';
+
+  @override
   String get juegoFormVersion => 'Versión';
 
   @override

@@ -13,6 +13,7 @@ import '../services/igdb_service.dart';
 import '../services/image_cache_service.dart';
 import '../widgets/campo_con_original.dart';
 import '../widgets/imagen_con_original.dart';
+import '../widgets/editor_ajuste_imagen.dart';
 import 'f95_config_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'igdb_config_screen.dart';
@@ -60,6 +61,14 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
   String? _imagenOverrideLocal;
   String? _imagenGridOverrideLocal;
 
+  // Ajuste de encuadre (pan + zoom), independiente de si se ve override u original
+  double _imagenAjusteX = 0;
+  double _imagenAjusteY = 0;
+  double _imagenAjusteZoom = 1;
+  double _imagenGridAjusteX = 0;
+  double _imagenGridAjusteY = 0;
+  double _imagenGridAjusteZoom = 1;
+
   String _imagenesExtra = '';
   String estadoSeleccionado = 'Pending';
   bool cargando = false;
@@ -97,6 +106,12 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
       imagenGridOverrideCtrl.text = j.imagenGridOverride ?? '';
       _imagenOverrideLocal = j.imagenOverrideLocal;
       _imagenGridOverrideLocal = j.imagenGridOverrideLocal;
+      _imagenAjusteX = j.imagenAjusteX;
+      _imagenAjusteY = j.imagenAjusteY;
+      _imagenAjusteZoom = j.imagenAjusteZoom;
+      _imagenGridAjusteX = j.imagenGridAjusteX;
+      _imagenGridAjusteY = j.imagenGridAjusteY;
+      _imagenGridAjusteZoom = j.imagenGridAjusteZoom;
 
       versionController.text = j.version;
       calificacionController.text = j.calificacion.toString();
@@ -499,9 +514,15 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
         if (esGrid) {
           _imagenGridOverrideLocal = picked.path;
           imagenGridOverrideCtrl.clear();
+          _imagenGridAjusteX = 0;
+          _imagenGridAjusteY = 0;
+          _imagenGridAjusteZoom = 1;
         } else {
           _imagenOverrideLocal = picked.path;
           imagenOverrideCtrl.clear();
+          _imagenAjusteX = 0;
+          _imagenAjusteY = 0;
+          _imagenAjusteZoom = 1;
         }
       });
     }
@@ -512,9 +533,15 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
       if (esGrid) {
         _imagenGridOverrideLocal = null;
         imagenGridOverrideCtrl.clear();
+        _imagenGridAjusteX = 0;
+        _imagenGridAjusteY = 0;
+        _imagenGridAjusteZoom = 1;
       } else {
         _imagenOverrideLocal = null;
         imagenOverrideCtrl.clear();
+        _imagenAjusteX = 0;
+        _imagenAjusteY = 0;
+        _imagenAjusteZoom = 1;
       }
     });
   }
@@ -645,12 +672,18 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
             ? null
             : imagenOverrideCtrl.text,
         imagenOverrideLocal: _imagenOverrideLocal,
+        imagenAjusteX: _imagenAjusteX,
+        imagenAjusteY: _imagenAjusteY,
+        imagenAjusteZoom: _imagenAjusteZoom,
         imagenGridOrig: _imagenGridOrig,
         imagenGridOrigLocal: _imagenGridOrigLocal,
         imagenGridOverride: imagenGridOverrideCtrl.text.isEmpty
             ? null
             : imagenGridOverrideCtrl.text,
         imagenGridOverrideLocal: _imagenGridOverrideLocal,
+        imagenGridAjusteX: _imagenGridAjusteX,
+        imagenGridAjusteY: _imagenGridAjusteY,
+        imagenGridAjusteZoom: _imagenGridAjusteZoom,
         version: versionController.text,
         calificacion: calificacionController.text,
         estado: estadoSeleccionado,
@@ -679,12 +712,18 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
             ? null
             : imagenOverrideCtrl.text,
         imagenOverrideLocal: _imagenOverrideLocal,
+        imagenAjusteX: _imagenAjusteX,
+        imagenAjusteY: _imagenAjusteY,
+        imagenAjusteZoom: _imagenAjusteZoom,
         imagenGridOrig: _imagenGridOrig,
         imagenGridOrigLocal: _imagenGridOrigLocal,
         imagenGridOverride: imagenGridOverrideCtrl.text.isEmpty
             ? null
             : imagenGridOverrideCtrl.text,
         imagenGridOverrideLocal: _imagenGridOverrideLocal,
+        imagenGridAjusteX: _imagenGridAjusteX,
+        imagenGridAjusteY: _imagenGridAjusteY,
+        imagenGridAjusteZoom: _imagenGridAjusteZoom,
         version: versionController.text,
         calificacion: calificacionController.text,
         estado: estadoSeleccionado,
@@ -805,100 +844,9 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
             ),
             const SizedBox(height: 12),
 
-            // ── Imagen detalle ──
-            Text(
-              l10n.juegoFormImagenDetalle,
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            const SizedBox(height: 4),
-            ImagenConOriginal(
-              overrideUrl: imagenOverrideCtrl.text,
-              overrideLocal: _imagenOverrideLocal,
-              origUrl: _imagenOrig,
-              origLocal: _imagenOrigLocal,
-              onQuitarOverride: () => _quitarOverrideImagen(esGrid: false),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: imagenOverrideCtrl,
-                    decoration: InputDecoration(
-                      labelText: l10n.juegoFormUrlImagenDetalle,
-                      hintText: _imagenOrig.isNotEmpty ? _imagenOrig : null,
-                      hintStyle: TextStyle(
-                        color: Colors.grey.withValues(alpha: 0.5),
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                    onChanged: (_) =>
-                        setState(() => _imagenOverrideLocal = null),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.photo_library),
-                  onPressed: () => _elegirImagen(esGrid: false),
-                ),
-              ],
-            ),
+            // ── Imágenes: layout responsivo (2 columnas en PC, apilado en móvil) ──
+            _seccionImagenes(l10n),
 
-            const SizedBox(height: 12),
-            // ── Imagen grid ──
-            Text(
-              l10n.juegoFormImagenGrid,
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            const SizedBox(height: 4),
-            ImagenConOriginal(
-              overrideUrl: imagenGridOverrideCtrl.text,
-              overrideLocal: _imagenGridOverrideLocal,
-              origUrl: _imagenGridOrig,
-              origLocal: _imagenGridOrigLocal,
-              onQuitarOverride: () => _quitarOverrideImagen(esGrid: true),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: imagenGridOverrideCtrl,
-                    decoration: InputDecoration(
-                      labelText: l10n.juegoFormUrlImagenGrid,
-                      hintText: _imagenGridOrig.isNotEmpty
-                          ? _imagenGridOrig
-                          : null,
-                      hintStyle: TextStyle(
-                        color: Colors.grey.withValues(alpha: 0.5),
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                    onChanged: (_) =>
-                        setState(() => _imagenGridOverrideLocal = null),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.photo_library),
-                  onPressed: () => _elegirImagen(esGrid: true),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-            TextField(
-              controller: versionController,
-              decoration: InputDecoration(labelText: l10n.juegoFormVersion),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: calificacionController,
-              decoration: InputDecoration(
-                labelText: l10n.juegoFormCalificacion,
-              ),
-              keyboardType: TextInputType.number,
-            ),
             const SizedBox(height: 12),
             CampoConOriginal(
               controller: generosCtrl,
@@ -956,52 +904,6 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
               ),
             ],
 
-            const SizedBox(height: 16),
-            Text(
-              l10n.juegoFormGuardarImagenesLocal,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-            ),
-            if (_guardandoCache)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                child: LinearProgressIndicator(),
-              ),
-            RadioGroup<ModoGuardadoImagen>(
-              groupValue: _modoGuardadoImagen,
-              onChanged: (v) => setState(() => _modoGuardadoImagen = v!),
-              child: Column(
-                children: [
-                  RadioListTile<ModoGuardadoImagen>(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      l10n.juegoFormModoNinguno,
-                      style: const TextStyle(fontSize: 13),
-                    ),
-                    value: ModoGuardadoImagen.ninguno,
-                  ),
-                  RadioListTile<ModoGuardadoImagen>(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      l10n.juegoFormModoOriginal,
-                      style: const TextStyle(fontSize: 13),
-                    ),
-                    value: ModoGuardadoImagen.original,
-                  ),
-                  RadioListTile<ModoGuardadoImagen>(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      l10n.juegoFormModoComprimido,
-                      style: const TextStyle(fontSize: 13),
-                    ),
-                    value: ModoGuardadoImagen.comprimido,
-                  ),
-                ],
-              ),
-            ),
-
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
@@ -1018,6 +920,331 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // ── Sección de imágenes: responsiva (PC: 2 columnas, móvil: apilado) ──
+
+  Widget _seccionImagenes(AppLocalizations l10n) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final esAncho = constraints.maxWidth >= 600;
+
+        if (esAncho) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(flex: 2, child: _bloqueGrid(l10n)),
+              const SizedBox(width: 16),
+              Expanded(
+                flex: 3,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _bloqueDetalle(l10n),
+                    const SizedBox(height: 16),
+                    _bloqueOpcionesGuardado(l10n),
+                    const SizedBox(height: 12),
+                    _camposVersionYCalificacion(l10n),
+                  ],
+                ),
+              ),
+            ],
+          );
+        }
+
+        // Móvil: apilado vertical — Grid, luego Detalle, opciones de guardado,
+        // y al final versión/calificación lado a lado (son campos cortos).
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _bloqueGrid(l10n),
+            const SizedBox(height: 16),
+            _bloqueDetalle(l10n),
+            const SizedBox(height: 16),
+            _bloqueOpcionesGuardado(l10n),
+            const SizedBox(height: 12),
+            _camposVersionYCalificacion(l10n),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _camposVersionYCalificacion(AppLocalizations l10n) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 3,
+          child: TextField(
+            controller: versionController,
+            decoration: InputDecoration(labelText: l10n.juegoFormVersion),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          flex: 2,
+          child: TextField(
+            controller: calificacionController,
+            decoration: InputDecoration(labelText: l10n.juegoFormCalificacion),
+            keyboardType: TextInputType.number,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _headerImagen(
+    AppLocalizations l10n,
+    String titulo,
+    VoidCallback onAjustar,
+  ) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            titulo,
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+        ),
+        TextButton(
+          style: TextButton.styleFrom(
+            padding: EdgeInsets.zero,
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          onPressed: onAjustar,
+          child: Text(
+            l10n.juegoFormAjustar,
+            style: const TextStyle(fontSize: 12),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _abrirEditorAjuste({required bool esGrid}) async {
+    final url = esGrid ? _imagenGridResueltaUrl : _imagenDetalleResueltaUrl;
+    final local = esGrid
+        ? _imagenGridResueltaLocal
+        : _imagenDetalleResueltaLocal;
+
+    if ((url == null || url.isEmpty) && (local == null || local.isEmpty)) {
+      return; // no hay imagen que ajustar
+    }
+
+    final resultado = await Navigator.push<AjusteImagen>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditorAjusteImagenScreen(
+          imagenUrl: url,
+          imagenLocal: local,
+          aspectRatio: esGrid ? 2 / 3 : 16 / 6,
+          ajusteInicial: esGrid
+              ? AjusteImagen(
+                  offsetX: _imagenGridAjusteX,
+                  offsetY: _imagenGridAjusteY,
+                  zoom: _imagenGridAjusteZoom,
+                )
+              : AjusteImagen(
+                  offsetX: _imagenAjusteX,
+                  offsetY: _imagenAjusteY,
+                  zoom: _imagenAjusteZoom,
+                ),
+        ),
+      ),
+    );
+
+    if (resultado == null) return;
+    setState(() {
+      if (esGrid) {
+        _imagenGridAjusteX = resultado.offsetX;
+        _imagenGridAjusteY = resultado.offsetY;
+        _imagenGridAjusteZoom = resultado.zoom;
+      } else {
+        _imagenAjusteX = resultado.offsetX;
+        _imagenAjusteY = resultado.offsetY;
+        _imagenAjusteZoom = resultado.zoom;
+      }
+    });
+  }
+
+  Widget _bloqueGrid(AppLocalizations l10n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _headerImagen(
+          l10n,
+          l10n.juegoFormImagenGrid,
+          () => _abrirEditorAjuste(esGrid: true),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: imagenGridOverrideCtrl,
+                style: const TextStyle(fontSize: 12),
+                decoration: InputDecoration(
+                  labelText: l10n.juegoFormUrlImagenGrid,
+                  labelStyle: const TextStyle(fontSize: 11),
+                  hintText: _imagenGridOrig.isNotEmpty ? _imagenGridOrig : null,
+                  hintStyle: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey.withValues(alpha: 0.5),
+                    fontStyle: FontStyle.italic,
+                  ),
+                  isDense: true,
+                ),
+                onChanged: (_) => setState(() {
+                  _imagenGridOverrideLocal = null;
+                  _imagenGridAjusteX = 0;
+                  _imagenGridAjusteY = 0;
+                  _imagenGridAjusteZoom = 1;
+                }),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.photo_library, size: 18),
+              onPressed: () => _elegirImagen(esGrid: true),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ImagenConOriginal(
+          overrideUrl: imagenGridOverrideCtrl.text,
+          overrideLocal: _imagenGridOverrideLocal,
+          origUrl: _imagenGridOrig,
+          origLocal: _imagenGridOrigLocal,
+          aspectRatio: 2 / 3,
+          ajusteX: _imagenGridAjusteX,
+          ajusteY: _imagenGridAjusteY,
+          ajusteZoom: _imagenGridAjusteZoom,
+          onQuitarOverride: () => _quitarOverrideImagen(esGrid: true),
+        ),
+      ],
+    );
+  }
+
+  Widget _bloqueDetalle(AppLocalizations l10n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _headerImagen(
+          l10n,
+          l10n.juegoFormImagenDetalle,
+          () => _abrirEditorAjuste(esGrid: false),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: imagenOverrideCtrl,
+                style: const TextStyle(fontSize: 12),
+                decoration: InputDecoration(
+                  labelText: l10n.juegoFormUrlImagenDetalle,
+                  labelStyle: const TextStyle(fontSize: 11),
+                  hintText: _imagenOrig.isNotEmpty ? _imagenOrig : null,
+                  hintStyle: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey.withValues(alpha: 0.5),
+                    fontStyle: FontStyle.italic,
+                  ),
+                  isDense: true,
+                ),
+                onChanged: (_) => setState(() {
+                  _imagenOverrideLocal = null;
+                  _imagenAjusteX = 0;
+                  _imagenAjusteY = 0;
+                  _imagenAjusteZoom = 1;
+                }),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.photo_library, size: 18),
+              onPressed: () => _elegirImagen(esGrid: false),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ImagenConOriginal(
+          overrideUrl: imagenOverrideCtrl.text,
+          overrideLocal: _imagenOverrideLocal,
+          origUrl: _imagenOrig,
+          origLocal: _imagenOrigLocal,
+          aspectRatio: 16 / 6,
+          ajusteX: _imagenAjusteX,
+          ajusteY: _imagenAjusteY,
+          ajusteZoom: _imagenAjusteZoom,
+          onQuitarOverride: () => _quitarOverrideImagen(esGrid: false),
+        ),
+      ],
+    );
+  }
+
+  Widget _bloqueOpcionesGuardado(AppLocalizations l10n) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF111111),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFF2A2A2A)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.juegoFormGuardarImagenesLocal.toUpperCase(),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+              color: Colors.grey.shade500,
+            ),
+          ),
+          if (_guardandoCache)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: LinearProgressIndicator(),
+            ),
+          RadioGroup<ModoGuardadoImagen>(
+            groupValue: _modoGuardadoImagen,
+            onChanged: (v) => setState(() => _modoGuardadoImagen = v!),
+            child: Column(
+              children: [
+                RadioListTile<ModoGuardadoImagen>(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    l10n.juegoFormModoNinguno,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                  value: ModoGuardadoImagen.ninguno,
+                ),
+                RadioListTile<ModoGuardadoImagen>(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    l10n.juegoFormModoOriginal,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                  value: ModoGuardadoImagen.original,
+                ),
+                RadioListTile<ModoGuardadoImagen>(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    l10n.juegoFormModoComprimido,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                  value: ModoGuardadoImagen.comprimido,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

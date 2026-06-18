@@ -60,7 +60,7 @@ class ApiService {
 
     return await openDatabase(
       path,
-      version: 10,
+      version: 11,
       onCreate: (db, version) async {
         await db.execute('''
         CREATE TABLE usuarios (
@@ -84,10 +84,16 @@ class ApiService {
           imagen_orig_local TEXT,
           imagen_override TEXT,
           imagen_override_local TEXT,
+          imagen_ajuste_x REAL NOT NULL DEFAULT 0,
+          imagen_ajuste_y REAL NOT NULL DEFAULT 0,
+          imagen_ajuste_zoom REAL NOT NULL DEFAULT 1,
           imagen_grid_orig TEXT,
           imagen_grid_orig_local TEXT,
           imagen_grid_override TEXT,
           imagen_grid_override_local TEXT,
+          imagen_grid_ajuste_x REAL NOT NULL DEFAULT 0,
+          imagen_grid_ajuste_y REAL NOT NULL DEFAULT 0,
+          imagen_grid_ajuste_zoom REAL NOT NULL DEFAULT 1,
           version TEXT,
           calificacion INTEGER,
           estado TEXT,
@@ -194,6 +200,26 @@ class ApiService {
               FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
             )
           ''');
+        }
+        if (oldVersion < 11) {
+          await db.execute(
+            'ALTER TABLE juegos ADD COLUMN imagen_ajuste_x REAL NOT NULL DEFAULT 0',
+          );
+          await db.execute(
+            'ALTER TABLE juegos ADD COLUMN imagen_ajuste_y REAL NOT NULL DEFAULT 0',
+          );
+          await db.execute(
+            'ALTER TABLE juegos ADD COLUMN imagen_ajuste_zoom REAL NOT NULL DEFAULT 1',
+          );
+          await db.execute(
+            'ALTER TABLE juegos ADD COLUMN imagen_grid_ajuste_x REAL NOT NULL DEFAULT 0',
+          );
+          await db.execute(
+            'ALTER TABLE juegos ADD COLUMN imagen_grid_ajuste_y REAL NOT NULL DEFAULT 0',
+          );
+          await db.execute(
+            'ALTER TABLE juegos ADD COLUMN imagen_grid_ajuste_zoom REAL NOT NULL DEFAULT 1',
+          );
         }
       },
     );
@@ -359,10 +385,16 @@ class ApiService {
     String? imagenOrigLocal,
     String? imagenOverride,
     String? imagenOverrideLocal,
+    double imagenAjusteX = 0,
+    double imagenAjusteY = 0,
+    double imagenAjusteZoom = 1,
     String imagenGridOrig = '',
     String? imagenGridOrigLocal,
     String? imagenGridOverride,
     String? imagenGridOverrideLocal,
+    double imagenGridAjusteX = 0,
+    double imagenGridAjusteY = 0,
+    double imagenGridAjusteZoom = 1,
     required String version,
     required String calificacion,
     required String estado,
@@ -390,10 +422,16 @@ class ApiService {
       'imagen_orig_local': imagenOrigLocal,
       'imagen_override': imagenOverride,
       'imagen_override_local': imagenOverrideLocal,
+      'imagen_ajuste_x': imagenAjusteX,
+      'imagen_ajuste_y': imagenAjusteY,
+      'imagen_ajuste_zoom': imagenAjusteZoom,
       'imagen_grid_orig': imagenGridOrig,
       'imagen_grid_orig_local': imagenGridOrigLocal,
       'imagen_grid_override': imagenGridOverride,
       'imagen_grid_override_local': imagenGridOverrideLocal,
+      'imagen_grid_ajuste_x': imagenGridAjusteX,
+      'imagen_grid_ajuste_y': imagenGridAjusteY,
+      'imagen_grid_ajuste_zoom': imagenGridAjusteZoom,
       'version': version,
       'calificacion': int.tryParse(calificacion) ?? 0,
       'estado': estado,
@@ -423,10 +461,16 @@ class ApiService {
     String? imagenOrigLocal,
     String? imagenOverride,
     String? imagenOverrideLocal,
+    double imagenAjusteX = 0,
+    double imagenAjusteY = 0,
+    double imagenAjusteZoom = 1,
     String? imagenGridOrig,
     String? imagenGridOrigLocal,
     String? imagenGridOverride,
     String? imagenGridOverrideLocal,
+    double imagenGridAjusteX = 0,
+    double imagenGridAjusteY = 0,
+    double imagenGridAjusteZoom = 1,
     required String version,
     required String calificacion,
     required String estado,
@@ -451,8 +495,14 @@ class ApiService {
       'generos_override': generosOverride,
       'imagen_override': imagenOverride,
       'imagen_override_local': imagenOverrideLocal,
+      'imagen_ajuste_x': imagenAjusteX,
+      'imagen_ajuste_y': imagenAjusteY,
+      'imagen_ajuste_zoom': imagenAjusteZoom,
       'imagen_grid_override': imagenGridOverride,
       'imagen_grid_override_local': imagenGridOverrideLocal,
+      'imagen_grid_ajuste_x': imagenGridAjusteX,
+      'imagen_grid_ajuste_y': imagenGridAjusteY,
+      'imagen_grid_ajuste_zoom': imagenGridAjusteZoom,
     };
 
     // Originales: solo se tocan si se proveen explícitamente (re-búsqueda en fuente)
