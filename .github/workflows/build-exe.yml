@@ -21,12 +21,6 @@ jobs:
           git clone https://github.com/flutter/flutter.git --branch 3.41.7 --depth 1 $env:USERPROFILE\flutter
           echo "$env:USERPROFILE\flutter\bin" >> $env:GITHUB_PATH
 
-      - name: Restaurar servicios privados
-        shell: pwsh
-        run: |
-          [System.IO.File]::WriteAllBytes("frontend/lib/services/f95_service.dart", [System.Convert]::FromBase64String("${{ secrets.F95_SERVICE }}"))
-          [System.IO.File]::WriteAllBytes("frontend/lib/screens/f95_config_screen.dart", [System.Convert]::FromBase64String("${{ secrets.F95_CONFIG_SCREEN }}"))
-
       - name: Instalar dependencias
         working-directory: frontend
         run: flutter pub get
@@ -44,20 +38,19 @@ jobs:
         run: |
           Compress-Archive -Path "frontend\build\windows\x64\runner\Release\*" -DestinationPath "feed95.zip"
 
-      - name: Borrar Release 'beta' anterior
+      - name: Borrar Release anterior
         uses: dev-drprasad/delete-tag-and-release@v1.1
         with:
           delete_release: true
-          tag_name: beta-windows
+          tag_name: v1.0.0-windows
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Crear Pre-release 'beta'
+      - name: Crear Release v1.0.0
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: beta-windows
-          name: "Feed95 - Versión Beta (Windows)"
-          body: "Versión beta de la aplicación para Windows."
-          # Para que sea un lanzamiento oficial solo debo cambiar el prerelease a false
-          prerelease: true
+          tag_name: v1.0.0-windows
+          name: "Feed95 v1.0.0 (Windows)"
+          body: "Primera versión oficial de Feed95 para Windows."
+          prerelease: false
           files: feed95.zip
           token: ${{ secrets.GITHUB_TOKEN }}

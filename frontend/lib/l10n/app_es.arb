@@ -211,6 +211,18 @@
     "placeholders": { "mb": { "type": "String" } }
   },
 
+  "acercaTitulo": "Acerca de",
+  "acercaQueEs": "¿Qué es Feed95?",
+  "acercaDescripcion": "Catálogo personal de videojuegos. Sin cuentas, sin nube, sin rastreo: todo se guarda localmente en tu dispositivo.",
+  "acercaCodigo": "Código fuente",
+  "acercaLicencia": "Licencia",
+  "acercaLicenciaTexto": "Distribuido bajo GNU GPL v3.0. Puedes usar, copiar, modificar y distribuir este software, pero cualquier versión derivada debe mantener la misma licencia con el código fuente disponible.",
+  "acercaVerLicenciaCompleta": "Ver licencia completa",
+  "acercaFuentesDatos": "Fuentes de datos",
+  "acercaFuentesDatosNota": "Ninguno de estos servicios está afiliado al proyecto. Steam es marca registrada de Valve Corporation.",
+  "acercaCreditos": "Créditos",
+  "acercaVerLicenciasPaquetes": "Ver licencias de paquetes usados",
+
   "igdbTitulo": "IGDB",
   "igdbConfiguradoTitulo": "IGDB configurado",
   "igdbConfiguradoDescripcion": "Las credenciales están guardadas localmente. El botón IGDB está disponible al añadir juegos.",

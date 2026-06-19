@@ -27,11 +27,6 @@ jobs:
           git clone https://github.com/flutter/flutter.git --branch 3.41.7 --depth 1 $HOME/flutter
           echo "$HOME/flutter/bin" >> $GITHUB_PATH
 
-      - name: Restaurar servicios privados
-        run: |
-          echo "${{ secrets.F95_SERVICE }}" | base64 --decode > frontend/lib/services/f95_service.dart
-          echo "${{ secrets.F95_CONFIG_SCREEN }}" | base64 --decode > frontend/lib/screens/f95_config_screen.dart
-          
       - name: Instalar dependencias
         working-directory: frontend
         run: flutter pub get
@@ -43,20 +38,19 @@ jobs:
       - name: Renombrar APK
         run: mv frontend/build/app/outputs/flutter-apk/app-release.apk feed95.apk
 
-      - name: Borrar Release 'beta' anterior
+      - name: Borrar Release anterior
         uses: dev-drprasad/delete-tag-and-release@v1.1
         with:
           delete_release: true
-          tag_name: beta-android
+          tag_name: v1.0.0-android
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Crear Pre-release 'beta'
+      - name: Crear Release v1.0.0
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: beta-android
-          name: "Feed95 - Versión Beta (Android)"
-          body: "Versión beta de la aplicación para Android."
-          # Para que sea un lanzamiento oficial solo debo cambiar el prerelease a false
-          prerelease: true
+          tag_name: v1.0.0-android
+          name: "Feed95 v1.0.0 (Android)"
+          body: "Primera versión oficial de Feed95 para Android."
+          prerelease: false
           files: feed95.apk
           token: ${{ secrets.GITHUB_TOKEN }}

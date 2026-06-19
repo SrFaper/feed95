@@ -14,6 +14,7 @@ import 'f95_config_screen.dart';
 import 'igdb_config_screen.dart';
 import 'package:frontend/l10n/app_localizations.dart';
 import '../services/image_cache_service.dart';
+import 'acerca_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final Usuario usuario;
@@ -306,6 +307,20 @@ class _HomeScreenState extends State<HomeScreen> {
                         onTap: () {
                           Navigator.pop(ctx);
                           _verRutaImagenes();
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      _botonSheet(
+                        icon: Icons.info_outline,
+                        label: l10n.acercaTitulo,
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AcercaScreen(),
+                            ),
+                          );
                         },
                       ),
                     ],

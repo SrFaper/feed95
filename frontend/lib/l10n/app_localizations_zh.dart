@@ -482,6 +482,41 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get acercaTitulo => '关于';
+
+  @override
+  String get acercaQueEs => 'feed95 是什么？';
+
+  @override
+  String get acercaDescripcion => '个人游戏库应用。无需账号，无需云端，无追踪：所有数据均保存在你的本地设备上。';
+
+  @override
+  String get acercaCodigo => '源代码';
+
+  @override
+  String get acercaLicencia => '开源许可';
+
+  @override
+  String get acercaLicenciaTexto =>
+      '本项目基于 GNU GPL v3.0 协议发布。你可以自由使用、复制、修改和分发本软件，但任何衍生版本必须保持相同的许可协议并公开源代码。';
+
+  @override
+  String get acercaVerLicenciaCompleta => '查看完整许可证';
+
+  @override
+  String get acercaFuentesDatos => '数据来源';
+
+  @override
+  String get acercaFuentesDatosNota =>
+      '以下服务均与本项目无关联。Steam 是 Valve Corporation 的注册商标。';
+
+  @override
+  String get acercaCreditos => '鸣谢';
+
+  @override
+  String get acercaVerLicenciasPaquetes => '查看依赖包许可证';
+
+  @override
   String get igdbTitulo => 'IGDB';
 
   @override

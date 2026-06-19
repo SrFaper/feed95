@@ -211,6 +211,18 @@
     "placeholders": { "mb": { "type": "String" } }
   },
 
+  "acercaTitulo": "关于",
+  "acercaQueEs": "feed95 是什么？",
+  "acercaDescripcion": "个人游戏库应用。无需账号，无需云端，无追踪：所有数据均保存在你的本地设备上。",
+  "acercaCodigo": "源代码",
+  "acercaLicencia": "开源许可",
+  "acercaLicenciaTexto": "本项目基于 GNU GPL v3.0 协议发布。你可以自由使用、复制、修改和分发本软件，但任何衍生版本必须保持相同的许可协议并公开源代码。",
+  "acercaVerLicenciaCompleta": "查看完整许可证",
+  "acercaFuentesDatos": "数据来源",
+  "acercaFuentesDatosNota": "以下服务均与本项目无关联。Steam 是 Valve Corporation 的注册商标。",
+  "acercaCreditos": "鸣谢",
+  "acercaVerLicenciasPaquetes": "查看依赖包许可证",
+
   "igdbTitulo": "IGDB",
   "igdbConfiguradoTitulo": "IGDB 已配置",
   "igdbConfiguradoDescripcion": "凭据已保存在本地。现在可以在添加游戏时使用 IGDB 搜索。",

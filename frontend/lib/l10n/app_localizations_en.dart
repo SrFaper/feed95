@@ -485,6 +485,42 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get acercaTitulo => 'About';
+
+  @override
+  String get acercaQueEs => 'What is Feed95?';
+
+  @override
+  String get acercaDescripcion =>
+      'Personal video game catalog. No accounts, no cloud, no tracking: everything is stored locally on your device.';
+
+  @override
+  String get acercaCodigo => 'Source code';
+
+  @override
+  String get acercaLicencia => 'License';
+
+  @override
+  String get acercaLicenciaTexto =>
+      'Distributed under GNU GPL v3.0. You can use, copy, modify, and distribute this software, but any derivative version must keep the same license with source code available.';
+
+  @override
+  String get acercaVerLicenciaCompleta => 'View full license';
+
+  @override
+  String get acercaFuentesDatos => 'Data sources';
+
+  @override
+  String get acercaFuentesDatosNota =>
+      'None of these services are affiliated with this project. Steam is a registered trademark of Valve Corporation.';
+
+  @override
+  String get acercaCreditos => 'Credits';
+
+  @override
+  String get acercaVerLicenciasPaquetes => 'View package licenses';
+
+  @override
   String get igdbTitulo => 'IGDB';
 
   @override

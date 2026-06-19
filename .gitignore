@@ -75,9 +75,3 @@ Cache / Logs
 frontend/.gradle/
 frontend/.pub-cache/
 *.log
-
-========================
-Alimentación
-========================
-frontend/lib/services/f95_service.dart
-frontend/lib/screens/f95_config_screen.dart

@@ -1006,6 +1006,72 @@ abstract class AppLocalizations {
   /// **'Espacio usado: {mb} MB'**
   String homeCarpetaImagenesEspacio(String mb);
 
+  /// No description provided for @acercaTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Acerca de'**
+  String get acercaTitulo;
+
+  /// No description provided for @acercaQueEs.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Qué es Feed95?'**
+  String get acercaQueEs;
+
+  /// No description provided for @acercaDescripcion.
+  ///
+  /// In es, this message translates to:
+  /// **'Catálogo personal de videojuegos. Sin cuentas, sin nube, sin rastreo: todo se guarda localmente en tu dispositivo.'**
+  String get acercaDescripcion;
+
+  /// No description provided for @acercaCodigo.
+  ///
+  /// In es, this message translates to:
+  /// **'Código fuente'**
+  String get acercaCodigo;
+
+  /// No description provided for @acercaLicencia.
+  ///
+  /// In es, this message translates to:
+  /// **'Licencia'**
+  String get acercaLicencia;
+
+  /// No description provided for @acercaLicenciaTexto.
+  ///
+  /// In es, this message translates to:
+  /// **'Distribuido bajo GNU GPL v3.0. Puedes usar, copiar, modificar y distribuir este software, pero cualquier versión derivada debe mantener la misma licencia con el código fuente disponible.'**
+  String get acercaLicenciaTexto;
+
+  /// No description provided for @acercaVerLicenciaCompleta.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver licencia completa'**
+  String get acercaVerLicenciaCompleta;
+
+  /// No description provided for @acercaFuentesDatos.
+  ///
+  /// In es, this message translates to:
+  /// **'Fuentes de datos'**
+  String get acercaFuentesDatos;
+
+  /// No description provided for @acercaFuentesDatosNota.
+  ///
+  /// In es, this message translates to:
+  /// **'Ninguno de estos servicios está afiliado al proyecto. Steam es marca registrada de Valve Corporation.'**
+  String get acercaFuentesDatosNota;
+
+  /// No description provided for @acercaCreditos.
+  ///
+  /// In es, this message translates to:
+  /// **'Créditos'**
+  String get acercaCreditos;
+
+  /// No description provided for @acercaVerLicenciasPaquetes.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver licencias de paquetes usados'**
+  String get acercaVerLicenciasPaquetes;
+
   /// No description provided for @igdbTitulo.
   ///
   /// In es, this message translates to:
