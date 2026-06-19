@@ -1022,9 +1022,10 @@ class _ImagenJuego extends StatelessWidget {
     return ImagenAjustada(
       url: url,
       local: local,
-      offsetX: juego.imagenGridAjusteX,
-      offsetY: juego.imagenGridAjusteY,
-      zoom: juego.imagenGridAjusteZoom,
+      cropX: juego.imagenGridCropX,
+      cropY: juego.imagenGridCropY,
+      cropW: juego.imagenGridCropW,
+      cropH: juego.imagenGridCropH,
       placeholder: Container(
         color: Colors.grey.shade800,
         child: const Center(

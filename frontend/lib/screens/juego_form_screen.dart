@@ -18,6 +18,7 @@ import 'f95_config_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'igdb_config_screen.dart';
 import 'package:frontend/l10n/app_localizations.dart';
+//import '../widgets/imagen_ajustada.dart';
 
 class JuegoFormScreen extends StatefulWidget {
   final Usuario usuario;
@@ -61,13 +62,16 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
   String? _imagenOverrideLocal;
   String? _imagenGridOverrideLocal;
 
-  // Ajuste de encuadre (pan + zoom), independiente de si se ve override u original
-  double _imagenAjusteX = 0;
-  double _imagenAjusteY = 0;
-  double _imagenAjusteZoom = 1;
-  double _imagenGridAjusteX = 0;
-  double _imagenGridAjusteY = 0;
-  double _imagenGridAjusteZoom = 1;
+  // Recorte (crop rect) sobre la imagen real, independiente de si se ve
+  // override u original. (0,0,1,1) = toda la imagen, sin recorte.
+  double _imagenCropX = 0;
+  double _imagenCropY = 0;
+  double _imagenCropW = 1;
+  double _imagenCropH = 1;
+  double _imagenGridCropX = 0;
+  double _imagenGridCropY = 0;
+  double _imagenGridCropW = 1;
+  double _imagenGridCropH = 1;
 
   String _imagenesExtra = '';
   String estadoSeleccionado = 'Pending';
@@ -106,12 +110,14 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
       imagenGridOverrideCtrl.text = j.imagenGridOverride ?? '';
       _imagenOverrideLocal = j.imagenOverrideLocal;
       _imagenGridOverrideLocal = j.imagenGridOverrideLocal;
-      _imagenAjusteX = j.imagenAjusteX;
-      _imagenAjusteY = j.imagenAjusteY;
-      _imagenAjusteZoom = j.imagenAjusteZoom;
-      _imagenGridAjusteX = j.imagenGridAjusteX;
-      _imagenGridAjusteY = j.imagenGridAjusteY;
-      _imagenGridAjusteZoom = j.imagenGridAjusteZoom;
+      _imagenCropX = j.imagenCropX;
+      _imagenCropY = j.imagenCropY;
+      _imagenCropW = j.imagenCropW;
+      _imagenCropH = j.imagenCropH;
+      _imagenGridCropX = j.imagenGridCropX;
+      _imagenGridCropY = j.imagenGridCropY;
+      _imagenGridCropW = j.imagenGridCropW;
+      _imagenGridCropH = j.imagenGridCropH;
 
       versionController.text = j.version;
       calificacionController.text = j.calificacion.toString();
@@ -514,15 +520,17 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
         if (esGrid) {
           _imagenGridOverrideLocal = picked.path;
           imagenGridOverrideCtrl.clear();
-          _imagenGridAjusteX = 0;
-          _imagenGridAjusteY = 0;
-          _imagenGridAjusteZoom = 1;
+          _imagenGridCropX = 0;
+          _imagenGridCropY = 0;
+          _imagenGridCropW = 1;
+          _imagenGridCropH = 1;
         } else {
           _imagenOverrideLocal = picked.path;
           imagenOverrideCtrl.clear();
-          _imagenAjusteX = 0;
-          _imagenAjusteY = 0;
-          _imagenAjusteZoom = 1;
+          _imagenCropX = 0;
+          _imagenCropY = 0;
+          _imagenCropW = 1;
+          _imagenCropH = 1;
         }
       });
     }
@@ -533,15 +541,17 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
       if (esGrid) {
         _imagenGridOverrideLocal = null;
         imagenGridOverrideCtrl.clear();
-        _imagenGridAjusteX = 0;
-        _imagenGridAjusteY = 0;
-        _imagenGridAjusteZoom = 1;
+        _imagenGridCropX = 0;
+        _imagenGridCropY = 0;
+        _imagenGridCropW = 1;
+        _imagenGridCropH = 1;
       } else {
         _imagenOverrideLocal = null;
         imagenOverrideCtrl.clear();
-        _imagenAjusteX = 0;
-        _imagenAjusteY = 0;
-        _imagenAjusteZoom = 1;
+        _imagenCropX = 0;
+        _imagenCropY = 0;
+        _imagenCropW = 1;
+        _imagenCropH = 1;
       }
     });
   }
@@ -672,18 +682,20 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
             ? null
             : imagenOverrideCtrl.text,
         imagenOverrideLocal: _imagenOverrideLocal,
-        imagenAjusteX: _imagenAjusteX,
-        imagenAjusteY: _imagenAjusteY,
-        imagenAjusteZoom: _imagenAjusteZoom,
+        imagenCropX: _imagenCropX,
+        imagenCropY: _imagenCropY,
+        imagenCropW: _imagenCropW,
+        imagenCropH: _imagenCropH,
         imagenGridOrig: _imagenGridOrig,
         imagenGridOrigLocal: _imagenGridOrigLocal,
         imagenGridOverride: imagenGridOverrideCtrl.text.isEmpty
             ? null
             : imagenGridOverrideCtrl.text,
         imagenGridOverrideLocal: _imagenGridOverrideLocal,
-        imagenGridAjusteX: _imagenGridAjusteX,
-        imagenGridAjusteY: _imagenGridAjusteY,
-        imagenGridAjusteZoom: _imagenGridAjusteZoom,
+        imagenGridCropX: _imagenGridCropX,
+        imagenGridCropY: _imagenGridCropY,
+        imagenGridCropW: _imagenGridCropW,
+        imagenGridCropH: _imagenGridCropH,
         version: versionController.text,
         calificacion: calificacionController.text,
         estado: estadoSeleccionado,
@@ -712,18 +724,20 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
             ? null
             : imagenOverrideCtrl.text,
         imagenOverrideLocal: _imagenOverrideLocal,
-        imagenAjusteX: _imagenAjusteX,
-        imagenAjusteY: _imagenAjusteY,
-        imagenAjusteZoom: _imagenAjusteZoom,
+        imagenCropX: _imagenCropX,
+        imagenCropY: _imagenCropY,
+        imagenCropW: _imagenCropW,
+        imagenCropH: _imagenCropH,
         imagenGridOrig: _imagenGridOrig,
         imagenGridOrigLocal: _imagenGridOrigLocal,
         imagenGridOverride: imagenGridOverrideCtrl.text.isEmpty
             ? null
             : imagenGridOverrideCtrl.text,
         imagenGridOverrideLocal: _imagenGridOverrideLocal,
-        imagenGridAjusteX: _imagenGridAjusteX,
-        imagenGridAjusteY: _imagenGridAjusteY,
-        imagenGridAjusteZoom: _imagenGridAjusteZoom,
+        imagenGridCropX: _imagenGridCropX,
+        imagenGridCropY: _imagenGridCropY,
+        imagenGridCropW: _imagenGridCropW,
+        imagenGridCropH: _imagenGridCropH,
         version: versionController.text,
         calificacion: calificacionController.text,
         estado: estadoSeleccionado,
@@ -1041,16 +1055,19 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
           imagenUrl: url,
           imagenLocal: local,
           aspectRatio: esGrid ? 2 / 3 : 16 / 6,
+          modo: esGrid ? ModoAjuste.rect : ModoAjuste.foco,
           ajusteInicial: esGrid
               ? AjusteImagen(
-                  offsetX: _imagenGridAjusteX,
-                  offsetY: _imagenGridAjusteY,
-                  zoom: _imagenGridAjusteZoom,
+                  offsetX: _imagenGridCropX,
+                  offsetY: _imagenGridCropY,
+                  cropW: _imagenGridCropW,
+                  cropH: _imagenGridCropH,
                 )
               : AjusteImagen(
-                  offsetX: _imagenAjusteX,
-                  offsetY: _imagenAjusteY,
-                  zoom: _imagenAjusteZoom,
+                  offsetX: _imagenCropX,
+                  offsetY: _imagenCropY,
+                  cropW: _imagenCropW,
+                  cropH: _imagenCropH,
                 ),
         ),
       ),
@@ -1059,13 +1076,15 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
     if (resultado == null) return;
     setState(() {
       if (esGrid) {
-        _imagenGridAjusteX = resultado.offsetX;
-        _imagenGridAjusteY = resultado.offsetY;
-        _imagenGridAjusteZoom = resultado.zoom;
+        _imagenGridCropX = resultado.offsetX;
+        _imagenGridCropY = resultado.offsetY;
+        _imagenGridCropW = resultado.cropW;
+        _imagenGridCropH = resultado.cropH;
       } else {
-        _imagenAjusteX = resultado.offsetX;
-        _imagenAjusteY = resultado.offsetY;
-        _imagenAjusteZoom = resultado.zoom;
+        _imagenCropX = resultado.offsetX;
+        _imagenCropY = resultado.offsetY;
+        _imagenCropW = resultado.cropW;
+        _imagenCropH = resultado.cropH;
       }
     });
   }
@@ -1099,9 +1118,10 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
                 ),
                 onChanged: (_) => setState(() {
                   _imagenGridOverrideLocal = null;
-                  _imagenGridAjusteX = 0;
-                  _imagenGridAjusteY = 0;
-                  _imagenGridAjusteZoom = 1;
+                  _imagenGridCropX = 0;
+                  _imagenGridCropY = 0;
+                  _imagenGridCropW = 1;
+                  _imagenGridCropH = 1;
                 }),
               ),
             ),
@@ -1118,9 +1138,10 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
           origUrl: _imagenGridOrig,
           origLocal: _imagenGridOrigLocal,
           aspectRatio: 2 / 3,
-          ajusteX: _imagenGridAjusteX,
-          ajusteY: _imagenGridAjusteY,
-          ajusteZoom: _imagenGridAjusteZoom,
+          cropX: _imagenGridCropX,
+          cropY: _imagenGridCropY,
+          cropW: _imagenGridCropW,
+          cropH: _imagenGridCropH,
           onQuitarOverride: () => _quitarOverrideImagen(esGrid: true),
         ),
       ],
@@ -1156,9 +1177,10 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
                 ),
                 onChanged: (_) => setState(() {
                   _imagenOverrideLocal = null;
-                  _imagenAjusteX = 0;
-                  _imagenAjusteY = 0;
-                  _imagenAjusteZoom = 1;
+                  _imagenCropX = 0;
+                  _imagenCropY = 0;
+                  _imagenCropW = 1;
+                  _imagenCropH = 1;
                 }),
               ),
             ),
@@ -1175,9 +1197,11 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
           origUrl: _imagenOrig,
           origLocal: _imagenOrigLocal,
           aspectRatio: 16 / 6,
-          ajusteX: _imagenAjusteX,
-          ajusteY: _imagenAjusteY,
-          ajusteZoom: _imagenAjusteZoom,
+          cropX: _imagenCropX,
+          cropY: _imagenCropY,
+          cropW: _imagenCropW,
+          cropH: _imagenCropH,
+          modo: ModoAjuste.foco,
           onQuitarOverride: () => _quitarOverrideImagen(esGrid: false),
         ),
       ],

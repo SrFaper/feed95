@@ -104,7 +104,6 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
   }
 
   // Reemplaza el widget _imagen() original por esta versión que utiliza ImagenAjustada.
-
   Widget _imagen() {
     return SizedBox(
       width: double.infinity,
@@ -114,9 +113,11 @@ class _JuegoDetalleScreenState extends State<JuegoDetalleScreen> {
             ? (juego.imagen.isNotEmpty ? juego.imagen : null)
             : null,
         local: juego.imagenLocal,
-        offsetX: juego.imagenAjusteX,
-        offsetY: juego.imagenAjusteY,
-        zoom: juego.imagenAjusteZoom,
+        cropX: juego.imagenCropX,
+        cropY: juego.imagenCropY,
+        cropW: juego.imagenCropW,
+        cropH: juego.imagenCropH,
+        modo: ModoAjuste.foco,
         placeholder: Container(
           color: Colors.grey.shade800,
           child: const Center(
