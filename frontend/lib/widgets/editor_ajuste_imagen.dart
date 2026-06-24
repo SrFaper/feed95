@@ -7,19 +7,18 @@ import 'imagen_ajustada.dart' show ModoAjuste;
 /// Resultado del ajuste. Su significado depende del [ModoAjuste] con el que
 /// se haya abierto el editor:
 ///
-/// - [ModoAjuste.rect] (grid/portada): offsetX/offsetY = esquina superior
-///   izquierda del recorte, cropW/cropH = ancho/alto del recorte. Todo en
-///   fracción 0-1 de la imagen original. (0,0,1,1) = toda la imagen.
+/// - [ModoAjuste.rect]: offsetX/offsetY = esquina superior izquierda del
+///   recorte, cropW/cropH = ancho/alto. Todo en fracción 0-1. (0,0,1,1) =
+///   toda la imagen.
 ///
-/// - [ModoAjuste.foco] (detalle/banner): offsetX/offsetY = punto focal
-///   (fracción 0-1 del centro de interés), cropW = factor de zoom (1 =
-///   cover completo, menor = más acercado). cropH no se usa, se guarda
-///   igual a cropW por compatibilidad. Este modo nunca deforma la imagen
-///   sin importar cómo cambie la proporción del contenedor al usarse.
+/// - [ModoAjuste.foco]: offsetX/offsetY = punto focal (fracción 0-1 del
+///   centro de interés), cropW = factor de zoom (1 = cover completo, menor =
+///   más acercado). cropH no se usa, se guarda igual a cropW por
+///   compatibilidad.
 class AjusteImagen {
   final double offsetX;
   final double offsetY;
-  final double zoom; // no usado, se mantiene a 1 por compatibilidad histórica
+  final double zoom;
   final double cropW;
   final double cropH;
 
@@ -32,22 +31,11 @@ class AjusteImagen {
   });
 }
 
-/// Editor de recorte/encuadre. El lienzo es SIEMPRE la imagen completa
-/// (BoxFit.contain). Sobre ella se dibuja un marco de selección con la
-/// proporción [aspectRatio] (de referencia visual), que el usuario puede
-/// mover (arrastrar) y escalar (pellizcar en móvil, o rueda del mouse en
-/// Windows/desktop), sin poder salir nunca de los límites de la imagen real.
+/// Editor de recorte/encuadre interactivo.
 ///
-/// El marco se ve y se maneja igual en ambos modos — la diferencia está en
-/// qué se hace con el resultado al pulsar "Aplicar" (ver [AjusteImagen]).
-///
-/// NOTA sobre el gesto: Flutter no permite combinar un reconocedor de "pan"
-/// y uno de "scale" en el mismo GestureDetector (scale ya es un superset de
-/// pan; mezclarlos lanza "Incorrect GestureDetector arguments"). Por eso
-/// todo el manejo de arrastre y zoom táctil pasa por onScaleStart/
-/// onScaleUpdate, distinguiendo "mover" (1 puntero) de "zoom" (2+ punteros).
-/// El zoom con rueda del mouse (típico en Windows) se maneja aparte con un
-/// Listener de PointerScrollEvent.
+/// El lienzo muestra la imagen completa (contain). Sobre ella se dibuja un
+/// marco de selección con la proporción [aspectRatio] que el usuario puede
+/// mover (arrastrar) y escalar (pellizco táctil o rueda del mouse).
 class EditorAjusteImagenScreen extends StatefulWidget {
   final String? imagenUrl;
   final String? imagenLocal;
@@ -71,40 +59,78 @@ class EditorAjusteImagenScreen extends StatefulWidget {
 
 class _EditorAjusteImagenScreenState extends State<EditorAjusteImagenScreen> {
   // Región de recorte en fracción de la imagen real (0-1).
-  // En modo foco, esto es solo una representación visual interna: el marco
-  // que el usuario ve y manipula. Al aplicar, se convierte a centro+zoom.
   late double _cropX;
   late double _cropY;
   late double _cropW;
   late double _cropH;
 
-  // Tamaño del marco "base" (zoom = 1, cover completo) para el aspectRatio
-  // de este editor. Se usa solo en modo foco para traducir entre el
-  // rectángulo visual y el factor de zoom guardado.
   double _cropWBase = 1;
   double _cropHBase = 1;
 
-  // Dimensiones reales de la imagen (se resuelven de forma asíncrona)
-  int? _imgWidthPx;
-  int? _imgHeightPx;
+  // ── Gestión de imagen ────────────────────────────────────────────────────
+  // Usamos ImageInfo en lugar de ui.Image directamente para que Flutter pueda
+  // gestionar el refcount correctamente. Al hacer dispose() de este widget,
+  // llamamos _imageInfo?.dispose() para liberar la referencia y permitir que
+  // el PaintingCache descarte la textura si nadie más la referencia.
+  // La versión anterior guardaba ui.Image sin dispose, dejando la textura
+  // en RAM mientras el editor estuviera en el historial de navegación.
+  ImageInfo? _imageInfo;
   bool _cargando = true;
   String? _error;
 
-  // Estado táctil/mouse temporal durante el gesto (unificado pan+zoom)
+  ImageStream? _stream;
+  late ImageStreamListener _listener;
+
+  static const double _minCropFraction = 0.1;
+
+  bool get _esModoFoco => widget.modo == ModoAjuste.foco;
+
+  // Estado táctil/mouse temporal durante el gesto
   Offset _focoInicio = Offset.zero;
   double _cropXInicio = 0;
   double _cropYInicio = 0;
   double _cropWInicio = 1;
 
-  static const double _minCropFraction =
-      0.1; // no permitir recortes < 10% de la imagen
-
-  bool get _esModoFoco => widget.modo == ModoAjuste.foco;
-
   @override
   void initState() {
     super.initState();
-    _resolverDimensiones();
+    _listener = ImageStreamListener(
+      (ImageInfo info, bool synchronousCall) {
+        if (!mounted) return;
+        final anterior = _imageInfo;
+        setState(() {
+          _imageInfo = info;
+          _cargando = false;
+          _calcularBase();
+          _inicializarDesdeAjuste();
+        });
+        // Liberar la referencia anterior después del setState para que el
+        // painter ya tenga la nueva imagen antes de que descartemos la vieja.
+        anterior?.dispose();
+      },
+      onError: (Object exception, StackTrace? stackTrace) {
+        if (!mounted) return;
+        setState(() {
+          _error = 'No se pudo cargar la imagen';
+          _cargando = false;
+        });
+      },
+    );
+    _resolveStream();
+  }
+
+  @override
+  void dispose() {
+    // Cancelar el stream primero para que el listener no intente actualizar
+    // estado después de que el widget esté desmontado.
+    _stream?.removeListener(_listener);
+    _stream = null;
+    // Liberar la referencia al ImageInfo. Sin esto, la textura decodificada
+    // quedaría en RAM hasta que el GC de Dart la recoja eventualmente, lo
+    // que puede tardar varios segundos o minutos.
+    _imageInfo?.dispose();
+    _imageInfo = null;
+    super.dispose();
   }
 
   ImageProvider get _imageProvider {
@@ -114,38 +140,17 @@ class _EditorAjusteImagenScreenState extends State<EditorAjusteImagenScreen> {
     return NetworkImage(widget.imagenUrl ?? '');
   }
 
-  void _resolverDimensiones() {
-    final stream = _imageProvider.resolve(const ImageConfiguration());
-    late ImageStreamListener listener;
-    listener = ImageStreamListener(
-      (ImageInfo info, bool _) {
-        if (!mounted) return;
-        setState(() {
-          _imgWidthPx = info.image.width;
-          _imgHeightPx = info.image.height;
-          _cargando = false;
-          _calcularBase();
-          _inicializarDesdeAjuste();
-        });
-        stream.removeListener(listener);
-      },
-      onError: (error, stackTrace) {
-        if (!mounted) return;
-        setState(() {
-          _error = 'No se pudo cargar la imagen';
-          _cargando = false;
-        });
-        stream.removeListener(listener);
-      },
-    );
-    stream.addListener(listener);
+  void _resolveStream() {
+    final stream = _imageProvider.resolve(ImageConfiguration.empty);
+    _stream = stream;
+    stream.addListener(_listener);
   }
 
-  /// Calcula el tamaño del marco "cover completo" (zoom = 1) para el
-  /// aspectRatio de este editor, sobre la imagen real actual.
   void _calcularBase() {
-    final imgW = _imgWidthPx!.toDouble();
-    final imgH = _imgHeightPx!.toDouble();
+    final image = _imageInfo?.image;
+    if (image == null) return;
+    final imgW = image.width.toDouble();
+    final imgH = image.height.toDouble();
     final imgAspect = imgW / imgH;
 
     double cropWFrac, cropHFrac;
@@ -160,15 +165,12 @@ class _EditorAjusteImagenScreenState extends State<EditorAjusteImagenScreen> {
     _cropHBase = cropHFrac.clamp(0.0, 1.0);
   }
 
-  /// Traduce el [widget.ajusteInicial] al rectángulo visual interno
-  /// (_cropX/_cropY/_cropW/_cropH) según el modo.
   void _inicializarDesdeAjuste() {
     final a = widget.ajusteInicial;
     final esDefault =
         a.offsetX == 0 && a.offsetY == 0 && a.cropW == 1 && a.cropH == 1;
 
     if (esDefault) {
-      // Sin ajuste guardado todavía → marco centrado, cover completo.
       _cropW = _cropWBase;
       _cropH = _cropHBase;
       _cropX = (1 - _cropW) / 2;
@@ -177,14 +179,12 @@ class _EditorAjusteImagenScreenState extends State<EditorAjusteImagenScreen> {
     }
 
     if (_esModoFoco) {
-      // a.offsetX/offsetY = punto focal; a.cropW = zoom.
       final zoom = a.cropW.clamp(_minCropFraction, 1.0);
       _cropW = (_cropWBase * zoom).clamp(_minCropFraction, 1.0);
       _cropH = (_cropHBase * zoom).clamp(_minCropFraction, 1.0);
       _cropX = (a.offsetX - _cropW / 2).clamp(0.0, 1 - _cropW);
       _cropY = (a.offsetY - _cropH / 2).clamp(0.0, 1 - _cropH);
     } else {
-      // Modo rect: valores absolutos directos.
       _cropX = a.offsetX;
       _cropY = a.offsetY;
       _cropW = a.cropW;
@@ -192,10 +192,7 @@ class _EditorAjusteImagenScreenState extends State<EditorAjusteImagenScreen> {
     }
   }
 
-  // ── Gesto unificado: mover (1 puntero) + zoom (2+ punteros / pellizco) ──
-  // Todo pasa por onScale* porque Flutter no permite mezclar un
-  // PanGestureRecognizer con un ScaleGestureRecognizer en el mismo
-  // GestureDetector (scale ya cubre el caso de 1 dedo).
+  // ── Gestos ───────────────────────────────────────────────────────────────
 
   void _onScaleStart(ScaleStartDetails details) {
     _focoInicio = details.localFocalPoint;
@@ -206,36 +203,29 @@ class _EditorAjusteImagenScreenState extends State<EditorAjusteImagenScreen> {
 
   void _onScaleUpdate(ScaleUpdateDetails details, Size lienzoSize) {
     if (details.pointerCount >= 2) {
-      // Pellizco con 2+ dedos → zoom del marco de selección.
-      final nuevoCropW = _cropWInicio / details.scale;
-      _cambiarTamanoCrop(nuevoCropW);
+      _cambiarTamanoCrop(_cropWInicio / details.scale);
     } else {
-      // 1 dedo (o click sostenido con mouse) → mover el marco.
       setState(() {
         final delta = details.localFocalPoint - _focoInicio;
         final deltaXFrac = delta.dx / lienzoSize.width;
         final deltaYFrac = delta.dy / lienzoSize.height;
-
         _cropX = (_cropXInicio + deltaXFrac).clamp(0.0, 1 - _cropW);
         _cropY = (_cropYInicio + deltaYFrac).clamp(0.0, 1 - _cropH);
       });
     }
   }
 
-  // ── Zoom con rueda del mouse (principal en Windows/desktop, donde no
-  // hay pellizco de 2 dedos) ──
-
   void _onPointerScroll(PointerScrollEvent event) {
     final factor = event.scrollDelta.dy > 0 ? 1.08 : 1 / 1.08;
     _cambiarTamanoCrop(_cropW * factor);
   }
 
-  /// Cambia el tamaño del marco de selección (zoom), manteniendo el centro
-  /// fijo y respetando siempre el aspectRatio y los límites de la imagen.
   void _cambiarTamanoCrop(double nuevoCropW) {
-    final imgAspect = _imgWidthPx! / _imgHeightPx!;
+    final image = _imageInfo?.image;
+    if (image == null) return;
+    final imgAspect = image.width / image.height;
     final nuevoCropH =
-        (nuevoCropW * _imgWidthPx!) / widget.aspectRatio / _imgHeightPx!;
+        (nuevoCropW * image.width) / widget.aspectRatio / image.height;
 
     final cropWClamped = nuevoCropW.clamp(_minCropFraction, 1.0);
     final cropHClamped = nuevoCropH.clamp(_minCropFraction / imgAspect, 1.0);
@@ -243,7 +233,6 @@ class _EditorAjusteImagenScreenState extends State<EditorAjusteImagenScreen> {
     setState(() {
       final centroX = _cropX + _cropW / 2;
       final centroY = _cropY + _cropH / 2;
-
       _cropW = cropWClamped;
       _cropH = cropHClamped;
       _cropX = (centroX - _cropW / 2).clamp(0.0, 1 - _cropW);
@@ -263,9 +252,6 @@ class _EditorAjusteImagenScreenState extends State<EditorAjusteImagenScreen> {
   void _aplicar() {
     AjusteImagen resultado;
     if (_esModoFoco) {
-      // Convertir el rectángulo visual a centro + zoom (independiente de
-      // aspectRatio: por eso nunca se deforma al usarse en un contenedor
-      // con una proporción distinta a la de este editor).
       final centroX = _cropX + _cropW / 2;
       final centroY = _cropY + _cropH / 2;
       final zoom = (_cropW / _cropWBase).clamp(_minCropFraction, 1.0);
@@ -321,6 +307,13 @@ class _EditorAjusteImagenScreenState extends State<EditorAjusteImagenScreen> {
   }
 
   Widget _buildEditor() {
+    final image = _imageInfo?.image;
+    if (image == null) {
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.white54),
+      );
+    }
+
     return Column(
       children: [
         Expanded(
@@ -329,10 +322,8 @@ class _EditorAjusteImagenScreenState extends State<EditorAjusteImagenScreen> {
               builder: (context, constraints) {
                 final maxW = constraints.maxWidth * 0.94;
                 final maxH = constraints.maxHeight * 0.94;
-                final imgAspect = _imgWidthPx! / _imgHeightPx!;
+                final imgAspect = image.width / image.height;
 
-                // El lienzo muestra la imagen COMPLETA (contain) dentro del
-                // espacio disponible, sin recortar nada todavía.
                 double lienzoW = maxW;
                 double lienzoH = lienzoW / imgAspect;
                 if (lienzoH > maxH) {
@@ -342,19 +333,12 @@ class _EditorAjusteImagenScreenState extends State<EditorAjusteImagenScreen> {
                 final lienzoSize = Size(lienzoW, lienzoH);
 
                 return Listener(
-                  // Zoom con rueda del mouse — clave en Windows/desktop,
-                  // donde normalmente no hay pantalla táctil para pellizcar.
                   onPointerSignal: (event) {
                     if (event is PointerScrollEvent) {
                       _onPointerScroll(event);
                     }
                   },
                   child: GestureDetector(
-                    // Único set de callbacks: scale cubre tanto el arrastre
-                    // (1 puntero) como el pellizco (2+ punteros). NO se debe
-                    // agregar onPanStart/onPanUpdate aquí: mezclar pan y
-                    // scale en el mismo GestureDetector lanza la excepción
-                    // "Incorrect GestureDetector arguments".
                     onScaleStart: _onScaleStart,
                     onScaleUpdate: (d) => _onScaleUpdate(d, lienzoSize),
                     child: SizedBox(
@@ -363,17 +347,15 @@ class _EditorAjusteImagenScreenState extends State<EditorAjusteImagenScreen> {
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
-                          // La imagen completa, sin recortar
-                          Image(
-                            image: _imageProvider,
+                          // Usamos RawImage para renderizar directamente desde
+                          // el ui.Image del ImageInfo sin pasar por un
+                          // ImageProvider adicional, evitando doble decodificado.
+                          RawImage(
+                            image: image,
                             fit: BoxFit.fill,
                             width: lienzoW,
                             height: lienzoH,
-                            errorBuilder: (_, _, _) =>
-                                const ColoredBox(color: Color(0xFF222222)),
                           ),
-                          // Overlay oscuro fuera del marco de selección +
-                          // recuadro de selección dibujado encima.
                           IgnorePointer(
                             child: CustomPaint(
                               painter: _MarcoSeleccionPainter(
@@ -434,7 +416,8 @@ class _EditorAjusteImagenScreenState extends State<EditorAjusteImagenScreen> {
   }
 }
 
-/// Dibuja el overlay oscuro fuera del marco de selección y el borde del marco.
+// ── Painter del marco de selección — sin cambios ─────────────────────────────
+
 class _MarcoSeleccionPainter extends CustomPainter {
   final double cropX, cropY, cropW, cropH;
 
@@ -454,7 +437,6 @@ class _MarcoSeleccionPainter extends CustomPainter {
       cropH * size.height,
     );
 
-    // Overlay oscuro en toda la imagen, luego "recortamos" el área del marco
     final overlayPaint = Paint()..color = Colors.black.withValues(alpha: 0.6);
     final path = Path()
       ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
@@ -462,14 +444,12 @@ class _MarcoSeleccionPainter extends CustomPainter {
       ..fillType = PathFillType.evenOdd;
     canvas.drawPath(path, overlayPaint);
 
-    // Borde del marco
     final bordePaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
     canvas.drawRect(marcoRect, bordePaint);
 
-    // Cuadrícula de tercios dentro del marco
     final gridPaint = Paint()
       ..color = Colors.white.withValues(alpha: 0.4)
       ..strokeWidth = 1;
