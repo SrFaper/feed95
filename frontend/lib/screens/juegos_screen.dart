@@ -364,8 +364,13 @@ class _JuegosScreenState extends State<JuegosScreen> {
   }
 
   Widget _vistaGrid(List<Juego> lista) {
+    // cacheExtent: cuántos píxeles FUERA de la viewport se mantienen montados.
+    // Con 400px (~2-3 filas extra) hay suficiente buffer visual sin montar
+    // cientos de widgets innecesarios. El PaintingCache de Flutter gestiona
+    // las imágenes de esas filas de forma independiente con su política LRU.
     return GridView.builder(
       padding: const EdgeInsets.all(12),
+      cacheExtent: 400,
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 180,
         mainAxisSpacing: 12,
@@ -400,6 +405,9 @@ class _JuegosScreenState extends State<JuegosScreen> {
   Widget _vistaReordenLista(List<Juego> lista) {
     return ReorderableListView.builder(
       buildDefaultDragHandles: false,
+      // Buffer reducido en modo reorden: el usuario está reorganizando,
+      // no scrolleando rápido, así que no necesitamos mucho buffer.
+      cacheExtent: 200,
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: lista.length,
       onReorder: (oldIndex, newIndex) async {
@@ -690,6 +698,9 @@ class _ReordenGridState extends State<_ReordenGrid> {
   Widget build(BuildContext context) {
     return GridView.builder(
       padding: const EdgeInsets.all(12),
+      // En modo reorden el usuario mueve items manualmente, scrolleo rápido
+      // es menos probable. Buffer modesto para no desperdiciar RAM.
+      cacheExtent: 300,
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 160,
         mainAxisSpacing: 10,
