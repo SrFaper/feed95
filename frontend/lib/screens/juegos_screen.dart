@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -32,6 +34,15 @@ class _JuegosScreenState extends State<JuegosScreen> {
   bool _modoReorden = false;
   bool _reordenEnGrid = false;
   final TextEditingController _busquedaController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+
+  // Precargado inteligente: índice hasta el que ya se precargaron imágenes.
+  // Permite que _onScroll sepa desde dónde continuar sin repetir trabajo.
+  int _precargadoHasta = 0;
+
+  // Tamaño de cada lote. 40 imágenes cubre ~3-4 filas en 1080p con tarjetas
+  // de 180px. El lote inicial se lanza al cargar; los siguientes al scrollear.
+  static const int _lotePrecargado = 40;
 
   String nombreCatalogoSecundario = 'NSFW';
 
@@ -39,7 +50,113 @@ class _JuegosScreenState extends State<JuegosScreen> {
   void initState() {
     super.initState();
     _cargarModosExtras();
+    _scrollController.addListener(_onScroll);
     cargarTodo();
+  }
+
+  @override
+  void dispose() {
+    _busquedaController.dispose();
+    _scrollController.dispose();
+    // Al salir del catálogo, liberar del PaintingCache las imágenes que ya
+    // no tienen widgets activos referenciándolas. Esto devuelve RAM al sistema
+    // de forma inmediata en lugar de esperar a que el LRU las descarte solo.
+    // clearLiveImages() es seguro: solo afecta a imágenes sin referencias
+    // activas, nunca descarta algo que un widget visible esté usando.
+    PaintingBinding.instance.imageCache.clearLiveImages();
+    super.dispose();
+  }
+
+  // ── Precargado inteligente ────────────────────────────────────────────────
+
+  /// Construye el ImageProvider correcto para la imagen del grid de un juego.
+  /// Devuelve null si el juego no tiene imagen configurada.
+  ImageProvider? _providerGrid(Juego j) {
+    final local = j.imagenGridLocal?.isNotEmpty == true
+        ? j.imagenGridLocal
+        : (j.imagenLocal?.isNotEmpty == true ? j.imagenLocal : null);
+    if (local != null) return FileImage(File(local));
+
+    final url = j.imagenGrid.isNotEmpty
+        ? j.imagenGrid
+        : (j.imagen.isNotEmpty ? j.imagen : null);
+    if (url != null) return NetworkImage(url);
+
+    return null;
+  }
+
+  /// Construye el ImageProvider para la imagen de detalle de un juego.
+  /// Sigue la misma prioridad que JuegoDetalleScreen: primero local
+  /// (override si existe, si no original), luego URL resuelta por el modelo.
+  ImageProvider? _providerDetalle(Juego j) {
+    // j.imagenLocal ya resuelve override vs original según el modelo Juego.
+    final local = j.imagenLocal?.isNotEmpty == true ? j.imagenLocal : null;
+    if (local != null) return FileImage(File(local));
+
+    // j.imagen ya resuelve override vs original URL.
+    final url = j.imagen.isNotEmpty ? j.imagen : null;
+    if (url != null) return NetworkImage(url);
+
+    return null;
+  }
+
+  /// Precarga un rango de imágenes de grid [desde, hasta) de la lista dada.
+  /// Usa unawaited para no bloquear el UI. Si el widget ya no está montado
+  /// cuando resuelve la imagen, precacheImage lo descarta silenciosamente.
+  void _precargarRango(List<Juego> lista, int desde, int hasta) {
+    final fin = hasta.clamp(0, lista.length);
+    for (int i = desde; i < fin; i++) {
+      final provider = _providerGrid(lista[i]);
+      if (provider != null) {
+        unawaited(
+          precacheImage(provider, context).catchError((_) {}),
+        );
+      }
+    }
+  }
+
+  /// Listener del ScrollController. Cuando el usuario se acerca al final
+  /// del lote precargado actual, lanza el siguiente lote.
+  void _onScroll() {
+    if (!mounted || _modoReorden) return;
+
+    final sc = _scrollController;
+    if (!sc.hasClients) return;
+
+    // Umbral: activar cuando queden menos de 600px para llegar al final
+    // del contenido ya precargado. Con tarjetas de ~277px de alto
+    // (180/0.65), 600px equivale a ~2 filas de margen antes de que
+    // aparezcan imágenes no precargadas.
+    final umbral = sc.position.maxScrollExtent - 600;
+    if (sc.position.pixels < umbral) return;
+
+    final lista = juegosFiltrados;
+    if (_precargadoHasta >= lista.length) return;
+
+    final desde = _precargadoHasta;
+    final hasta = desde + _lotePrecargado;
+    _precargadoHasta = hasta.clamp(0, lista.length);
+    _precargarRango(lista, desde, hasta);
+  }
+
+  /// Lanza el precargado inicial cuando el catálogo termina de cargar.
+  /// Precarga el primer lote de la lista filtrada actual.
+  void _precargadoInicial() {
+    if (!mounted) return;
+    _precargadoHasta = 0;
+    final lista = juegosFiltrados;
+    _precargadoHasta = _lotePrecargado.clamp(0, lista.length);
+    _precargarRango(lista, 0, _precargadoHasta);
+  }
+
+  /// Precarga la imagen de detalle de un juego específico.
+  /// Se llama justo antes del Navigator.push para aprovechar el gap de
+  /// la animación de navegación (~300ms) como tiempo de carga gratuito.
+  void _precargarDetalle(Juego j) {
+    final provider = _providerDetalle(j);
+    if (provider != null) {
+      unawaited(precacheImage(provider, context).catchError((_) {}));
+    }
   }
 
   Future<void> _cargarModosExtras() async {
@@ -62,6 +179,10 @@ class _JuegosScreenState extends State<JuegosScreen> {
       catalogoActual,
     );
     setState(() => cargando = false);
+    // Lanzar el precargado inicial una vez que el catálogo está listo y
+    // el árbol de widgets ya se reconstruyó con los datos nuevos.
+    // WidgetsBinding garantiza que el context sea válido en este punto.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _precargadoInicial());
   }
 
   List<Juego> get juegosFiltrados {
@@ -207,12 +328,18 @@ class _JuegosScreenState extends State<JuegosScreen> {
                         icon: const Icon(Icons.close, size: 16),
                         onPressed: () {
                           _busquedaController.clear();
-                          setState(() => busqueda = '');
+                          setState(() {
+                            busqueda = '';
+                            _precargadoHasta = 0;
+                          });
                         },
                       )
                     : null,
               ),
-              onChanged: (v) => setState(() => busqueda = v),
+              onChanged: (v) => setState(() {
+              busqueda = v;
+              _precargadoHasta = 0;
+            }),
             ),
           ),
           Padding(
@@ -229,7 +356,10 @@ class _JuegosScreenState extends State<JuegosScreen> {
           _itemFiltro(
             label: l10n.catalogoFiltroTodos,
             seleccionado: filtroEstado == null,
-            onTap: () => setState(() => filtroEstado = null),
+            onTap: () => setState(() {
+              filtroEstado = null;
+              _precargadoHasta = 0;
+            }),
           ),
           for (final entry in {
             'Pending': l10n.estadoPendiente,
@@ -240,10 +370,11 @@ class _JuegosScreenState extends State<JuegosScreen> {
             _itemFiltro(
               label: entry.value,
               seleccionado: filtroEstado == entry.key,
-              onTap: () => setState(
-                () =>
-                    filtroEstado = filtroEstado == entry.key ? null : entry.key,
-              ),
+              onTap: () => setState(() {
+                filtroEstado =
+                    filtroEstado == entry.key ? null : entry.key;
+                _precargadoHasta = 0;
+              }),
             ),
           const Divider(indent: 12, endIndent: 12),
           Padding(
@@ -272,7 +403,10 @@ class _JuegosScreenState extends State<JuegosScreen> {
           _itemFiltro(
             label: l10n.catalogoFiltroTodas,
             seleccionado: filtroCategoria == null,
-            onTap: () => setState(() => filtroCategoria = null),
+            onTap: () => setState(() {
+              filtroCategoria = null;
+              _precargadoHasta = 0;
+            }),
           ),
           Expanded(
             child: ListView(
@@ -311,8 +445,10 @@ class _JuegosScreenState extends State<JuegosScreen> {
   Widget _itemCategoria(Categoria cat) {
     final seleccionada = filtroCategoria == cat.id;
     return InkWell(
-      onTap: () =>
-          setState(() => filtroCategoria = seleccionada ? null : cat.id),
+      onTap: () => setState(() {
+        filtroCategoria = seleccionada ? null : cat.id;
+        _precargadoHasta = 0;
+      }),
       onLongPress: () => _mostrarMenuCategoria(cat),
       onSecondaryTap: () => _mostrarMenuCategoria(cat),
       child: Container(
@@ -366,9 +502,10 @@ class _JuegosScreenState extends State<JuegosScreen> {
   Widget _vistaGrid(List<Juego> lista) {
     // cacheExtent: cuántos píxeles FUERA de la viewport se mantienen montados.
     // Con 400px (~2-3 filas extra) hay suficiente buffer visual sin montar
-    // cientos de widgets innecesarios. El PaintingCache de Flutter gestiona
-    // las imágenes de esas filas de forma independiente con su política LRU.
+    // cientos de widgets innecesarios. El PaintingCache gestiona las imágenes
+    // de esas filas de forma independiente con su política LRU.
     return GridView.builder(
+      controller: _scrollController,
       padding: const EdgeInsets.all(12),
       cacheExtent: 400,
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
@@ -384,6 +521,11 @@ class _JuegosScreenState extends State<JuegosScreen> {
           juego: juego,
           categorias: categorias,
           onTap: () async {
+            // Precargar la imagen de detalle antes de navegar.
+            // La animación de navegación (~300ms) actúa como tiempo de carga
+            // gratuito: cuando la pantalla de detalle aparece, la imagen
+            // ya está en el PaintingCache lista para renderizarse.
+            _precargarDetalle(juego);
             await Navigator.push(
               context,
               MaterialPageRoute(
@@ -611,6 +753,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
                   filtroEstado = null;
                   busqueda = '';
                   _busquedaController.clear();
+                  _precargadoHasta = 0;
                 });
                 cargarTodo();
               },
