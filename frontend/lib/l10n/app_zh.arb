@@ -203,7 +203,7 @@
   "juegoFormCacheError": "无法在本地保存任何图片",
   "juegoFormModoNinguno": "不在本地保存",
   "juegoFormModoOriginal": "原样保存（不压缩）",
-  "juegoFormModoComprimido": "压缩保存（JPEG）",
+  "juegoFormModoComprimido": "压缩保存（JPG）",
   "homeCarpetaImagenes": "图片文件夹",
   "homeCarpetaImagenesTitulo": "本地保存的图片",
   "homeCarpetaImagenesEspacio": "已用空间：{mb} MB",

@@ -985,7 +985,7 @@ abstract class AppLocalizations {
   /// No description provided for @juegoFormModoComprimido.
   ///
   /// In es, this message translates to:
-  /// **'Guardar comprimido (JPEG)'**
+  /// **'Guardar comprimido (JPG)'**
   String get juegoFormModoComprimido;
 
   /// No description provided for @homeCarpetaImagenes.

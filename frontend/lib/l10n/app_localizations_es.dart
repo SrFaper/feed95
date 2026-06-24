@@ -477,7 +477,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get juegoFormModoOriginal => 'Guardar tal cual (sin comprimir)';
 
   @override
-  String get juegoFormModoComprimido => 'Guardar comprimido (JPEG)';
+  String get juegoFormModoComprimido => 'Guardar comprimido (JPG)';
 
   @override
   String get homeCarpetaImagenes => 'Carpeta de imágenes';

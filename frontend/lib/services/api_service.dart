@@ -559,6 +559,31 @@ class ApiService {
     return {'success': true, 'messageKey': ApiKeys.juegoActualizadoOk};
   }
 
+  static Future<void> actualizarRutasLocales({
+    required int id,
+    String? imagenGridLocal,
+    bool imagenGridEsOverride = false,
+    String? imagenDetalleLocal,
+    bool imagenDetalleEsOverride = false,
+  }) async {
+    final database = await db;
+    final data = <String, dynamic>{};
+    if (imagenGridLocal != null) {
+      data[imagenGridEsOverride
+              ? 'imagen_grid_override_local'
+              : 'imagen_grid_orig_local'] =
+          imagenGridLocal;
+    }
+    if (imagenDetalleLocal != null) {
+      data[imagenDetalleEsOverride
+              ? 'imagen_override_local'
+              : 'imagen_orig_local'] =
+          imagenDetalleLocal;
+    }
+    if (data.isEmpty) return;
+    await database.update('juegos', data, where: 'id = ?', whereArgs: [id]);
+  }
+
   // Eliminar juego
   static Future<Map<String, dynamic>> eliminarJuego(int id) async {
     final database = await db;

@@ -624,6 +624,23 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
       rutaLocalExistente: _imagenDetalleResueltaLocal,
     );
 
+    // Persistir las rutas guardadas en disco hacia la BD
+    final gridEsOverride =
+        (_imagenGridOverrideLocal != null &&
+            _imagenGridOverrideLocal!.isNotEmpty) ||
+        imagenGridOverrideCtrl.text.isNotEmpty;
+    final detalleEsOverride =
+        (_imagenOverrideLocal != null && _imagenOverrideLocal!.isNotEmpty) ||
+        imagenOverrideCtrl.text.isNotEmpty;
+
+    await ApiService.actualizarRutasLocales(
+      id: juegoId,
+      imagenGridLocal: rutaGrid,
+      imagenGridEsOverride: gridEsOverride,
+      imagenDetalleLocal: rutaDetalle,
+      imagenDetalleEsOverride: detalleEsOverride,
+    );
+
     if (!mounted) return;
     setState(() => _guardandoCache = false);
 

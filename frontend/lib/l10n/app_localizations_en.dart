@@ -471,7 +471,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get juegoFormModoOriginal => 'Save as-is (uncompressed)';
 
   @override
-  String get juegoFormModoComprimido => 'Save compressed (JPEG)';
+  String get juegoFormModoComprimido => 'Save compressed (JPG)';
 
   @override
   String get homeCarpetaImagenes => 'Images folder';

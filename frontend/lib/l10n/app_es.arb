@@ -203,7 +203,7 @@
   "juegoFormCacheError": "No se pudo guardar ninguna imagen localmente",
   "juegoFormModoNinguno": "No guardar localmente",
   "juegoFormModoOriginal": "Guardar tal cual (sin comprimir)",
-  "juegoFormModoComprimido": "Guardar comprimido (JPEG)",
+  "juegoFormModoComprimido": "Guardar comprimido (JPG)",
   "homeCarpetaImagenes": "Carpeta de imágenes",
   "homeCarpetaImagenesTitulo": "Imágenes guardadas localmente",
   "homeCarpetaImagenesEspacio": "Espacio usado: {mb} MB",

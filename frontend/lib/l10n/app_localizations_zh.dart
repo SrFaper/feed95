@@ -468,7 +468,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get juegoFormModoOriginal => '原样保存（不压缩）';
 
   @override
-  String get juegoFormModoComprimido => '压缩保存（JPEG）';
+  String get juegoFormModoComprimido => '压缩保存（JPG）';
 
   @override
   String get homeCarpetaImagenes => '图片文件夹';
