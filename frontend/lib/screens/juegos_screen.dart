@@ -36,12 +36,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
   final TextEditingController _busquedaController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  // Precargado inteligente: índice hasta el que ya se precargaron imágenes.
-  // Permite que _onScroll sepa desde dónde continuar sin repetir trabajo.
   int _precargadoHasta = 0;
-
-  // Tamaño de cada lote. 40 imágenes cubre ~3-4 filas en 1080p con tarjetas
-  // de 180px. El lote inicial se lanza al cargar; los siguientes al scrollear.
   static const int _lotePrecargado = 40;
 
   String nombreCatalogoSecundario = 'NSFW';
@@ -58,89 +53,56 @@ class _JuegosScreenState extends State<JuegosScreen> {
   void dispose() {
     _busquedaController.dispose();
     _scrollController.dispose();
-    // Al salir del catálogo, liberar del PaintingCache las imágenes que ya
-    // no tienen widgets activos referenciándolas. Esto devuelve RAM al sistema
-    // de forma inmediata en lugar de esperar a que el LRU las descarte solo.
-    // clearLiveImages() es seguro: solo afecta a imágenes sin referencias
-    // activas, nunca descarta algo que un widget visible esté usando.
     PaintingBinding.instance.imageCache.clearLiveImages();
     super.dispose();
   }
 
   // ── Precargado inteligente ────────────────────────────────────────────────
 
-  /// Construye el ImageProvider correcto para la imagen del grid de un juego.
-  /// Devuelve null si el juego no tiene imagen configurada.
   ImageProvider? _providerGrid(Juego j) {
     final local = j.imagenGridLocal?.isNotEmpty == true
         ? j.imagenGridLocal
         : (j.imagenLocal?.isNotEmpty == true ? j.imagenLocal : null);
     if (local != null) return FileImage(File(local));
-
     final url = j.imagenGrid.isNotEmpty
         ? j.imagenGrid
         : (j.imagen.isNotEmpty ? j.imagen : null);
     if (url != null) return NetworkImage(url);
-
     return null;
   }
 
-  /// Construye el ImageProvider para la imagen de detalle de un juego.
-  /// Sigue la misma prioridad que JuegoDetalleScreen: primero local
-  /// (override si existe, si no original), luego URL resuelta por el modelo.
   ImageProvider? _providerDetalle(Juego j) {
-    // j.imagenLocal ya resuelve override vs original según el modelo Juego.
     final local = j.imagenLocal?.isNotEmpty == true ? j.imagenLocal : null;
     if (local != null) return FileImage(File(local));
-
-    // j.imagen ya resuelve override vs original URL.
     final url = j.imagen.isNotEmpty ? j.imagen : null;
     if (url != null) return NetworkImage(url);
-
     return null;
   }
 
-  /// Precarga un rango de imágenes de grid [desde, hasta) de la lista dada.
-  /// Usa unawaited para no bloquear el UI. Si el widget ya no está montado
-  /// cuando resuelve la imagen, precacheImage lo descarta silenciosamente.
   void _precargarRango(List<Juego> lista, int desde, int hasta) {
     final fin = hasta.clamp(0, lista.length);
     for (int i = desde; i < fin; i++) {
       final provider = _providerGrid(lista[i]);
       if (provider != null) {
-        unawaited(
-          precacheImage(provider, context).catchError((_) {}),
-        );
+        unawaited(precacheImage(provider, context).catchError((_) {}));
       }
     }
   }
 
-  /// Listener del ScrollController. Cuando el usuario se acerca al final
-  /// del lote precargado actual, lanza el siguiente lote.
   void _onScroll() {
     if (!mounted || _modoReorden) return;
-
     final sc = _scrollController;
     if (!sc.hasClients) return;
-
-    // Umbral: activar cuando queden menos de 600px para llegar al final
-    // del contenido ya precargado. Con tarjetas de ~277px de alto
-    // (180/0.65), 600px equivale a ~2 filas de margen antes de que
-    // aparezcan imágenes no precargadas.
     final umbral = sc.position.maxScrollExtent - 600;
     if (sc.position.pixels < umbral) return;
-
     final lista = juegosFiltrados;
     if (_precargadoHasta >= lista.length) return;
-
     final desde = _precargadoHasta;
     final hasta = desde + _lotePrecargado;
     _precargadoHasta = hasta.clamp(0, lista.length);
     _precargarRango(lista, desde, hasta);
   }
 
-  /// Lanza el precargado inicial cuando el catálogo termina de cargar.
-  /// Precarga el primer lote de la lista filtrada actual.
   void _precargadoInicial() {
     if (!mounted) return;
     _precargadoHasta = 0;
@@ -149,15 +111,14 @@ class _JuegosScreenState extends State<JuegosScreen> {
     _precargarRango(lista, 0, _precargadoHasta);
   }
 
-  /// Precarga la imagen de detalle de un juego específico.
-  /// Se llama justo antes del Navigator.push para aprovechar el gap de
-  /// la animación de navegación (~300ms) como tiempo de carga gratuito.
   void _precargarDetalle(Juego j) {
     final provider = _providerDetalle(j);
     if (provider != null) {
       unawaited(precacheImage(provider, context).catchError((_) {}));
     }
   }
+
+  // ── Carga de datos ────────────────────────────────────────────────────────
 
   Future<void> _cargarModosExtras() async {
     final prefs = await SharedPreferences.getInstance();
@@ -179,23 +140,65 @@ class _JuegosScreenState extends State<JuegosScreen> {
       catalogoActual,
     );
     setState(() => cargando = false);
-    // Lanzar el precargado inicial una vez que el catálogo está listo y
-    // el árbol de widgets ya se reconstruyó con los datos nuevos.
-    // WidgetsBinding garantiza que el context sea válido en este punto.
     WidgetsBinding.instance.addPostFrameCallback((_) => _precargadoInicial());
+  }
+
+  // ── Filtrado con búsqueda extendida ───────────────────────────────────────
+
+  /// Parsea el texto de búsqueda en grupos AND separados por coma.
+  /// Dentro de cada grupo, los términos separados por | son OR entre sí.
+  ///
+  /// Ejemplo: "Netorare, Sandbox | Character Creation, Violence"
+  ///   → grupo 1: ["Netorare"]           (AND con el resto)
+  ///   → grupo 2: ["Sandbox", "Character Creation"]  (OR interno)
+  ///   → grupo 3: ["Violence"]           (AND con el resto)
+  ///
+  /// El juego debe satisfacer TODOS los grupos. Dentro de cada grupo basta
+  /// con que nombre o géneros contengan AL MENOS UNO de los términos.
+  bool _coincideBusqueda(Juego j, String query) {
+    if (query.isEmpty) return true;
+    final nombreLow = j.nombre.toLowerCase();
+    final generosLow = j.generos.toLowerCase();
+
+    // Dividir por coma → grupos AND
+    final grupos = query
+        .split(',')
+        .map((g) => g.trim())
+        .where((g) => g.isNotEmpty)
+        .toList();
+
+    for (final grupo in grupos) {
+      // Dentro de cada grupo, dividir por | → términos OR
+      final terminos = grupo
+          .split('|')
+          .map((t) => t.trim().toLowerCase())
+          .where((t) => t.isNotEmpty)
+          .toList();
+
+      if (terminos.isEmpty) continue;
+
+      // El juego debe satisfacer al menos uno de los términos del grupo
+      final satisfaceGrupo = terminos.any(
+        (t) => nombreLow.contains(t) || generosLow.contains(t),
+      );
+
+      if (!satisfaceGrupo) return false;
+    }
+    return true;
   }
 
   List<Juego> get juegosFiltrados {
     return juegos.where((j) {
-      final matchBusqueda =
-          busqueda.isEmpty ||
-          j.nombre.toLowerCase().contains(busqueda.toLowerCase());
+      final matchBusqueda = _coincideBusqueda(j, busqueda);
       final matchEstado = filtroEstado == null || j.estado == filtroEstado;
+      // Filtro de categoría: el juego debe tener la categoría entre sus categorías
       final matchCategoria =
-          filtroCategoria == null || j.categoriaId == filtroCategoria;
+          filtroCategoria == null || j.categorias.contains(filtroCategoria);
       return matchBusqueda && matchEstado && matchCategoria;
     }).toList();
   }
+
+  // ── Categorías ────────────────────────────────────────────────────────────
 
   Future<void> _mostrarDialogoCategoria({Categoria? editar}) async {
     final l10n = AppLocalizations.of(context)!;
@@ -277,6 +280,193 @@ class _JuegosScreenState extends State<JuegosScreen> {
     }
   }
 
+  // ── Dialog de acción rápida ───────────────────────────────────────────────
+
+  Future<void> _mostrarDialogoAccionRapida(Juego juego) async {
+    final l10n = AppLocalizations.of(context)!;
+    final primary = Theme.of(context).colorScheme.primary;
+
+    // Estado local del dialog — no afecta al widget padre hasta confirmar
+    String estadoLocal = juego.estado;
+    final calCtrl = TextEditingController(
+      text: juego.calificacion > 0 ? '${juego.calificacion}' : '',
+    );
+    // Copia local de categorías para que los chips respondan sin await
+    final List<int> categoriasLocal = List.from(juego.categorias);
+
+    final estados = {
+      'Pending': l10n.estadoPendiente,
+      'Playing': l10n.estadoJugando,
+      'Completed': l10n.estadoCompletado,
+      'Abandoned': l10n.estadoAbandonado,
+    };
+
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: Text(
+              juego.nombre,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+            ),
+            contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+            content: SizedBox(
+              width: 360,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── Estado ──────────────────────────────────────────────
+                    _labelSeccion('Estado'),
+                    const SizedBox(height: 6),
+                    DropdownButtonFormField<String>(
+                      initialValue: estadoLocal,
+                      isDense: true,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                      ),
+                      items: estados.entries
+                          .map(
+                            (e) => DropdownMenuItem(
+                              value: e.key,
+                              child: Text(e.value),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) setDialogState(() => estadoLocal = v);
+                      },
+                    ),
+
+                    const SizedBox(height: 14),
+                    const Divider(height: 1),
+                    const SizedBox(height: 14),
+
+                    // ── Calificación ─────────────────────────────────────────
+                    _labelSeccion('Calificación (1-10)'),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: calCtrl,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                              hintText: '0 = sin calificación',
+                            ),
+                            onSubmitted: (_) {
+                              // Enter cierra el teclado pero no el dialog
+                              FocusScope.of(context).unfocus();
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    if (categorias.isNotEmpty) ...[
+                      const SizedBox(height: 14),
+                      const Divider(height: 1),
+                      const SizedBox(height: 14),
+
+                      // ── Categorías ────────────────────────────────────────
+                      _labelSeccion('Categorías'),
+                      const SizedBox(height: 8),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 220),
+                        child: SingleChildScrollView(
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: categorias.map((cat) {
+                              final activa = categoriasLocal.contains(cat.id);
+                              return _ChipCategoria(
+                                nombre: cat.nombre,
+                                activa: activa,
+                                color: primary,
+                                onTap: () async {
+                                  setDialogState(() {
+                                    if (activa) {
+                                      categoriasLocal.remove(cat.id);
+                                    } else {
+                                      categoriasLocal.add(cat.id);
+                                    }
+                                  });
+                                },
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(l10n.btnCancelar),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final cal = (int.tryParse(calCtrl.text) ?? 0).clamp(0, 10);
+                  // Guardar estado y calificación
+                  await ApiService.actualizarEstadoYCalificacion(
+                    id: juego.id,
+                    estado: estadoLocal,
+                    calificacion: cal,
+                  );
+                  // Guardar categorías
+                  await ApiService.sincronizarCategorias(
+                    juego.id,
+                    categoriasLocal,
+                  );
+                  if (context.mounted) Navigator.pop(context);
+                },
+                child: Text(l10n.btnGuardar),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    // Recargar para reflejar cambios en el grid
+    cargarTodo();
+  }
+
+  Widget _labelSeccion(String texto) {
+    return Text(
+      texto.toUpperCase(),
+      style: TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 0.8,
+        color: Colors.grey.shade500,
+      ),
+    );
+  }
+
+  // ── Reordenamiento ────────────────────────────────────────────────────────
+
   Future<void> _moverJuegoAPosicion(
     List<Juego> lista,
     int juegoIndex,
@@ -300,6 +490,8 @@ class _JuegosScreenState extends State<JuegosScreen> {
     await ApiService.guardarOrden(juegos.map((j) => j.id).toList());
   }
 
+  // ── Panel lateral ─────────────────────────────────────────────────────────
+
   Widget _panelLateral() {
     final l10n = AppLocalizations.of(context)!;
     return Container(
@@ -313,7 +505,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
             child: TextField(
               controller: _busquedaController,
               decoration: InputDecoration(
@@ -337,9 +529,21 @@ class _JuegosScreenState extends State<JuegosScreen> {
                     : null,
               ),
               onChanged: (v) => setState(() {
-              busqueda = v;
-              _precargadoHasta = 0;
-            }),
+                busqueda = v;
+                _precargadoHasta = 0;
+              }),
+            ),
+          ),
+          // Hint de sintaxis de búsqueda
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 0, 12, 8),
+            child: Text(
+              ', = AND   |  = OR',
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.grey.shade400,
+                fontStyle: FontStyle.italic,
+              ),
             ),
           ),
           Padding(
@@ -371,8 +575,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
               label: entry.value,
               seleccionado: filtroEstado == entry.key,
               onTap: () => setState(() {
-                filtroEstado =
-                    filtroEstado == entry.key ? null : entry.key;
+                filtroEstado = filtroEstado == entry.key ? null : entry.key;
                 _precargadoHasta = 0;
               }),
             ),
@@ -499,11 +702,40 @@ class _JuegosScreenState extends State<JuegosScreen> {
     );
   }
 
+  void _mostrarMenuCategoria(Categoria cat) {
+    final l10n = AppLocalizations.of(context)!;
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.edit),
+            title: Text(l10n.btnEditar),
+            onTap: () {
+              Navigator.pop(context);
+              _mostrarDialogoCategoria(editar: cat);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.delete, color: Colors.red),
+            title: Text(
+              l10n.btnEliminar,
+              style: const TextStyle(color: Colors.red),
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              _eliminarCategoria(cat);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Vistas ────────────────────────────────────────────────────────────────
+
   Widget _vistaGrid(List<Juego> lista) {
-    // cacheExtent: cuántos píxeles FUERA de la viewport se mantienen montados.
-    // Con 400px (~2-3 filas extra) hay suficiente buffer visual sin montar
-    // cientos de widgets innecesarios. El PaintingCache gestiona las imágenes
-    // de esas filas de forma independiente con su política LRU.
     return GridView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.all(12),
@@ -519,12 +751,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
         final juego = lista[index];
         return _TarjetaJuego(
           juego: juego,
-          categorias: categorias,
           onTap: () async {
-            // Precargar la imagen de detalle antes de navegar.
-            // La animación de navegación (~300ms) actúa como tiempo de carga
-            // gratuito: cuando la pantalla de detalle aparece, la imagen
-            // ya está en el PaintingCache lista para renderizarse.
             _precargarDetalle(juego);
             await Navigator.push(
               context,
@@ -535,10 +762,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
             );
             cargarTodo();
           },
-          onAsignarCategoria: (catId) async {
-            await ApiService.asignarCategoria(juego.id, catId);
-            cargarTodo();
-          },
+          onAccionRapida: () => _mostrarDialogoAccionRapida(juego),
         );
       },
     );
@@ -547,8 +771,6 @@ class _JuegosScreenState extends State<JuegosScreen> {
   Widget _vistaReordenLista(List<Juego> lista) {
     return ReorderableListView.builder(
       buildDefaultDragHandles: false,
-      // Buffer reducido en modo reorden: el usuario está reorganizando,
-      // no scrolleando rápido, así que no necesitamos mucho buffer.
       cacheExtent: 200,
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: lista.length,
@@ -667,36 +889,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
     );
   }
 
-  void _mostrarMenuCategoria(Categoria cat) {
-    final l10n = AppLocalizations.of(context)!;
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.edit),
-            title: Text(l10n.btnEditar),
-            onTap: () {
-              Navigator.pop(context);
-              _mostrarDialogoCategoria(editar: cat);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.delete, color: Colors.red),
-            title: Text(
-              l10n.btnEliminar,
-              style: const TextStyle(color: Colors.red),
-            ),
-            onTap: () {
-              Navigator.pop(context);
-              _eliminarCategoria(cat);
-            },
-          ),
-        ],
-      ),
-    );
-  }
+  // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -814,7 +1007,51 @@ class _JuegosScreenState extends State<JuegosScreen> {
   }
 }
 
-// ── Grid con drag & drop nativo ──────────────────────────────────────────────
+// ── Chip de categoría para el Dialog ─────────────────────────────────────────
+
+class _ChipCategoria extends StatelessWidget {
+  final String nombre;
+  final bool activa;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ChipCategoria({
+    required this.nombre,
+    required this.activa,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: activa ? color.withValues(alpha: 0.18) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: activa ? color : Colors.grey.shade400,
+            width: activa ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          nombre,
+          style: TextStyle(
+            fontSize: 13,
+            color: activa ? color : Colors.grey.shade600,
+            fontWeight: activa ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Grid con drag & drop ──────────────────────────────────────────────────────
 
 class _ReordenGrid extends StatefulWidget {
   final List<Juego> juegos;
@@ -841,8 +1078,6 @@ class _ReordenGridState extends State<_ReordenGrid> {
   Widget build(BuildContext context) {
     return GridView.builder(
       padding: const EdgeInsets.all(12),
-      // En modo reorden el usuario mueve items manualmente, scrolleo rápido
-      // es menos probable. Buffer modesto para no desperdiciar RAM.
       cacheExtent: 300,
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 160,
@@ -950,7 +1185,7 @@ class _ReordenGridState extends State<_ReordenGrid> {
   }
 }
 
-// ── Input de posición ────────────────────────────────────────────────────────
+// ── Input de posición ─────────────────────────────────────────────────────────
 
 class _InputPosicion extends StatefulWidget {
   final int posicionActual;
@@ -1075,7 +1310,7 @@ class _InputPosicionState extends State<_InputPosicion> {
   }
 }
 
-// ── Tarjeta en modo reordenamiento grid ─────────────────────────────────────
+// ── Tarjeta en modo reorden grid ──────────────────────────────────────────────
 
 class _TarjetaReordenGrid extends StatelessWidget {
   final Juego juego;
@@ -1151,7 +1386,7 @@ class _TarjetaReordenGrid extends StatelessWidget {
   }
 }
 
-// ── Widget imagen reutilizable ───────────────────────────────────────────────
+// ── Widget imagen reutilizable ────────────────────────────────────────────────
 
 class _ImagenJuego extends StatelessWidget {
   final Juego juego;
@@ -1190,84 +1425,18 @@ class _ImagenJuego extends StatelessWidget {
   }
 }
 
-// ── Tarjeta de juego en vista grid ─────────────────────────────────────────
+// ── Tarjeta de juego en el grid ───────────────────────────────────────────────
+
 class _TarjetaJuego extends StatelessWidget {
   final Juego juego;
-  final List<Categoria> categorias;
   final VoidCallback onTap;
-  final Function(int?) onAsignarCategoria;
+  final VoidCallback onAccionRapida;
 
   const _TarjetaJuego({
     required this.juego,
-    required this.categorias,
     required this.onTap,
-    required this.onAsignarCategoria,
+    required this.onAccionRapida,
   });
-
-  void _mostrarMenuContextual(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              juego.nombre,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.folder),
-            title: Text(l10n.catalogoAsignarCategoria),
-            onTap: () {
-              Navigator.pop(ctx);
-              _mostrarSelectorCategoria(context);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _mostrarSelectorCategoria(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.catalogoAsignarCategoria),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.clear),
-                title: Text(l10n.catalogoSinCategoria),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  onAsignarCategoria(null);
-                },
-              ),
-              ...categorias.map(
-                (cat) => ListTile(
-                  leading: const Icon(Icons.folder),
-                  title: Text(cat.nombre),
-                  selected: juego.categoriaId == cat.id,
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    onAsignarCategoria(cat.id);
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -1275,8 +1444,8 @@ class _TarjetaJuego extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
-      onLongPress: () => _mostrarMenuContextual(context),
-      onSecondaryTap: () => _mostrarMenuContextual(context),
+      onLongPress: onAccionRapida,
+      onSecondaryTap: onAccionRapida,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(10),
         child: Stack(

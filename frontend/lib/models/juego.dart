@@ -18,8 +18,6 @@ class Juego {
   final String? imagenOrigLocal;
   final String? imagenOverride;
   final String? imagenOverrideLocal;
-  // Recorte: región de la imagen ORIGINAL seleccionada, en fracción 0-1.
-  // (0,0,1,1) = toda la imagen, sin recorte.
   final double imagenCropX;
   final double imagenCropY;
   final double imagenCropW;
@@ -35,7 +33,7 @@ class Juego {
   final double imagenGridCropW;
   final double imagenGridCropH;
 
-  // ── Resto de campos (sin override, no tiene sentido para estos) ──
+  // ── Resto de campos ──
   final String imagenesExtra;
   final String version;
   final int calificacion;
@@ -43,8 +41,12 @@ class Juego {
   final int usuarioId;
   final String? rutaEjecutable;
   final int catalogo; // 0 = principal, 1 = secundario
-  final int? categoriaId;
   final int posicion;
+
+  // ── Categorías múltiples (IDs) ──
+  // Pobladas por ApiService.obtenerJuegos via JOIN con juego_categorias.
+  // No se persisten en este objeto directamente: la fuente de verdad es la BD.
+  final List<int> categorias;
 
   Juego({
     required this.id,
@@ -77,11 +79,11 @@ class Juego {
     required this.usuarioId,
     this.rutaEjecutable,
     this.catalogo = 0,
-    this.categoriaId,
     this.posicion = 0,
+    this.categorias = const [],
   });
 
-  factory Juego.fromJson(Map<String, dynamic> json) {
+  factory Juego.fromJson(Map<String, dynamic> json, {List<int>? categorias}) {
     return Juego(
       id: int.parse(json['id'].toString()),
       nombreOrig: json['nombre_orig'] ?? '',
@@ -113,12 +115,12 @@ class Juego {
       usuarioId: int.parse(json['usuario_id'].toString()),
       rutaEjecutable: json['ruta_ejecutable'] as String?,
       catalogo: json['catalogo'] as int? ?? 0,
-      categoriaId: json['categoria_id'] as int?,
       posicion: json['posicion'] as int? ?? 0,
+      categorias: categorias ?? const [],
     );
   }
 
-  // ── Getters resueltos: override si existe y no está vacío, si no el original ──
+  // ── Getters resueltos ──
 
   bool get tieneNombreOverride =>
       nombreOverride != null && nombreOverride!.isNotEmpty;
@@ -133,7 +135,6 @@ class Juego {
       generosOverride != null && generosOverride!.isNotEmpty;
   String get generos => tieneGenerosOverride ? generosOverride! : generosOrig;
 
-  // Imagen detalle: prioridad override-local > override-url > orig-local > orig-url
   bool get tieneImagenOverride =>
       (imagenOverrideLocal != null && imagenOverrideLocal!.isNotEmpty) ||
       (imagenOverride != null && imagenOverride!.isNotEmpty);
@@ -143,7 +144,6 @@ class Juego {
   String get imagen =>
       tieneImagenOverride ? (imagenOverride ?? '') : imagenOrig;
 
-  // Imagen grid: misma lógica
   bool get tieneImagenGridOverride =>
       (imagenGridOverrideLocal != null &&
           imagenGridOverrideLocal!.isNotEmpty) ||
@@ -155,13 +155,11 @@ class Juego {
       ? (imagenGridOverride ?? '')
       : (imagenGridOrig.isNotEmpty ? imagenGridOrig : imagenOrig);
 
-  // ¿Tiene algún dato "original" de fuente externa? (para mostrar placeholders fantasma)
   bool get tieneOriginal =>
       nombreOrig.isNotEmpty ||
       imagenOrig.isNotEmpty ||
       imagenGridOrig.isNotEmpty;
 
-  // Lista de URLs del carrusel
   List<String> get listaImagenesExtra => imagenesExtra
       .split(',')
       .map((u) => u.trim())

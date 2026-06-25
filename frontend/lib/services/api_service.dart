@@ -8,8 +8,6 @@ import '../models/juego.dart';
 import '../models/usuario.dart';
 import '../models/categoria.dart';
 
-// Claves de respuesta — se traducen en la UI con l10n
-// (evita pasar BuildContext al service)
 class ApiKeys {
   static const perfilCreadoOk = 'apiPerfilCreadoOk';
   static const nombreDuplicado = 'apiNombreDuplicado';
@@ -23,12 +21,9 @@ class ApiKeys {
   static const juegoActualizadoOk = 'juegoFormActualizado';
   static const juegoEliminadoOk = 'juegoFormEliminado';
   static const backupArchivoInvalido = 'apiBackupArchivoInvalido';
-  // Para el backup restaurado se usa una clave especial con parámetros:
-  // el caller debe detectar 'apiBackupRestaurado' y usar l10n.apiBackupRestaurado(...)
   static const backupRestaurado = 'apiBackupRestaurado';
 }
 
-// Valor especial que indica "sin contraseña"
 const _kNoPassword = '';
 
 class ApiService {
@@ -47,7 +42,6 @@ class ApiService {
     }
 
     String path;
-
     if (!kIsWeb && Platform.isWindows) {
       final appData = Platform.environment['APPDATA']!;
       final dir = Directory(join(appData, 'feed95'));
@@ -60,64 +54,73 @@ class ApiService {
 
     return await openDatabase(
       path,
-      version: 12,
+      version: 13,
       onCreate: (db, version) async {
         await db.execute('''
-        CREATE TABLE usuarios (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          nombre TEXT NOT NULL UNIQUE,
-          password TEXT NOT NULL,
-          color INTEGER NOT NULL DEFAULT 4280391411,
-          imagen_perfil TEXT
-        )
-      ''');
+          CREATE TABLE usuarios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL UNIQUE,
+            password TEXT NOT NULL,
+            color INTEGER NOT NULL DEFAULT 4280391411,
+            imagen_perfil TEXT
+          )
+        ''');
         await db.execute('''
-        CREATE TABLE juegos (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          nombre_orig TEXT,
-          nombre_override TEXT,
-          descripcion_orig TEXT,
-          descripcion_override TEXT,
-          generos_orig TEXT,
-          generos_override TEXT,
-          imagen_orig TEXT,
-          imagen_orig_local TEXT,
-          imagen_override TEXT,
-          imagen_override_local TEXT,
-          imagen_crop_x REAL NOT NULL DEFAULT 0,
-          imagen_crop_y REAL NOT NULL DEFAULT 0,
-          imagen_crop_w REAL NOT NULL DEFAULT 1,
-          imagen_crop_h REAL NOT NULL DEFAULT 1,
-          imagen_grid_orig TEXT,
-          imagen_grid_orig_local TEXT,
-          imagen_grid_override TEXT,
-          imagen_grid_override_local TEXT,
-          imagen_grid_crop_x REAL NOT NULL DEFAULT 0,
-          imagen_grid_crop_y REAL NOT NULL DEFAULT 0,
-          imagen_grid_crop_w REAL NOT NULL DEFAULT 1,
-          imagen_grid_crop_h REAL NOT NULL DEFAULT 1,
-          version TEXT,
-          calificacion INTEGER,
-          estado TEXT,
-          ruta_ejecutable TEXT,
-          imagenes_extra TEXT,
-          usuario_id INTEGER NOT NULL,
-          catalogo INTEGER NOT NULL DEFAULT 0,
-          categoria_id INTEGER,
-          posicion INTEGER NOT NULL DEFAULT 0,
-          FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
-        )
-      ''');
+          CREATE TABLE juegos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre_orig TEXT,
+            nombre_override TEXT,
+            descripcion_orig TEXT,
+            descripcion_override TEXT,
+            generos_orig TEXT,
+            generos_override TEXT,
+            imagen_orig TEXT,
+            imagen_orig_local TEXT,
+            imagen_override TEXT,
+            imagen_override_local TEXT,
+            imagen_crop_x REAL NOT NULL DEFAULT 0,
+            imagen_crop_y REAL NOT NULL DEFAULT 0,
+            imagen_crop_w REAL NOT NULL DEFAULT 1,
+            imagen_crop_h REAL NOT NULL DEFAULT 1,
+            imagen_grid_orig TEXT,
+            imagen_grid_orig_local TEXT,
+            imagen_grid_override TEXT,
+            imagen_grid_override_local TEXT,
+            imagen_grid_crop_x REAL NOT NULL DEFAULT 0,
+            imagen_grid_crop_y REAL NOT NULL DEFAULT 0,
+            imagen_grid_crop_w REAL NOT NULL DEFAULT 1,
+            imagen_grid_crop_h REAL NOT NULL DEFAULT 1,
+            version TEXT,
+            calificacion INTEGER,
+            estado TEXT,
+            ruta_ejecutable TEXT,
+            imagenes_extra TEXT,
+            usuario_id INTEGER NOT NULL,
+            catalogo INTEGER NOT NULL DEFAULT 0,
+            posicion INTEGER NOT NULL DEFAULT 0,
+            FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+          )
+        ''');
         await db.execute('''
-        CREATE TABLE categorias (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          nombre TEXT NOT NULL,
-          imagen TEXT,
-          catalogo INTEGER NOT NULL DEFAULT 0,
-          usuario_id INTEGER NOT NULL,
-          FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
-        )
-      ''');
+          CREATE TABLE categorias (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL,
+            imagen TEXT,
+            catalogo INTEGER NOT NULL DEFAULT 0,
+            usuario_id INTEGER NOT NULL,
+            FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+          )
+        ''');
+        // Tabla de relación muchos-a-muchos juego ↔ categoría
+        await db.execute('''
+          CREATE TABLE juego_categorias (
+            juego_id INTEGER NOT NULL,
+            categoria_id INTEGER NOT NULL,
+            PRIMARY KEY (juego_id, categoria_id),
+            FOREIGN KEY (juego_id) REFERENCES juegos(id) ON DELETE CASCADE,
+            FOREIGN KEY (categoria_id) REFERENCES categorias(id) ON DELETE CASCADE
+          )
+        ''');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 3) {
@@ -155,8 +158,8 @@ class ApiService {
               catalogo INTEGER NOT NULL DEFAULT 0,
               usuario_id INTEGER NOT NULL,
               FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
-          )
-        ''');
+            )
+          ''');
         }
         if (oldVersion < 8) {
           await db.execute(
@@ -169,9 +172,6 @@ class ApiService {
           );
         }
         if (oldVersion < 10) {
-          // Migración al esquema original/override.
-          // No hay forma fiable de separar "original" vs "personalizado" en datos
-          // viejos, así que se recrea la tabla juegos desde cero (se pidió reimportar).
           await db.execute('DROP TABLE IF EXISTS juegos');
           await db.execute('''
             CREATE TABLE juegos (
@@ -224,9 +224,6 @@ class ApiService {
           );
         }
         if (oldVersion < 12) {
-          // Se reemplaza el esquema de ajuste (offset+zoom) por un esquema de
-          // recorte (crop rect) más simple y fiel. Las columnas _ajuste_*
-          // quedan obsoletas sin usar (SQLite no permite DROP COLUMN fácil).
           await db.execute(
             'ALTER TABLE juegos ADD COLUMN imagen_crop_x REAL NOT NULL DEFAULT 0',
           );
@@ -252,20 +249,52 @@ class ApiService {
             'ALTER TABLE juegos ADD COLUMN imagen_grid_crop_h REAL NOT NULL DEFAULT 1',
           );
         }
+        if (oldVersion < 13) {
+          // Crear tabla de relación muchos-a-muchos
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS juego_categorias (
+              juego_id INTEGER NOT NULL,
+              categoria_id INTEGER NOT NULL,
+              PRIMARY KEY (juego_id, categoria_id),
+              FOREIGN KEY (juego_id) REFERENCES juegos(id) ON DELETE CASCADE,
+              FOREIGN KEY (categoria_id) REFERENCES categorias(id) ON DELETE CASCADE
+            )
+          ''');
+          // Migrar categoria_id existente → juego_categorias
+          // Solo para juegos que tenían una categoría asignada
+          try {
+            final rows = await db.rawQuery(
+              'SELECT id, categoria_id FROM juegos WHERE categoria_id IS NOT NULL',
+            );
+            final batch = db.batch();
+            for (final row in rows) {
+              batch.insert('juego_categorias', {
+                'juego_id': row['id'],
+                'categoria_id': row['categoria_id'],
+              }, conflictAlgorithm: ConflictAlgorithm.ignore);
+            }
+            await batch.commit(noResult: true);
+          } catch (_) {
+            // Si categoria_id no existe (v10 en adelante la tabla fue recreada
+            // sin ella en algunos paths), simplemente no hay nada que migrar.
+          }
+        }
       },
     );
   }
+
+  // ── Helpers de contraseña ─────────────────────────────────────────────────
 
   static String _hashPassword(String password) {
     final bytes = utf8.encode(password);
     return sha256.convert(bytes).toString();
   }
 
-  // Devuelve true si el perfil no tiene contraseña
   static bool _sinPassword(String storedPassword) =>
       storedPassword == _kNoPassword;
 
-  // Registro
+  // ── Usuarios ──────────────────────────────────────────────────────────────
+
   static Future<Map<String, dynamic>> registrarUsuario({
     required String nombre,
     required String password,
@@ -273,7 +302,6 @@ class ApiService {
     String? imagenPerfil,
   }) async {
     final database = await db;
-    // Si password está vacío, se guarda '' (sin contraseña)
     final stored = password.isEmpty ? _kNoPassword : _hashPassword(password);
     try {
       final id = await database.insert('usuarios', {
@@ -298,13 +326,11 @@ class ApiService {
     }
   }
 
-  // Login — si el perfil no tiene contraseña, acepta cualquier entrada (incluido vacío)
   static Future<Map<String, dynamic>> login({
     required String nombre,
     required String password,
   }) async {
     final database = await db;
-    // Buscar el perfil por nombre
     final byName = await database.query(
       'usuarios',
       where: 'nombre = ?',
@@ -314,18 +340,15 @@ class ApiService {
       return {'success': false, 'messageKey': ApiKeys.passwordIncorrecta};
     }
     final stored = byName.first['password'] as String;
-    // Perfil sin contraseña → acceso directo
     if (_sinPassword(stored)) {
       return {'success': true, 'usuario': byName.first};
     }
-    // Perfil con contraseña → verificar hash
     if (stored == _hashPassword(password)) {
       return {'success': true, 'usuario': byName.first};
     }
     return {'success': false, 'messageKey': ApiKeys.passwordIncorrecta};
   }
 
-  // Indica si un perfil concreto tiene contraseña establecida
   static Future<bool> perfilTienePassword(int id) async {
     final database = await db;
     final result = await database.query(
@@ -338,14 +361,12 @@ class ApiService {
     return !_sinPassword(result.first['password'] as String);
   }
 
-  // Listar todos los perfiles
   static Future<List<Usuario>> listarUsuarios() async {
     final database = await db;
     final result = await database.query('usuarios', orderBy: 'nombre ASC');
     return result.map((item) => Usuario.fromJson(item)).toList();
   }
 
-  // Editar perfil
   static Future<Map<String, dynamic>> editarUsuario({
     required int id,
     required String nombre,
@@ -376,7 +397,6 @@ class ApiService {
     }
   }
 
-  // Eliminar perfil y sus juegos
   static Future<Map<String, dynamic>> eliminarUsuario(int id) async {
     final database = await db;
     await database.delete('juegos', where: 'usuario_id = ?', whereArgs: [id]);
@@ -384,27 +404,63 @@ class ApiService {
     return {'success': true, 'messageKey': ApiKeys.perfilEliminado};
   }
 
-  // Listar juegos del usuario
+  static Future<Usuario?> obtenerUsuarioPorId(int id) async {
+    final database = await db;
+    final result = await database.query(
+      'usuarios',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (result.isNotEmpty) return convertirUsuario(result.first);
+    return null;
+  }
+
+  static Usuario convertirUsuario(Map<String, dynamic> json) {
+    return Usuario.fromJson(json);
+  }
+
+  // ── Juegos ────────────────────────────────────────────────────────────────
+
+  /// Obtiene los juegos del usuario con sus categorías ya populadas.
+  /// Hace una sola query a juegos + una query de categorías para todo el lote,
+  /// evitando N+1 queries (una por juego).
   static Future<List<Juego>> obtenerJuegos(
     int usuarioId, {
     int catalogo = 0,
   }) async {
     final database = await db;
-    final result = await database.query(
+
+    final rows = await database.query(
       'juegos',
       where: 'usuario_id = ? AND catalogo = ?',
       whereArgs: [usuarioId, catalogo],
       orderBy: 'posicion ASC, id ASC',
     );
-    return result.map((item) => Juego.fromJson(item)).toList();
+
+    if (rows.isEmpty) return [];
+
+    // Obtener todas las categorías de los juegos del lote en una sola query
+    final ids = rows.map((r) => r['id'] as int).toList();
+    final placeholders = List.filled(ids.length, '?').join(',');
+    final catRows = await database.rawQuery(
+      'SELECT juego_id, categoria_id FROM juego_categorias WHERE juego_id IN ($placeholders)',
+      ids,
+    );
+
+    // Construir mapa juego_id → List<categoria_id>
+    final mapaCategs = <int, List<int>>{};
+    for (final c in catRows) {
+      final jid = c['juego_id'] as int;
+      final cid = c['categoria_id'] as int;
+      mapaCategs.putIfAbsent(jid, () => []).add(cid);
+    }
+
+    return rows.map((row) {
+      final id = row['id'] as int;
+      return Juego.fromJson(row, categorias: mapaCategs[id] ?? []);
+    }).toList();
   }
 
-  // ── Crear juego ──────────────────────────────────────────────────────
-  // Todos los campos "orig" representan datos importados de una fuente externa
-  // (Steam/Epic/IGDB/F95). Los campos "override" son ediciones manuales del
-  // usuario y siempre tienen prioridad visual sobre el original.
-  // Si el juego se crea 100% manual (sin buscar en ninguna fuente), todo va
-  // a override y el original queda vacío.
   static Future<Map<String, dynamic>> crearJuego({
     String nombreOrig = '',
     String? nombreOverride,
@@ -435,7 +491,6 @@ class ApiService {
     String? rutaEjecutable,
     String? imagenesExtra,
     int catalogo = 0,
-    int? categoriaId,
   }) async {
     final database = await db;
     final maxResult = await database.rawQuery(
@@ -474,16 +529,11 @@ class ApiService {
       'imagenes_extra': imagenesExtra,
       'usuario_id': usuarioId,
       'catalogo': catalogo,
-      'categoria_id': categoriaId,
       'posicion': maxPos + 1,
     });
     return {'success': true, 'messageKey': ApiKeys.juegoAgregadoOk, 'id': id};
   }
 
-  // ── Actualizar juego ─────────────────────────────────────────────────
-  // Nota: los campos "orig" solo se actualizan si se vuelve a buscar en una
-  // fuente externa; esta función siempre recibe el set completo resultante
-  // desde la pantalla de formulario (que ya sabe qué cambió).
   static Future<Map<String, dynamic>> actualizarJuego({
     required int id,
     String? nombreOrig,
@@ -514,7 +564,6 @@ class ApiService {
     String? rutaEjecutable,
     String? imagenesExtra,
     int catalogo = 0,
-    int? categoriaId,
   }) async {
     final database = await db;
 
@@ -525,8 +574,6 @@ class ApiService {
       'ruta_ejecutable': rutaEjecutable,
       'imagenes_extra': imagenesExtra ?? '',
       'catalogo': catalogo,
-      'categoria_id': categoriaId,
-      // Overrides: se guardan siempre (pueden ser null para "limpiar")
       'nombre_override': nombreOverride,
       'descripcion_override': descripcionOverride,
       'generos_override': generosOverride,
@@ -544,7 +591,6 @@ class ApiService {
       'imagen_grid_crop_h': imagenGridCropH,
     };
 
-    // Originales: solo se tocan si se proveen explícitamente (re-búsqueda en fuente)
     if (nombreOrig != null) data['nombre_orig'] = nombreOrig;
     if (descripcionOrig != null) data['descripcion_orig'] = descripcionOrig;
     if (generosOrig != null) data['generos_orig'] = generosOrig;
@@ -557,6 +603,22 @@ class ApiService {
 
     await database.update('juegos', data, where: 'id = ?', whereArgs: [id]);
     return {'success': true, 'messageKey': ApiKeys.juegoActualizadoOk};
+  }
+
+  /// Actualización rápida de estado y/o calificación desde el Dialog del grid.
+  /// No toca ningún otro campo para minimizar escrituras a disco.
+  static Future<void> actualizarEstadoYCalificacion({
+    required int id,
+    required String estado,
+    required int calificacion,
+  }) async {
+    final database = await db;
+    await database.update(
+      'juegos',
+      {'estado': estado, 'calificacion': calificacion},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 
   static Future<void> actualizarRutasLocales({
@@ -584,14 +646,15 @@ class ApiService {
     await database.update('juegos', data, where: 'id = ?', whereArgs: [id]);
   }
 
-  // Eliminar juego
   static Future<Map<String, dynamic>> eliminarJuego(int id) async {
     final database = await db;
+    // ON DELETE CASCADE en juego_categorias elimina las relaciones automáticamente
     await database.delete('juegos', where: 'id = ?', whereArgs: [id]);
     return {'success': true, 'messageKey': ApiKeys.juegoEliminadoOk};
   }
 
-  // Listar categorías del usuario
+  // ── Categorías ────────────────────────────────────────────────────────────
+
   static Future<List<Categoria>> obtenerCategorias(
     int usuarioId,
     int catalogo,
@@ -606,7 +669,6 @@ class ApiService {
     return result.map((item) => Categoria.fromJson(item)).toList();
   }
 
-  // Crear categoría
   static Future<Map<String, dynamic>> crearCategoria({
     required String nombre,
     String? imagen,
@@ -623,7 +685,6 @@ class ApiService {
     return {'success': true, 'messageKey': ApiKeys.categoriaCreada};
   }
 
-  // Editar categoría
   static Future<Map<String, dynamic>> editarCategoria({
     required int id,
     required String nombre,
@@ -639,30 +700,69 @@ class ApiService {
     return {'success': true, 'messageKey': ApiKeys.categoriaActualizada};
   }
 
-  // Eliminar categoría (desasigna juegos)
   static Future<void> eliminarCategoria(int id) async {
     final database = await db;
-    await database.update(
-      'juegos',
-      {'categoria_id': null},
-      where: 'categoria_id = ?',
-      whereArgs: [id],
-    );
+    // ON DELETE CASCADE en juego_categorias elimina las relaciones automáticamente
     await database.delete('categorias', where: 'id = ?', whereArgs: [id]);
   }
 
-  // Asignar categoría a juego
-  static Future<void> asignarCategoria(int juegoId, int? categoriaId) async {
+  // ── Categorías de juego (muchos-a-muchos) ─────────────────────────────────
+
+  /// Devuelve los IDs de categorías asignadas a un juego.
+  static Future<List<int>> obtenerCategoriasDeJuego(int juegoId) async {
     final database = await db;
-    await database.update(
-      'juegos',
-      {'categoria_id': categoriaId},
-      where: 'id = ?',
+    final rows = await database.query(
+      'juego_categorias',
+      columns: ['categoria_id'],
+      where: 'juego_id = ?',
       whereArgs: [juegoId],
+    );
+    return rows.map((r) => r['categoria_id'] as int).toList();
+  }
+
+  /// Asigna una categoría a un juego. No elimina las existentes.
+  static Future<void> asignarCategoria(int juegoId, int categoriaId) async {
+    final database = await db;
+    await database.insert('juego_categorias', {
+      'juego_id': juegoId,
+      'categoria_id': categoriaId,
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
+  }
+
+  /// Quita una categoría de un juego.
+  static Future<void> quitarCategoria(int juegoId, int categoriaId) async {
+    final database = await db;
+    await database.delete(
+      'juego_categorias',
+      where: 'juego_id = ? AND categoria_id = ?',
+      whereArgs: [juegoId, categoriaId],
     );
   }
 
-  // Guardar orden de juegos
+  /// Reemplaza todas las categorías de un juego por la lista dada.
+  /// Útil cuando el Dialog cierra y queremos sincronizar el estado completo.
+  static Future<void> sincronizarCategorias(
+    int juegoId,
+    List<int> categoriaIds,
+  ) async {
+    final database = await db;
+    final batch = database.batch();
+    batch.delete(
+      'juego_categorias',
+      where: 'juego_id = ?',
+      whereArgs: [juegoId],
+    );
+    for (final cid in categoriaIds) {
+      batch.insert('juego_categorias', {
+        'juego_id': juegoId,
+        'categoria_id': cid,
+      }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    }
+    await batch.commit(noResult: true);
+  }
+
+  // ── Orden ─────────────────────────────────────────────────────────────────
+
   static Future<void> guardarOrden(List<int> idsOrdenados) async {
     final database = await db;
     final batch = database.batch();
@@ -677,7 +777,8 @@ class ApiService {
     await batch.commit(noResult: true);
   }
 
-  // Obtener estadísticas del usuario
+  // ── Estadísticas ──────────────────────────────────────────────────────────
+
   static Future<Map<String, dynamic>> obtenerEstadisticas(int usuarioId) async {
     final database = await db;
     final total =
@@ -689,57 +790,42 @@ class ApiService {
         0;
     final completados =
         (await database.rawQuery(
-              'SELECT COUNT(*) as c FROM juegos WHERE usuario_id = ? AND estado = ?',
-              [usuarioId, 'Completed'],
+              "SELECT COUNT(*) as c FROM juegos WHERE usuario_id = ? AND estado = 'Completed'",
+              [usuarioId],
             )).first['c']
             as int? ??
         0;
     final jugando =
         (await database.rawQuery(
-              'SELECT COUNT(*) as c FROM juegos WHERE usuario_id = ? AND estado = ?',
-              [usuarioId, 'Playing'],
+              "SELECT COUNT(*) as c FROM juegos WHERE usuario_id = ? AND estado = 'Playing'",
+              [usuarioId],
             )).first['c']
             as int? ??
         0;
     return {'total': total, 'completados': completados, 'jugando': jugando};
   }
 
-  // Convertir JSON a Usuario
-  static Usuario convertirUsuario(Map<String, dynamic> json) {
-    return Usuario.fromJson(json);
-  }
+  // ── Backup ────────────────────────────────────────────────────────────────
 
-  // Obtener usuario por ID
-  static Future<Usuario?> obtenerUsuarioPorId(int id) async {
-    final database = await db;
-    final result = await database.query(
-      'usuarios',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
-    if (result.isNotEmpty) return convertirUsuario(result.first);
-    return null;
-  }
-
-  // Exportar backup
   static Future<String> exportarBackup() async {
     final database = await db;
     final usuarios = await database.query('usuarios');
     final juegos = await database.query('juegos');
     final categorias = await database.query('categorias');
+    final juegoCategorias = await database.query('juego_categorias');
 
     final backup = {
-      'version': 2,
+      'version': 3,
       'fecha': DateTime.now().toIso8601String(),
       'usuarios': usuarios,
       'juegos': juegos,
       'categorias': categorias,
+      'juego_categorias': juegoCategorias,
     };
 
     return jsonEncode(backup);
   }
 
-  // Importar backup
   static Future<Map<String, dynamic>> importarBackup(String jsonStr) async {
     final database = await db;
 
@@ -750,7 +836,10 @@ class ApiService {
       final juegos = (backup['juegos'] as List).cast<Map<String, dynamic>>();
       final categorias = (backup['categorias'] as List? ?? [])
           .cast<Map<String, dynamic>>();
+      final juegoCategorias = (backup['juego_categorias'] as List? ?? [])
+          .cast<Map<String, dynamic>>();
 
+      // Insertar usuarios
       for (final u in usuarios) {
         try {
           await database.insert('usuarios', {
@@ -763,7 +852,6 @@ class ApiService {
 
       final usuariosNuevos = await database.query('usuarios');
       final mapaIds = <int, int>{};
-
       for (final u in usuarios) {
         final encontrado = usuariosNuevos.where(
           (n) => n['nombre'] == u['nombre'],
@@ -773,13 +861,12 @@ class ApiService {
         }
       }
 
+      // Insertar categorías y mapear sus IDs
       final mapaCategorias = <int, int>{};
-
       for (final c in categorias) {
         final idUsuarioOriginal = c['usuario_id'] as int;
         final idUsuarioNuevo = mapaIds[idUsuarioOriginal];
         if (idUsuarioNuevo == null) continue;
-
         try {
           final nuevaId = await database.insert('categorias', {
             'nombre': c['nombre'],
@@ -791,17 +878,14 @@ class ApiService {
         } catch (_) {}
       }
 
+      // Insertar juegos y mapear sus IDs
+      final mapaJuegos = <int, int>{};
       for (final j in juegos) {
         final idOriginal = j['usuario_id'] as int;
         final idNuevo = mapaIds[idOriginal];
         if (idNuevo == null) continue;
-
         try {
-          int? categoriaNueva;
-          if (j['categoria_id'] != null) {
-            categoriaNueva = mapaCategorias[j['categoria_id']];
-          }
-          await database.insert('juegos', {
+          final nuevoId = await database.insert('juegos', {
             'nombre_orig': j['nombre_orig'] ?? '',
             'nombre_override': j['nombre_override'],
             'descripcion_orig': j['descripcion_orig'] ?? '',
@@ -812,21 +896,61 @@ class ApiService {
             'imagen_orig_local': j['imagen_orig_local'],
             'imagen_override': j['imagen_override'],
             'imagen_override_local': j['imagen_override_local'],
+            'imagen_crop_x': j['imagen_crop_x'] ?? 0,
+            'imagen_crop_y': j['imagen_crop_y'] ?? 0,
+            'imagen_crop_w': j['imagen_crop_w'] ?? 1,
+            'imagen_crop_h': j['imagen_crop_h'] ?? 1,
             'imagen_grid_orig': j['imagen_grid_orig'] ?? '',
             'imagen_grid_orig_local': j['imagen_grid_orig_local'],
             'imagen_grid_override': j['imagen_grid_override'],
             'imagen_grid_override_local': j['imagen_grid_override_local'],
+            'imagen_grid_crop_x': j['imagen_grid_crop_x'] ?? 0,
+            'imagen_grid_crop_y': j['imagen_grid_crop_y'] ?? 0,
+            'imagen_grid_crop_w': j['imagen_grid_crop_w'] ?? 1,
+            'imagen_grid_crop_h': j['imagen_grid_crop_h'] ?? 1,
             'version': j['version'],
             'calificacion': j['calificacion'] ?? 0,
             'estado': j['estado'],
             'ruta_ejecutable': j['ruta_ejecutable'],
             'imagenes_extra': j['imagenes_extra'],
             'catalogo': j['catalogo'] ?? 0,
-            'categoria_id': categoriaNueva,
             'posicion': j['posicion'] ?? 0,
             'usuario_id': idNuevo,
           });
+          mapaJuegos[j['id'] as int] = nuevoId;
         } catch (_) {}
+      }
+
+      // Restaurar relaciones juego_categorias
+      // Soporta tanto backup v3 (con juego_categorias) como v2 legacy
+      // (con categoria_id en juegos, ya migrado arriba vía mapaJuegos)
+      if (juegoCategorias.isNotEmpty) {
+        final batch = database.batch();
+        for (final jc in juegoCategorias) {
+          final nuevoJuegoId = mapaJuegos[jc['juego_id'] as int];
+          final nuevoCatId = mapaCategorias[jc['categoria_id'] as int];
+          if (nuevoJuegoId == null || nuevoCatId == null) continue;
+          batch.insert('juego_categorias', {
+            'juego_id': nuevoJuegoId,
+            'categoria_id': nuevoCatId,
+          }, conflictAlgorithm: ConflictAlgorithm.ignore);
+        }
+        await batch.commit(noResult: true);
+      } else {
+        // Compatibilidad con backup v2: leer categoria_id del propio objeto juego
+        final batch = database.batch();
+        for (final j in juegos) {
+          final catIdOriginal = j['categoria_id'];
+          if (catIdOriginal == null) continue;
+          final nuevoJuegoId = mapaJuegos[j['id'] as int];
+          final nuevoCatId = mapaCategorias[catIdOriginal as int];
+          if (nuevoJuegoId == null || nuevoCatId == null) continue;
+          batch.insert('juego_categorias', {
+            'juego_id': nuevoJuegoId,
+            'categoria_id': nuevoCatId,
+          }, conflictAlgorithm: ConflictAlgorithm.ignore);
+        }
+        await batch.commit(noResult: true);
       }
 
       return {
