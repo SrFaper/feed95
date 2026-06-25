@@ -24,7 +24,7 @@ dependencies:
   shared_preferences: ^2.3.3
   sqflite_common_ffi: ^2.3.4
   image_picker: ^1.1.2
-  file_picker: ^8.1.4
+  file_picker: ^11.0.2
   http: ^1.4.0
   cookie_jar: ^4.0.8
   dio: ^5.7.0

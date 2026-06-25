@@ -82,7 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ).showSnackBar(SnackBar(content: Text(l10n.homeBackupNoDisponibleWeb)));
         return;
       }
-      final carpeta = await FilePicker.platform.getDirectoryPath(
+      final carpeta = await FilePicker.getDirectoryPath(
         dialogTitle: l10n.homeGuardarBackupEn,
       );
       if (carpeta == null) return;
@@ -145,7 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
         );
         return;
       }
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['json'],
         dialogTitle: l10n.homeDialogoImportarTitulo,

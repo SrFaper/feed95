@@ -558,7 +558,7 @@ class _JuegoFormScreenState extends State<JuegoFormScreen> {
 
   Future<void> _elegirEjecutable() async {
     final l10n = AppLocalizations.of(context)!;
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['exe', 'bat', 'sh', 'app'],
       dialogTitle: l10n.juegoFormBuscarArchivo,
