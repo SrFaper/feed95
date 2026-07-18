@@ -131,6 +131,12 @@
   "catalogoFiltroTodas": "Todas",
   "catalogoAsignarCategoria": "Asignar categoría",
   "catalogoSinCategoria": "Sin categoría",
+  "catalogoTooltipDensidad": "Tamaño de las tarjetas",
+  "catalogoDensidadTitulo": "VISTA DEL CATÁLOGO",
+  "catalogoDensidadSubtitulo": "Tarjetas más chicas = más juegos visibles a la vez",
+  "catalogoDensidadGrande": "Grande",
+  "catalogoDensidadCompacta": "Compacta",
+  "catalogoDensidadLista": "Lista",
 
   "categoriaNuevaTitulo": "Nueva categoría",
   "categoriaEditarTitulo": "Editar categoría",

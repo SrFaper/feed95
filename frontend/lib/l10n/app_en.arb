@@ -131,6 +131,12 @@
   "catalogoFiltroTodas": "All",
   "catalogoAsignarCategoria": "Assign category",
   "catalogoSinCategoria": "No category",
+  "catalogoTooltipDensidad": "Card size",
+  "catalogoDensidadTitulo": "CATALOG VIEW",
+  "catalogoDensidadSubtitulo": "Smaller cards = more games visible at once",
+  "catalogoDensidadGrande": "Large",
+  "catalogoDensidadCompacta": "Compact",
+  "catalogoDensidadLista": "List",
 
   "categoriaNuevaTitulo": "New category",
   "categoriaEditarTitulo": "Edit category",

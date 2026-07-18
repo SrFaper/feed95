@@ -658,6 +658,42 @@ abstract class AppLocalizations {
   /// **'Sin categoría'**
   String get catalogoSinCategoria;
 
+  /// No description provided for @catalogoTooltipDensidad.
+  ///
+  /// In es, this message translates to:
+  /// **'Tamaño de las tarjetas'**
+  String get catalogoTooltipDensidad;
+
+  /// No description provided for @catalogoDensidadTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'VISTA DEL CATÁLOGO'**
+  String get catalogoDensidadTitulo;
+
+  /// No description provided for @catalogoDensidadSubtitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Tarjetas más chicas = más juegos visibles a la vez'**
+  String get catalogoDensidadSubtitulo;
+
+  /// No description provided for @catalogoDensidadGrande.
+  ///
+  /// In es, this message translates to:
+  /// **'Grande'**
+  String get catalogoDensidadGrande;
+
+  /// No description provided for @catalogoDensidadCompacta.
+  ///
+  /// In es, this message translates to:
+  /// **'Compacta'**
+  String get catalogoDensidadCompacta;
+
+  /// No description provided for @catalogoDensidadLista.
+  ///
+  /// In es, this message translates to:
+  /// **'Lista'**
+  String get catalogoDensidadLista;
+
   /// No description provided for @categoriaNuevaTitulo.
   ///
   /// In es, this message translates to:

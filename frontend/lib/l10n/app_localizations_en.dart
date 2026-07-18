@@ -303,6 +303,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get catalogoSinCategoria => 'No category';
 
   @override
+  String get catalogoTooltipDensidad => 'Card size';
+
+  @override
+  String get catalogoDensidadTitulo => 'CATALOG VIEW';
+
+  @override
+  String get catalogoDensidadSubtitulo =>
+      'Smaller cards = more games visible at once';
+
+  @override
+  String get catalogoDensidadGrande => 'Large';
+
+  @override
+  String get catalogoDensidadCompacta => 'Compact';
+
+  @override
+  String get catalogoDensidadLista => 'List';
+
+  @override
   String get categoriaNuevaTitulo => 'New category';
 
   @override

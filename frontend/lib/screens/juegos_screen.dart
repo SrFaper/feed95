@@ -11,6 +11,19 @@ import 'juego_form_screen.dart';
 import 'juego_detalle_screen.dart';
 import 'package:frontend/l10n/app_localizations.dart';
 import '../widgets/imagen_ajustada.dart';
+import '../main.dart';
+
+/// Nivel de densidad del catálogo: cuántos juegos entran en pantalla y
+/// cuánta información se muestra en cada tarjeta.
+enum DensidadGrid { grande, compacta, lista }
+
+// Medidas de la tarjeta horizontal de DensidadGrid.lista. El ancho de la
+// miniatura mantiene la proporción 2:3 de las portadas (52/78 = 2/3).
+const double _altoFilaLista =
+    84; // antes usaba 72 pero tenia riesgo de colapsar
+const double _thumbAnchoLista = 52;
+const double _anchoMaxColumnaLista =
+    260; // antes usaba 340 pero sobraba muchisimo espacio
 
 class JuegosScreen extends StatefulWidget {
   final Usuario usuario;
@@ -33,11 +46,21 @@ class _JuegosScreenState extends State<JuegosScreen> {
   int? filtroCategoria;
   bool _modoReorden = false;
   bool _reordenEnGrid = false;
+  DensidadGrid _densidad = DensidadGrid.grande;
   final TextEditingController _busquedaController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
   int _precargadoHasta = 0;
-  static const int _lotePrecargado = 40;
+  int get _lotePrecargadoActual {
+    switch (_densidad) {
+      case DensidadGrid.grande:
+        return 40;
+      case DensidadGrid.compacta:
+        return 70;
+      case DensidadGrid.lista:
+        return 90;
+    }
+  }
 
   String nombreCatalogoSecundario = 'NSFW';
 
@@ -45,6 +68,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
   void initState() {
     super.initState();
     _cargarModosExtras();
+    _cargarDensidad();
     _scrollController.addListener(_onScroll);
     cargarTodo();
   }
@@ -58,7 +82,6 @@ class _JuegosScreenState extends State<JuegosScreen> {
   }
 
   // ── Precargado inteligente ────────────────────────────────────────────────
-
   ImageProvider? _providerGrid(Juego j) {
     final local = j.imagenGridLocal?.isNotEmpty == true
         ? j.imagenGridLocal
@@ -98,7 +121,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
     final lista = juegosFiltrados;
     if (_precargadoHasta >= lista.length) return;
     final desde = _precargadoHasta;
-    final hasta = desde + _lotePrecargado;
+    final hasta = desde + _lotePrecargadoActual;
     _precargadoHasta = hasta.clamp(0, lista.length);
     _precargarRango(lista, desde, hasta);
   }
@@ -107,7 +130,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
     if (!mounted) return;
     _precargadoHasta = 0;
     final lista = juegosFiltrados;
-    _precargadoHasta = _lotePrecargado.clamp(0, lista.length);
+    _precargadoHasta = _lotePrecargadoActual.clamp(0, lista.length);
     _precargarRango(lista, 0, _precargadoHasta);
   }
 
@@ -118,14 +141,131 @@ class _JuegosScreenState extends State<JuegosScreen> {
     }
   }
 
-  // ── Carga de datos ────────────────────────────────────────────────────────
+  // ── Selector de densidad ─────────────────────────────────────────────────
+  Future<void> _mostrarSelectorDensidad() async {
+    final l10n = AppLocalizations.of(context)!;
+    final primary = Theme.of(context).colorScheme.primary;
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(
+        context,
+      ).extension<SuperficiesFeed95>()!.superficieOscura,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.catalogoDensidadTitulo,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey.shade500,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                l10n.catalogoDensidadSubtitulo,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey.shade400,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _ChipDensidad(
+                    icon: Icons.grid_view,
+                    label: l10n.catalogoDensidadGrande,
+                    activa: _densidad == DensidadGrid.grande,
+                    color: primary,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _cambiarDensidad(DensidadGrid.grande);
+                    },
+                  ),
+                  _ChipDensidad(
+                    icon: Icons.apps,
+                    label: l10n.catalogoDensidadCompacta,
+                    activa: _densidad == DensidadGrid.compacta,
+                    color: primary,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _cambiarDensidad(DensidadGrid.compacta);
+                    },
+                  ),
+                  _ChipDensidad(
+                    icon: Icons.view_agenda_outlined,
+                    label: l10n.catalogoDensidadLista,
+                    activa: _densidad == DensidadGrid.lista,
+                    color: primary,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _cambiarDensidad(DensidadGrid.lista);
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
+  // ── Carga de datos ────────────────────────────────────────────────────────
   Future<void> _cargarModosExtras() async {
     final prefs = await SharedPreferences.getInstance();
     if (mounted) {
       setState(() {
         _modosExtrasActivos = prefs.getBool('f95_activado') ?? false;
       });
+    }
+  }
+
+  Future<void> _cargarDensidad() async {
+    final prefs = await SharedPreferences.getInstance();
+    final guardado = prefs.getString('catalogo_densidad');
+    if (!mounted) return;
+    setState(() {
+      _densidad = DensidadGrid.values.firstWhere(
+        (d) => d.name == guardado,
+        orElse: () => DensidadGrid.grande,
+      );
+    });
+  }
+
+  Future<void> _cambiarDensidad(DensidadGrid nueva) async {
+    if (nueva == _densidad) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('catalogo_densidad', nueva.name);
+    // El offset de scroll en píxeles ya no corresponde a la misma posición
+    // lógica al cambiar el tamaño de las tarjetas, así que reseteamos.
+    if (_scrollController.hasClients) _scrollController.jumpTo(0);
+    setState(() {
+      _densidad = nueva;
+      _precargadoHasta = 0;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _precargadoInicial());
+  }
+
+  IconData _iconoDensidad() {
+    switch (_densidad) {
+      case DensidadGrid.grande:
+        return Icons.grid_view;
+      case DensidadGrid.compacta:
+        return Icons.apps;
+      case DensidadGrid.lista:
+        return Icons.view_agenda_outlined;
     }
   }
 
@@ -199,7 +339,6 @@ class _JuegosScreenState extends State<JuegosScreen> {
   }
 
   // ── Categorías ────────────────────────────────────────────────────────────
-
   Future<void> _mostrarDialogoCategoria({Categoria? editar}) async {
     final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: editar?.nombre ?? '');
@@ -281,7 +420,6 @@ class _JuegosScreenState extends State<JuegosScreen> {
   }
 
   // ── Dialog de acción rápida ───────────────────────────────────────────────
-
   Future<void> _mostrarDialogoAccionRapida(Juego juego) async {
     final l10n = AppLocalizations.of(context)!;
     final primary = Theme.of(context).colorScheme.primary;
@@ -308,7 +446,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
           return AlertDialog(
             title: Text(
               juego.nombre,
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
             ),
@@ -466,7 +604,6 @@ class _JuegosScreenState extends State<JuegosScreen> {
   }
 
   // ── Reordenamiento ────────────────────────────────────────────────────────
-
   Future<void> _moverJuegoAPosicion(
     List<Juego> lista,
     int juegoIndex,
@@ -491,7 +628,6 @@ class _JuegosScreenState extends State<JuegosScreen> {
   }
 
   // ── Panel lateral ─────────────────────────────────────────────────────────
-
   Widget _panelLateral() {
     final l10n = AppLocalizations.of(context)!;
     return Container(
@@ -734,22 +870,69 @@ class _JuegosScreenState extends State<JuegosScreen> {
   }
 
   // ── Vistas ────────────────────────────────────────────────────────────────
-
   Widget _vistaGrid(List<Juego> lista) {
+    switch (_densidad) {
+      case DensidadGrid.lista:
+        return _vistaGridLista(lista);
+      case DensidadGrid.compacta:
+        return _vistaGridPortadas(lista, compacta: true);
+      case DensidadGrid.grande:
+        return _vistaGridPortadas(lista, compacta: false);
+    }
+  }
+
+  Widget _vistaGridPortadas(List<Juego> lista, {required bool compacta}) {
     return GridView.builder(
       controller: _scrollController,
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(compacta ? 8 : 12),
       cacheExtent: 400,
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 180,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
+      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+        // 128 es punto de partida: ajústalo a tu ventana real. Se mantiene el
+        // mismo childAspectRatio (0.65), o sea es la misma tarjeta encogida,
+        // no un formato nuevo — por eso ancho y alto bajan juntos.
+        maxCrossAxisExtent: compacta ? 128 : 180,
+        mainAxisSpacing: compacta ? 8 : 12,
+        crossAxisSpacing: compacta ? 8 : 12,
         childAspectRatio: 0.65,
       ),
       itemCount: lista.length,
       itemBuilder: (context, index) {
         final juego = lista[index];
         return _TarjetaJuego(
+          juego: juego,
+          compacta: compacta,
+          onTap: () async {
+            _precargarDetalle(juego);
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    JuegoDetalleScreen(juego: juego, usuario: widget.usuario),
+              ),
+            );
+            cargarTodo();
+          },
+          onAccionRapida: () => _mostrarDialogoAccionRapida(juego),
+        );
+      },
+    );
+  }
+
+  Widget _vistaGridLista(List<Juego> lista) {
+    return GridView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.all(10),
+      cacheExtent: 400,
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: _anchoMaxColumnaLista,
+        mainAxisExtent: _altoFilaLista, // alto fijo, ancho de columna flexible
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+      ),
+      itemCount: lista.length,
+      itemBuilder: (context, index) {
+        final juego = lista[index];
+        return _TarjetaJuegoLista(
           juego: juego,
           onTap: () async {
             _precargarDetalle(juego);
@@ -885,7 +1068,6 @@ class _JuegosScreenState extends State<JuegosScreen> {
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -910,6 +1092,11 @@ class _JuegosScreenState extends State<JuegosScreen> {
               icon: Icon(panelAbierto ? Icons.menu_open : Icons.menu),
               tooltip: l10n.catalogoTooltipFiltros,
               onPressed: () => setState(() => panelAbierto = !panelAbierto),
+            ),
+            IconButton(
+              icon: Icon(_iconoDensidad()),
+              tooltip: l10n.catalogoTooltipDensidad,
+              onPressed: _mostrarSelectorDensidad,
             ),
           ],
           IconButton(
@@ -1002,8 +1189,65 @@ class _JuegosScreenState extends State<JuegosScreen> {
   }
 }
 
-// ── Chip de categoría para el Dialog ─────────────────────────────────────────
+// ── Chip de densidad ──────────────────────────────────────────────────────────
+class _ChipDensidad extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool activa;
+  final Color color;
+  final VoidCallback onTap;
 
+  const _ChipDensidad({
+    required this.icon,
+    required this.label,
+    required this.activa,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: activa ? color.withValues(alpha: 0.18) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: activa
+                ? color
+                : Colors.white38, // antes: Colors.grey.shade400
+            width: activa ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: activa ? color : Colors.white60,
+            ), // antes: grey.shade600
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                color: activa ? color : Colors.white60, // antes: grey.shade600
+                fontWeight: activa ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Chip de categoría para el Dialog ─────────────────────────────────────────
 class _ChipCategoria extends StatelessWidget {
   final String nombre;
   final bool activa;
@@ -1047,7 +1291,6 @@ class _ChipCategoria extends StatelessWidget {
 }
 
 // ── Grid con drag & drop ──────────────────────────────────────────────────────
-
 class _ReordenGrid extends StatefulWidget {
   final List<Juego> juegos;
   final Future<void> Function(int from, int to) onReorder;
@@ -1181,7 +1424,6 @@ class _ReordenGridState extends State<_ReordenGrid> {
 }
 
 // ── Input de posición ─────────────────────────────────────────────────────────
-
 class _InputPosicion extends StatefulWidget {
   final int posicionActual;
   final int total;
@@ -1306,7 +1548,6 @@ class _InputPosicionState extends State<_InputPosicion> {
 }
 
 // ── Tarjeta en modo reorden grid ──────────────────────────────────────────────
-
 class _TarjetaReordenGrid extends StatelessWidget {
   final Juego juego;
   final int posicion;
@@ -1382,7 +1623,6 @@ class _TarjetaReordenGrid extends StatelessWidget {
 }
 
 // ── Widget imagen reutilizable ────────────────────────────────────────────────
-
 class _ImagenJuego extends StatelessWidget {
   final Juego juego;
 
@@ -1420,17 +1660,135 @@ class _ImagenJuego extends StatelessWidget {
   }
 }
 
-// ── Tarjeta de juego en el grid ───────────────────────────────────────────────
+// ── Tarjeta de juego en el grid modo lista ─────────────────────────────────────────
+class _TarjetaJuegoLista extends StatelessWidget {
+  final Juego juego;
+  final VoidCallback onTap;
+  final VoidCallback onAccionRapida;
 
+  const _TarjetaJuegoLista({
+    required this.juego,
+    required this.onTap,
+    required this.onAccionRapida,
+  });
+
+  Color _colorEstado(String estado, BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    switch (estado) {
+      case 'Playing':
+        return primary;
+      case 'Completed':
+        return primary.withValues(alpha: 0.75);
+      case 'Abandoned':
+        return Colors.grey.shade700;
+      default:
+        return Colors.grey.shade500;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final superficies = Theme.of(context).extension<SuperficiesFeed95>()!;
+
+    return GestureDetector(
+      onTap: onTap,
+      onLongPress: onAccionRapida,
+      onSecondaryTap: onAccionRapida,
+      child: Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: superficies.superficieOscura,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: superficies.superficieOscuraBorde),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              width: _thumbAnchoLista,
+              child: _ImagenJuego(juego: juego),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      juego.nombre,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: superficies.textoSobreSuperficieOscura,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _colorEstado(
+                              juego.estado,
+                              context,
+                            ).withValues(alpha: 0.85),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            traducirEstadoJuego(juego.estado, context),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        if (juego.calificacion > 0) ...[
+                          const SizedBox(width: 6),
+                          const Icon(Icons.star, size: 12, color: Colors.amber),
+                          const SizedBox(width: 2),
+                          Text(
+                            '${juego.calificacion}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Tarjeta de juego en el grid ───────────────────────────────────────────────
 class _TarjetaJuego extends StatelessWidget {
   final Juego juego;
   final VoidCallback onTap;
   final VoidCallback onAccionRapida;
+  final bool compacta;
 
   const _TarjetaJuego({
     required this.juego,
     required this.onTap,
     required this.onAccionRapida,
+    this.compacta = false,
   });
 
   @override
@@ -1442,7 +1800,7 @@ class _TarjetaJuego extends StatelessWidget {
       onLongPress: onAccionRapida,
       onSecondaryTap: onAccionRapida,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(compacta ? 8 : 10),
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -1463,29 +1821,30 @@ class _TarjetaJuego extends StatelessWidget {
               ),
             ),
             Positioned(
-              left: 8,
-              right: 8,
-              bottom: 8,
+              left: compacta ? 6 : 8,
+              right: compacta ? 6 : 8,
+              bottom: compacta ? 6 : 8,
               child: Text(
                 juego.nombre,
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  shadows: [Shadow(blurRadius: 4, color: Colors.black)],
+                  fontSize: compacta ? 11 : 13,
+                  shadows: const [Shadow(blurRadius: 4, color: Colors.black)],
                 ),
-                maxLines: 2,
+                // En compacta, 1 sola línea: a este tamaño 2 líneas se ven apretadas.
+                maxLines: compacta ? 1 : 2,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
             if (juego.calificacion > 0)
               Positioned(
-                top: 8,
-                right: 8,
+                top: compacta ? 6 : 8,
+                right: compacta ? 6 : 8,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 3,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: compacta ? 4 : 6,
+                    vertical: compacta ? 2 : 3,
                   ),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.65),
@@ -1494,13 +1853,17 @@ class _TarjetaJuego extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.star, size: 12, color: Colors.amber),
+                      Icon(
+                        Icons.star,
+                        size: compacta ? 10 : 12,
+                        color: Colors.amber,
+                      ),
                       const SizedBox(width: 2),
                       Text(
                         '${juego.calificacion}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 12,
+                          fontSize: compacta ? 10 : 12,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -1508,25 +1871,31 @@ class _TarjetaJuego extends StatelessWidget {
                   ),
                 ),
               ),
-            Positioned(
-              top: 8,
-              left: 8,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                decoration: BoxDecoration(
-                  color: colorEstado.withValues(alpha: 0.85),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  traducirEstadoJuego(juego.estado, context),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
+            // Con tarjetas tan chicas, nombre + rating + estado se ve saturado,
+            // así que el badge de estado se oculta en compacta.
+            if (!compacta)
+              Positioned(
+                top: 8,
+                left: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorEstado.withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    traducirEstadoJuego(juego.estado, context),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
-            ),
           ],
         ),
       ),

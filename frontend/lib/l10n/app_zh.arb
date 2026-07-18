@@ -131,6 +131,12 @@
   "catalogoFiltroTodas": "全部分类",
   "catalogoAsignarCategoria": "分配分类",
   "catalogoSinCategoria": "未分类",
+  "catalogoTooltipDensidad": "卡片大小",
+  "catalogoDensidadTitulo": "游戏库视图",
+  "catalogoDensidadSubtitulo": "卡片越小，同时显示的游戏越多",
+  "catalogoDensidadGrande": "大",
+  "catalogoDensidadCompacta": "紧凑",
+  "catalogoDensidadLista": "列表",
 
   "categoriaNuevaTitulo": "新建分类",
   "categoriaEditarTitulo": "编辑分类",

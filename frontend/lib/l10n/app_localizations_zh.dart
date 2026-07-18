@@ -300,6 +300,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get catalogoSinCategoria => '未分类';
 
   @override
+  String get catalogoTooltipDensidad => '卡片大小';
+
+  @override
+  String get catalogoDensidadTitulo => '游戏库视图';
+
+  @override
+  String get catalogoDensidadSubtitulo => '卡片越小，同时显示的游戏越多';
+
+  @override
+  String get catalogoDensidadGrande => '大';
+
+  @override
+  String get catalogoDensidadCompacta => '紧凑';
+
+  @override
+  String get catalogoDensidadLista => '列表';
+
+  @override
   String get categoriaNuevaTitulo => '新建分类';
 
   @override

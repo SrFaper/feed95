@@ -6,6 +6,65 @@ import 'services/api_service.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:frontend/l10n/app_localizations.dart';
 
+/// Colores de superficie propios de Feed95 que no vienen en el ColorScheme
+/// estándar de Material. Al estar centralizados aquí, cambiarlos una vez
+/// los actualiza en AppBar, tarjetas de lista y selectores de color, sin tener que tocar cada widget individualmente.
+class SuperficiesFeed95 extends ThemeExtension<SuperficiesFeed95> {
+  final Color superficieOscura;
+  final Color superficieOscuraBorde;
+  final Color textoSobreSuperficieOscura;
+
+  const SuperficiesFeed95({
+    required this.superficieOscura,
+    required this.superficieOscuraBorde,
+    required this.textoSobreSuperficieOscura,
+  });
+
+  @override
+  SuperficiesFeed95 copyWith({
+    Color? superficieOscura,
+    Color? superficieOscuraBorde,
+    Color? textoSobreSuperficieOscura,
+  }) {
+    return SuperficiesFeed95(
+      superficieOscura: superficieOscura ?? this.superficieOscura,
+      superficieOscuraBorde:
+          superficieOscuraBorde ?? this.superficieOscuraBorde,
+      textoSobreSuperficieOscura:
+          textoSobreSuperficieOscura ?? this.textoSobreSuperficieOscura,
+    );
+  }
+
+  @override
+  SuperficiesFeed95 lerp(ThemeExtension<SuperficiesFeed95>? other, double t) {
+    if (other is! SuperficiesFeed95) return this;
+    return SuperficiesFeed95(
+      superficieOscura: Color.lerp(
+        superficieOscura,
+        other.superficieOscura,
+        t,
+      )!,
+      superficieOscuraBorde: Color.lerp(
+        superficieOscuraBorde,
+        other.superficieOscuraBorde,
+        t,
+      )!,
+      textoSobreSuperficieOscura: Color.lerp(
+        textoSobreSuperficieOscura,
+        other.textoSobreSuperficieOscura,
+        t,
+      )!,
+    );
+  }
+}
+
+// dos constantes por dos instancias distintas (una en `theme`, otra en `darkTheme`).
+const superficiesFeed95 = SuperficiesFeed95(
+  superficieOscura: Color(0xFF1C1C1C),
+  superficieOscuraBorde: Color(0xFF2E2E2E),
+  textoSobreSuperficieOscura: Colors.white,
+);
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -107,11 +166,12 @@ class Feed95AppState extends State<Feed95App> {
           surface: Colors.white,
         ),
         scaffoldBackgroundColor: Colors.white,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
+        appBarTheme: AppBarTheme(
+          backgroundColor: superficiesFeed95.superficieOscura,
+          foregroundColor: superficiesFeed95.textoSobreSuperficieOscura,
           elevation: 0,
         ),
+        extensions: const [superficiesFeed95],
         cardTheme: const CardThemeData(color: Colors.white),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
@@ -136,11 +196,12 @@ class Feed95AppState extends State<Feed95App> {
           secondary: _accentColor,
           surface: const Color(0xFF222222),
         ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF1E1E1E),
-          foregroundColor: Colors.white,
+        appBarTheme: AppBarTheme(
+          backgroundColor: superficiesFeed95.superficieOscura,
+          foregroundColor: superficiesFeed95.textoSobreSuperficieOscura,
           elevation: 0,
         ),
+        extensions: const [superficiesFeed95],
         cardTheme: const CardThemeData(color: Color(0xFF262626)),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
