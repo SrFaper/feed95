@@ -9,25 +9,6 @@ import 'package:frontend/l10n/app_localizations.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ── Límite del PaintingCache ─────────────────────────────────────────────
-  // Por defecto Flutter permite hasta 100 imágenes y 100 MB en el cache de
-  // imágenes decodificadas. Sin un límite explícito, con cientos de portadas
-  // el cache puede crecer sin control.
-  //
-  // Con la nueva implementación de ImagenAjustada, todas las imágenes pasan
-  // por este cache (a diferencia de la versión anterior que las guardaba en
-  // estado local, fuera del control de Flutter).
-  //
-  // 75 MB es un equilibrio razonable para un catálogo de cientos de juegos:
-  // - Una portada típica 600×900 decodificada en RGBA ocupa ~2 MB.
-  // - 75 MB permiten ~37 portadas simultáneas en cache antes de que empiece
-  //   a descartar las menos usadas (política LRU automática de Flutter).
-  // - Cuando el usuario scrollea, las portadas que ya pasaron por pantalla
-  //   se mantienen en cache mientras haya espacio; si se llena, se descartan
-  //   las más antiguas y se redecodifican si vuelven a aparecer.
-  //
-  // Puedes subir este valor si notas muchos redecodificados al scrollear,
-  // o bajarlo si la RAM es el límite principal. 50–100 MB es el rango útil.
   PaintingBinding.instance.imageCache.maximumSizeBytes = 75 * 1024 * 1024;
 
   // Máximo de entradas en cache (independiente del límite de bytes).
@@ -105,6 +86,18 @@ class Feed95AppState extends State<Feed95App> {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
+      localeResolutionCallback: (locale, supportedLocales) {
+        if (locale != null) {
+          for (final supported in supportedLocales) {
+            if (supported.languageCode == locale.languageCode) {
+              return supported;
+            }
+          }
+        }
+        return const Locale(
+          'en',
+        ); // fallback explícito y a prueba de cambios futuros
+      },
       themeMode: _themeMode,
       theme: ThemeData(
         useMaterial3: true,
