@@ -799,16 +799,11 @@ class _JuegosScreenState extends State<JuegosScreen> {
                 const SizedBox(width: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
-                  child: juego.imagenGrid.isNotEmpty
-                      ? Image.network(
-                          juego.imagenGrid,
-                          width: 40,
-                          height: 56,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) =>
-                              const Icon(Icons.videogame_asset),
-                        )
-                      : const Icon(Icons.videogame_asset),
+                  child: SizedBox(
+                    width: 40,
+                    height: 56,
+                    child: _ImagenJuego(juego: juego),
+                  ),
                 ),
               ],
             ),

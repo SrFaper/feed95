@@ -47,8 +47,8 @@ class F95Service {
   static Future<Dio> _getDio() async {
     if (_dio != null) return _dio!;
 
-    final appDir = await getApplicationDocumentsDirectory();
-    final cookiePath = p.join(appDir.path, 'f95_cookies');
+    await _limpiarRutaVieja();
+    final cookiePath = await _rutaCookies();
     await Directory(cookiePath).create(recursive: true);
 
     _cookieJar = PersistCookieJar(storage: FileStorage(cookiePath));
@@ -71,6 +71,26 @@ class F95Service {
 
     _dio!.interceptors.add(CookieManager(_cookieJar!));
     return _dio!;
+  }
+
+  static Future<String> _rutaCookies() async {
+    if (!kIsWeb && Platform.isWindows) {
+      final appData = Platform.environment['APPDATA']!;
+      return p.join(appData, 'feed95', 'f95_cookies');
+    }
+    final appDir = await getApplicationDocumentsDirectory();
+    return p.join(appDir.path, 'f95_cookies');
+  }
+
+  static Future<void> _limpiarRutaVieja() async {
+    if (kIsWeb || !Platform.isWindows) return;
+    try {
+      final docsDir = await getApplicationDocumentsDirectory();
+      final rutaVieja = Directory(p.join(docsDir.path, 'f95_cookies'));
+      if (await rutaVieja.exists()) {
+        await rutaVieja.delete(recursive: true);
+      }
+    } catch (_) {}
   }
 
   // Verificar si hay sesión activa
