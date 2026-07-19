@@ -6,32 +6,31 @@ import 'services/api_service.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:frontend/l10n/app_localizations.dart';
 
-/// Colores de superficie propios de Feed95 que no vienen en el ColorScheme
-/// estándar de Material. Al estar centralizados aquí, cambiarlos una vez
-/// los actualiza en AppBar, tarjetas de lista y selectores de color, sin tener que tocar cada widget individualmente.
+/// Colores de superficie propios de Feed95.
+/// Representa una superficie "elevada" (AppBar, tarjetas de lista, chips)
 class SuperficiesFeed95 extends ThemeExtension<SuperficiesFeed95> {
-  final Color superficieOscura;
-  final Color superficieOscuraBorde;
-  final Color textoSobreSuperficieOscura;
+  final Color superficieElevada;
+  final Color superficieElevadaBorde;
+  final Color textoSobreSuperficieElevada;
 
   const SuperficiesFeed95({
-    required this.superficieOscura,
-    required this.superficieOscuraBorde,
-    required this.textoSobreSuperficieOscura,
+    required this.superficieElevada,
+    required this.superficieElevadaBorde,
+    required this.textoSobreSuperficieElevada,
   });
 
   @override
   SuperficiesFeed95 copyWith({
-    Color? superficieOscura,
-    Color? superficieOscuraBorde,
-    Color? textoSobreSuperficieOscura,
+    Color? superficieElevada,
+    Color? superficieElevadaBorde,
+    Color? textoSobreSuperficieElevada,
   }) {
     return SuperficiesFeed95(
-      superficieOscura: superficieOscura ?? this.superficieOscura,
-      superficieOscuraBorde:
-          superficieOscuraBorde ?? this.superficieOscuraBorde,
-      textoSobreSuperficieOscura:
-          textoSobreSuperficieOscura ?? this.textoSobreSuperficieOscura,
+      superficieElevada: superficieElevada ?? this.superficieElevada,
+      superficieElevadaBorde:
+          superficieElevadaBorde ?? this.superficieElevadaBorde,
+      textoSobreSuperficieElevada:
+          textoSobreSuperficieElevada ?? this.textoSobreSuperficieElevada,
     );
   }
 
@@ -39,30 +38,37 @@ class SuperficiesFeed95 extends ThemeExtension<SuperficiesFeed95> {
   SuperficiesFeed95 lerp(ThemeExtension<SuperficiesFeed95>? other, double t) {
     if (other is! SuperficiesFeed95) return this;
     return SuperficiesFeed95(
-      superficieOscura: Color.lerp(
-        superficieOscura,
-        other.superficieOscura,
+      superficieElevada: Color.lerp(
+        superficieElevada,
+        other.superficieElevada,
         t,
       )!,
-      superficieOscuraBorde: Color.lerp(
-        superficieOscuraBorde,
-        other.superficieOscuraBorde,
+      superficieElevadaBorde: Color.lerp(
+        superficieElevadaBorde,
+        other.superficieElevadaBorde,
         t,
       )!,
-      textoSobreSuperficieOscura: Color.lerp(
-        textoSobreSuperficieOscura,
-        other.textoSobreSuperficieOscura,
+      textoSobreSuperficieElevada: Color.lerp(
+        textoSobreSuperficieElevada,
+        other.textoSobreSuperficieElevada,
         t,
       )!,
     );
   }
 }
 
-// dos constantes por dos instancias distintas (una en `theme`, otra en `darkTheme`).
-const superficiesFeed95 = SuperficiesFeed95(
-  superficieOscura: Color(0xFF1C1C1C),
-  superficieOscuraBorde: Color(0xFF2E2E2E),
-  textoSobreSuperficieOscura: Colors.white,
+// Tema claro: fondo F7F7F5, superficie levemente MÁS OSCURA que ese fondo.
+const superficiesFeed95Claro = SuperficiesFeed95(
+  superficieElevada: Color(0xFFEAEAE7),
+  superficieElevadaBorde: Color(0xFFD8D8D4),
+  textoSobreSuperficieElevada: Color(0xFF1A1A1A),
+);
+
+// Tema oscuro: fondo 121212, superficie levemente MÁS OSCURA que ese fondo
+const superficiesFeed95Oscuro = SuperficiesFeed95(
+  superficieElevada: Color(0xFF0A0A0A),
+  superficieElevadaBorde: Color(0xFF1E1E1E),
+  textoSobreSuperficieElevada: Colors.white,
 );
 
 void main() async {
@@ -163,16 +169,19 @@ class Feed95AppState extends State<Feed95App> {
         colorScheme: ColorScheme.light(
           primary: _accentColor,
           secondary: _accentColor,
-          surface: Colors.white,
+          surface: const Color(0xFFF7F7F5),
         ),
-        scaffoldBackgroundColor: Colors.white,
+        scaffoldBackgroundColor: const Color(0xFFF7F7F5),
         appBarTheme: AppBarTheme(
-          backgroundColor: superficiesFeed95.superficieOscura,
-          foregroundColor: superficiesFeed95.textoSobreSuperficieOscura,
+          backgroundColor: superficiesFeed95Claro.superficieElevada,
+          foregroundColor: superficiesFeed95Claro.textoSobreSuperficieElevada,
           elevation: 0,
         ),
-        extensions: const [superficiesFeed95],
-        cardTheme: const CardThemeData(color: Colors.white),
+        extensions: const [superficiesFeed95Claro],
+        cardTheme: const CardThemeData(
+          // Recordatorio: Cambiar estos colores para emparejarlos con los de la superficie elevada.
+          color: Color(0xFFEAEAE7),
+        ), // antes: Colors.white
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: _accentColor,
@@ -197,12 +206,15 @@ class Feed95AppState extends State<Feed95App> {
           surface: const Color(0xFF222222),
         ),
         appBarTheme: AppBarTheme(
-          backgroundColor: superficiesFeed95.superficieOscura,
-          foregroundColor: superficiesFeed95.textoSobreSuperficieOscura,
+          backgroundColor: superficiesFeed95Oscuro.superficieElevada,
+          foregroundColor: superficiesFeed95Oscuro.textoSobreSuperficieElevada,
           elevation: 0,
         ),
-        extensions: const [superficiesFeed95],
-        cardTheme: const CardThemeData(color: Color(0xFF262626)),
+        extensions: const [superficiesFeed95Oscuro],
+        cardTheme: const CardThemeData(
+          // Recordatorio: Cambiar estos colores para emparejarlos con los de la superficie elevada.
+          color: Color(0xFF0A0A0A),
+        ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: _accentColor,

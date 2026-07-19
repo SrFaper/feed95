@@ -145,11 +145,11 @@ class _JuegosScreenState extends State<JuegosScreen> {
   Future<void> _mostrarSelectorDensidad() async {
     final l10n = AppLocalizations.of(context)!;
     final primary = Theme.of(context).colorScheme.primary;
+    final superficies = Theme.of(context).extension<SuperficiesFeed95>()!;
+
     await showModalBottomSheet(
       context: context,
-      backgroundColor: Theme.of(
-        context,
-      ).extension<SuperficiesFeed95>()!.superficieOscura,
+      backgroundColor: superficies.superficieElevada,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -164,7 +164,9 @@ class _JuegosScreenState extends State<JuegosScreen> {
                 l10n.catalogoDensidadTitulo,
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.grey.shade500,
+                  color: superficies.textoSobreSuperficieElevada.withValues(
+                    alpha: 0.6,
+                  ),
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.2,
                 ),
@@ -174,7 +176,9 @@ class _JuegosScreenState extends State<JuegosScreen> {
                 l10n.catalogoDensidadSubtitulo,
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.grey.shade400,
+                  color: superficies.textoSobreSuperficieElevada.withValues(
+                    alpha: 0.45,
+                  ),
                   fontStyle: FontStyle.italic,
                 ),
               ),
@@ -188,6 +192,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
                     label: l10n.catalogoDensidadGrande,
                     activa: _densidad == DensidadGrid.grande,
                     color: primary,
+                    colorInactivo: superficies.textoSobreSuperficieElevada,
                     onTap: () {
                       Navigator.pop(ctx);
                       _cambiarDensidad(DensidadGrid.grande);
@@ -198,6 +203,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
                     label: l10n.catalogoDensidadCompacta,
                     activa: _densidad == DensidadGrid.compacta,
                     color: primary,
+                    colorInactivo: superficies.textoSobreSuperficieElevada,
                     onTap: () {
                       Navigator.pop(ctx);
                       _cambiarDensidad(DensidadGrid.compacta);
@@ -208,6 +214,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
                     label: l10n.catalogoDensidadLista,
                     activa: _densidad == DensidadGrid.lista,
                     color: primary,
+                    colorInactivo: superficies.textoSobreSuperficieElevada,
                     onTap: () {
                       Navigator.pop(ctx);
                       _cambiarDensidad(DensidadGrid.lista);
@@ -1195,6 +1202,7 @@ class _ChipDensidad extends StatelessWidget {
   final String label;
   final bool activa;
   final Color color;
+  final Color colorInactivo;
   final VoidCallback onTap;
 
   const _ChipDensidad({
@@ -1202,6 +1210,7 @@ class _ChipDensidad extends StatelessWidget {
     required this.label,
     required this.activa,
     required this.color,
+    required this.colorInactivo,
     required this.onTap,
   });
 
@@ -1217,9 +1226,7 @@ class _ChipDensidad extends StatelessWidget {
           color: activa ? color.withValues(alpha: 0.18) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: activa
-                ? color
-                : Colors.white38, // antes: Colors.grey.shade400
+            color: activa ? color : colorInactivo.withValues(alpha: 0.35),
             width: activa ? 1.5 : 1,
           ),
         ),
@@ -1229,14 +1236,14 @@ class _ChipDensidad extends StatelessWidget {
             Icon(
               icon,
               size: 16,
-              color: activa ? color : Colors.white60,
-            ), // antes: grey.shade600
+              color: activa ? color : colorInactivo.withValues(alpha: 0.6),
+            ),
             const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
                 fontSize: 13,
-                color: activa ? color : Colors.white60, // antes: grey.shade600
+                color: activa ? color : colorInactivo.withValues(alpha: 0.6),
                 fontWeight: activa ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
@@ -1697,9 +1704,9 @@ class _TarjetaJuegoLista extends StatelessWidget {
       child: Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: superficies.superficieOscura,
+          color: superficies.superficieElevada,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: superficies.superficieOscuraBorde),
+          border: Border.all(color: superficies.superficieElevadaBorde),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1725,7 +1732,7 @@ class _TarjetaJuegoLista extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: superficies.textoSobreSuperficieOscura,
+                        color: superficies.textoSobreSuperficieElevada,
                       ),
                     ),
                     const SizedBox(height: 6),
