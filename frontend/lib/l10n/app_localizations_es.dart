@@ -268,6 +268,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get catalogoTooltipReordenar => 'Reordenar';
 
   @override
+  String get catalogoTooltipOrdenAlfabetico => 'Ordenar A-Z';
+
+  @override
+  String get catalogoTooltipOrdenManual => 'Volver al orden manual';
+
+  @override
   String get catalogoTooltipVerCatalogo => 'Ver catálogo';
 
   @override
@@ -303,7 +309,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get catalogoSinCategoria => 'Sin categoría';
 
   @override
-  String get catalogoTooltipDensidad => 'Tamaño de las tarjetas';
+  String get catalogoTooltipDensidad => 'Vista de las tarjetas';
 
   @override
   String get catalogoDensidadTitulo => 'VISTA DEL CATÁLOGO';
@@ -320,6 +326,26 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get catalogoDensidadLista => 'Lista';
+
+  @override
+  String get catalogoOrdenTitulo => 'ORDEN TEMPORAL DE LAS TARJETAS';
+
+  @override
+  String get catalogoOrdenSubtitulo => 'No reemplaza tu orden manual guardado';
+
+  @override
+  String get catalogoOrdenSubtituloEnReorden =>
+      'Se aplicará al salir del modo reordenar';
+
+  @override
+  String get catalogoOrdenAlfabetico => 'Alfabético (A-Z)';
+
+  @override
+  String get catalogoReordenarTitulo => 'REORDENAR MANUALMENTE';
+
+  @override
+  String get catalogoReordenarSubtitulo =>
+      'Arrastra los juegos para fijar su posición';
 
   @override
   String get categoriaNuevaTitulo => 'Nueva categoría';

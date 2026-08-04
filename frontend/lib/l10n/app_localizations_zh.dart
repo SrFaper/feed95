@@ -265,6 +265,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get catalogoTooltipReordenar => '重新排序';
 
   @override
+  String get catalogoTooltipOrdenAlfabetico => '按字母排序';
+
+  @override
+  String get catalogoTooltipOrdenManual => '恢复手动排序';
+
+  @override
   String get catalogoTooltipVerCatalogo => '查看游戏库';
 
   @override
@@ -316,6 +322,26 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get catalogoDensidadLista => '列表';
+
+  @override
+  String get catalogoOrdenTitulo => 'ORDEN TEMPORAL DE LAS TARJETAS';
+
+  @override
+  String get catalogoOrdenSubtitulo => 'No reemplaza tu orden manual guardado';
+
+  @override
+  String get catalogoOrdenSubtituloEnReorden =>
+      'Se aplicará al salir del modo reordenar';
+
+  @override
+  String get catalogoOrdenAlfabetico => 'Alfabético (A-Z)';
+
+  @override
+  String get catalogoReordenarTitulo => 'REORDENAR MANUALMENTE';
+
+  @override
+  String get catalogoReordenarSubtitulo =>
+      'Arrastra los juegos para fijar su posición';
 
   @override
   String get categoriaNuevaTitulo => '新建分类';

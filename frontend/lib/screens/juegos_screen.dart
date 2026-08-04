@@ -47,6 +47,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
   bool _modoReorden = false;
   bool _reordenEnGrid = false;
   DensidadGrid _densidad = DensidadGrid.grande;
+  bool _ordenAlfabetico = false;
   final TextEditingController _busquedaController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
@@ -69,6 +70,7 @@ class _JuegosScreenState extends State<JuegosScreen> {
     super.initState();
     _cargarModosExtras();
     _cargarDensidad();
+    _cargarOrdenAlfabetico();
     _scrollController.addListener(_onScroll);
     cargarTodo();
   }
@@ -142,89 +144,149 @@ class _JuegosScreenState extends State<JuegosScreen> {
   }
 
   // ── Selector de densidad ─────────────────────────────────────────────────
-  Future<void> _mostrarSelectorDensidad() async {
+  Future<void> _mostrarSelectorVistaYOrden() async {
     final l10n = AppLocalizations.of(context)!;
     final primary = Theme.of(context).colorScheme.primary;
     final superficies = Theme.of(context).extension<SuperficiesFeed95>()!;
 
     await showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: superficies.superficieElevada,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.catalogoDensidadTitulo,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: superficies.textoSobreSuperficieElevada.withValues(
-                    alpha: 0.6,
-                  ),
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          Widget seccionTitulo(String texto) => Text(
+            texto.toUpperCase(),
+            style: TextStyle(
+              fontSize: 11,
+              color: superficies.textoSobreSuperficieElevada.withValues(
+                alpha: 0.6,
               ),
-              const SizedBox(height: 4),
-              Text(
-                l10n.catalogoDensidadSubtitulo,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: superficies.textoSobreSuperficieElevada.withValues(
-                    alpha: 0.45,
-                  ),
-                  fontStyle: FontStyle.italic,
-                ),
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+            ),
+          );
+
+          Widget seccionSubtitulo(String texto) => Text(
+            texto,
+            style: TextStyle(
+              fontSize: 11,
+              color: superficies.textoSobreSuperficieElevada.withValues(
+                alpha: 0.45,
               ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+              fontStyle: FontStyle.italic,
+            ),
+          );
+
+          return SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // ── Tamaño de las tarjetas ──
+                  seccionTitulo(l10n.catalogoDensidadTitulo),
+                  const SizedBox(height: 4),
+                  seccionSubtitulo(l10n.catalogoDensidadSubtitulo),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _ChipDensidad(
+                        icon: Icons.grid_view,
+                        label: l10n.catalogoDensidadGrande,
+                        activa: _densidad == DensidadGrid.grande,
+                        color: primary,
+                        colorInactivo: superficies.textoSobreSuperficieElevada,
+                        onTap: () {
+                          _cambiarDensidad(DensidadGrid.grande);
+                          setSheetState(() {});
+                        },
+                      ),
+                      _ChipDensidad(
+                        icon: Icons.apps,
+                        label: l10n.catalogoDensidadCompacta,
+                        activa: _densidad == DensidadGrid.compacta,
+                        color: primary,
+                        colorInactivo: superficies.textoSobreSuperficieElevada,
+                        onTap: () {
+                          _cambiarDensidad(DensidadGrid.compacta);
+                          setSheetState(() {});
+                        },
+                      ),
+                      _ChipDensidad(
+                        icon: Icons.view_agenda_outlined,
+                        label: l10n.catalogoDensidadLista,
+                        activa: _densidad == DensidadGrid.lista,
+                        color: primary,
+                        colorInactivo: superficies.textoSobreSuperficieElevada,
+                        onTap: () {
+                          _cambiarDensidad(DensidadGrid.lista);
+                          setSheetState(() {});
+                        },
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+                  Divider(color: superficies.superficieElevadaBorde),
+                  const SizedBox(height: 16),
+
+                  // ── Orden temporal ──
+                  seccionTitulo(l10n.catalogoOrdenTitulo),
+                  const SizedBox(height: 4),
+                  seccionSubtitulo(
+                    _modoReorden
+                        ? l10n.catalogoOrdenSubtituloEnReorden
+                        : l10n.catalogoOrdenSubtitulo,
+                  ),
+                  const SizedBox(height: 12),
                   _ChipDensidad(
-                    icon: Icons.grid_view,
-                    label: l10n.catalogoDensidadGrande,
-                    activa: _densidad == DensidadGrid.grande,
+                    icon: Icons.sort_by_alpha,
+                    label: l10n.catalogoOrdenAlfabetico,
+                    activa: _ordenAlfabetico,
                     color: primary,
                     colorInactivo: superficies.textoSobreSuperficieElevada,
                     onTap: () {
-                      Navigator.pop(ctx);
-                      _cambiarDensidad(DensidadGrid.grande);
+                      _toggleOrdenAlfabetico();
+                      setSheetState(() {});
                     },
                   ),
+
+                  const SizedBox(height: 20),
+                  Divider(color: superficies.superficieElevadaBorde),
+                  const SizedBox(height: 16),
+
+                  // ── Reordenar manualmente ──
+                  seccionTitulo(l10n.catalogoReordenarTitulo),
+                  const SizedBox(height: 4),
+                  seccionSubtitulo(l10n.catalogoReordenarSubtitulo),
+                  const SizedBox(height: 12),
                   _ChipDensidad(
-                    icon: Icons.apps,
-                    label: l10n.catalogoDensidadCompacta,
-                    activa: _densidad == DensidadGrid.compacta,
+                    icon: _modoReorden
+                        ? Icons.dashboard_customize_sharp
+                        : Icons.swap_vert,
+                    label: _modoReorden
+                        ? l10n.catalogoTooltipVerCatalogo
+                        : l10n.catalogoTooltipReordenar,
+                    activa: _modoReorden,
                     color: primary,
                     colorInactivo: superficies.textoSobreSuperficieElevada,
                     onTap: () {
-                      Navigator.pop(ctx);
-                      _cambiarDensidad(DensidadGrid.compacta);
-                    },
-                  ),
-                  _ChipDensidad(
-                    icon: Icons.view_agenda_outlined,
-                    label: l10n.catalogoDensidadLista,
-                    activa: _densidad == DensidadGrid.lista,
-                    color: primary,
-                    colorInactivo: superficies.textoSobreSuperficieElevada,
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      _cambiarDensidad(DensidadGrid.lista);
+                      Navigator.pop(context);
+                      setState(() => _modoReorden = !_modoReorden);
                     },
                   ),
                 ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -249,6 +311,26 @@ class _JuegosScreenState extends State<JuegosScreen> {
         orElse: () => DensidadGrid.grande,
       );
     });
+  }
+
+  Future<void> _cargarOrdenAlfabetico() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _ordenAlfabetico = prefs.getBool('catalogo_orden_alfabetico') ?? false;
+    });
+  }
+
+  Future<void> _toggleOrdenAlfabetico() async {
+    final nuevo = !_ordenAlfabetico;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('catalogo_orden_alfabetico', nuevo);
+    if (_scrollController.hasClients) _scrollController.jumpTo(0);
+    setState(() {
+      _ordenAlfabetico = nuevo;
+      _precargadoHasta = 0;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _precargadoInicial());
   }
 
   Future<void> _cambiarDensidad(DensidadGrid nueva) async {
@@ -335,14 +417,33 @@ class _JuegosScreenState extends State<JuegosScreen> {
   }
 
   List<Juego> get juegosFiltrados {
-    return juegos.where((j) {
+    final resultado = juegos.where((j) {
       final matchBusqueda = _coincideBusqueda(j, busqueda);
       final matchEstado = filtroEstado == null || j.estado == filtroEstado;
-      // Filtro de categoría: el juego debe tener la categoría entre sus categorías
       final matchCategoria =
           filtroCategoria == null || j.categorias.contains(filtroCategoria);
       return matchBusqueda && matchEstado && matchCategoria;
     }).toList();
+
+    if (_ordenAlfabetico) {
+      resultado.sort(
+        (a, b) =>
+            _normalizarNombre(a.nombre).compareTo(_normalizarNombre(b.nombre)),
+      );
+    }
+
+    return resultado;
+  }
+
+  /// Minúsculas y sin acentos, para que "Ánimal" y "Zorro" ordenen de forma correcta
+  String _normalizarNombre(String s) {
+    const conAcento = 'áàäâãéèëêíìïîóòöôõúùüûñ';
+    const sinAcento = 'aaaaaeeeeiiiiooooouuuun';
+    var resultado = s.toLowerCase();
+    for (int i = 0; i < conAcento.length; i++) {
+      resultado = resultado.replaceAll(conAcento[i], sinAcento[i]);
+    }
+    return resultado;
   }
 
   // ── Categorías ────────────────────────────────────────────────────────────
@@ -1086,7 +1187,13 @@ class _JuegosScreenState extends State<JuegosScreen> {
           catalogoActual == 0 ? l10n.catalogoTitulo : nombreCatalogoSecundario,
         ),
         actions: [
-          if (_modoReorden) ...[
+          if (!_modoReorden)
+            IconButton(
+              icon: Icon(panelAbierto ? Icons.menu_open : Icons.menu),
+              tooltip: l10n.catalogoTooltipFiltros,
+              onPressed: () => setState(() => panelAbierto = !panelAbierto),
+            ),
+          if (_modoReorden)
             IconButton(
               icon: Icon(_reordenEnGrid ? Icons.view_list : Icons.grid_view),
               tooltip: _reordenEnGrid
@@ -1094,26 +1201,10 @@ class _JuegosScreenState extends State<JuegosScreen> {
                   : l10n.catalogoTooltipVistaGrid,
               onPressed: () => setState(() => _reordenEnGrid = !_reordenEnGrid),
             ),
-          ] else ...[
-            IconButton(
-              icon: Icon(panelAbierto ? Icons.menu_open : Icons.menu),
-              tooltip: l10n.catalogoTooltipFiltros,
-              onPressed: () => setState(() => panelAbierto = !panelAbierto),
-            ),
-            IconButton(
-              icon: Icon(_iconoDensidad()),
-              tooltip: l10n.catalogoTooltipDensidad,
-              onPressed: _mostrarSelectorDensidad,
-            ),
-          ],
           IconButton(
-            icon: Icon(
-              _modoReorden ? Icons.dashboard_customize_sharp : Icons.swap_vert,
-            ),
-            tooltip: _modoReorden
-                ? l10n.catalogoTooltipVerCatalogo
-                : l10n.catalogoTooltipReordenar,
-            onPressed: () => setState(() => _modoReorden = !_modoReorden),
+            icon: Icon(_iconoDensidad()),
+            tooltip: l10n.catalogoTooltipDensidad,
+            onPressed: _mostrarSelectorVistaYOrden,
           ),
           if (_modosExtrasActivos)
             IconButton(

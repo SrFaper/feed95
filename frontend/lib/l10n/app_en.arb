@@ -115,6 +115,8 @@
   "catalogoBuscar": "Search...",
   "catalogoTooltipFiltros": "Filters & categories",
   "catalogoTooltipReordenar": "Reorder",
+  "catalogoTooltipOrdenAlfabetico": "Sort A-Z",
+  "catalogoTooltipOrdenManual": "Back to manual order",
   "catalogoTooltipVerCatalogo": "View catalog",
   "catalogoTooltipVistaLista": "List view",
   "catalogoTooltipVistaGrid": "Grid view",

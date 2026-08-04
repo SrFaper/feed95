@@ -592,6 +592,18 @@ abstract class AppLocalizations {
   /// **'Reordenar'**
   String get catalogoTooltipReordenar;
 
+  /// No description provided for @catalogoTooltipOrdenAlfabetico.
+  ///
+  /// In es, this message translates to:
+  /// **'Ordenar A-Z'**
+  String get catalogoTooltipOrdenAlfabetico;
+
+  /// No description provided for @catalogoTooltipOrdenManual.
+  ///
+  /// In es, this message translates to:
+  /// **'Volver al orden manual'**
+  String get catalogoTooltipOrdenManual;
+
   /// No description provided for @catalogoTooltipVerCatalogo.
   ///
   /// In es, this message translates to:
@@ -661,7 +673,7 @@ abstract class AppLocalizations {
   /// No description provided for @catalogoTooltipDensidad.
   ///
   /// In es, this message translates to:
-  /// **'Tamaño de las tarjetas'**
+  /// **'Vista de las tarjetas'**
   String get catalogoTooltipDensidad;
 
   /// No description provided for @catalogoDensidadTitulo.
@@ -693,6 +705,42 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Lista'**
   String get catalogoDensidadLista;
+
+  /// No description provided for @catalogoOrdenTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'ORDEN TEMPORAL DE LAS TARJETAS'**
+  String get catalogoOrdenTitulo;
+
+  /// No description provided for @catalogoOrdenSubtitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'No reemplaza tu orden manual guardado'**
+  String get catalogoOrdenSubtitulo;
+
+  /// No description provided for @catalogoOrdenSubtituloEnReorden.
+  ///
+  /// In es, this message translates to:
+  /// **'Se aplicará al salir del modo reordenar'**
+  String get catalogoOrdenSubtituloEnReorden;
+
+  /// No description provided for @catalogoOrdenAlfabetico.
+  ///
+  /// In es, this message translates to:
+  /// **'Alfabético (A-Z)'**
+  String get catalogoOrdenAlfabetico;
+
+  /// No description provided for @catalogoReordenarTitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'REORDENAR MANUALMENTE'**
+  String get catalogoReordenarTitulo;
+
+  /// No description provided for @catalogoReordenarSubtitulo.
+  ///
+  /// In es, this message translates to:
+  /// **'Arrastra los juegos para fijar su posición'**
+  String get catalogoReordenarSubtitulo;
 
   /// No description provided for @categoriaNuevaTitulo.
   ///

@@ -115,6 +115,8 @@
   "catalogoBuscar": "搜索...",
   "catalogoTooltipFiltros": "筛选与分类",
   "catalogoTooltipReordenar": "重新排序",
+  "catalogoTooltipOrdenAlfabetico": "按字母排序",
+  "catalogoTooltipOrdenManual": "恢复手动排序",
   "catalogoTooltipVerCatalogo": "查看游戏库",
   "catalogoTooltipVistaLista": "列表视图",
   "catalogoTooltipVistaGrid": "网格视图",
