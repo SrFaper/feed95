@@ -10,6 +10,16 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=flat-square)](LICENSE)
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-blue?style=flat-square&logo=flutter)](https://flutter.dev)
 
+<br>
+
+<img src="docs/screenshots/inicio.png" width="395" alt="Pantalla de inicio del perfil">
+<img src="docs/screenshots/catalogo.png" width="395" alt="Catálogo en cuadrícula">
+<br>
+<img src="docs/screenshots/detalle.png" width="395" alt="Detalle de un juego">
+<img src="docs/screenshots/vista.png" width="395" alt="Catálogo en vista compacta">
+
+<sub>Las portadas mostradas pertenecen a sus respectivos propietarios.</sub>
+
 </div>
 
 ---
